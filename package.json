@@ -1,12 +1,15 @@
 {
   "name": "echogb",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Game Boy emulator",
   "author": "David Orr <davidyorr@gmail.com>",
-  "main": "index.js",
   "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "build": "GOOS=js GOARCH=wasm go build -o main.wasm",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm run build:wasm && vite",
+    "build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vite": "6.3.5"
   }
 }
