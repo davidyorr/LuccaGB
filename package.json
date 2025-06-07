@@ -6,10 +6,12 @@
   "packageManager": "pnpm@10.11.1",
   "scripts": {
     "dev": "pnpm run build:wasm && vite",
-    "build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm"
+    "build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm",
+    "format": "prettier --write '{**/*,*}.{ts,css,html}'"
   },
   "devDependencies": {
     "@types/golang-wasm-exec": "1.15.2",
+    "prettier": "3.5.3",
     "typescript": "5.8.3",
     "vite": "6.3.5"
   }
