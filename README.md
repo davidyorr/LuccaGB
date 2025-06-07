@@ -1,2 +1,2 @@
 # EchoGB
-A Game Boy emulator written in Go Wasm
+A Game Boy emulator written in Go and compiled to WebAssembly.
