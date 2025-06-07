@@ -5,12 +5,15 @@
   "author": "David Orr <davidyorr@gmail.com>",
   "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "dev": "pnpm run build:wasm && vite",
+    "dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
     "build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm",
+    "watch:wasm": "chokidar '**/*.go' -c 'pnpm run build:wasm'",
     "format": "prettier --write '{**/*,*}.{ts,css,html}'"
   },
   "devDependencies": {
     "@types/golang-wasm-exec": "1.15.2",
+    "chokidar-cli": "3.0.0",
+    "concurrently": "9.1.2",
     "prettier": "3.5.3",
     "typescript": "5.8.3",
     "vite": "6.3.5"
