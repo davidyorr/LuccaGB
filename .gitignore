@@ -1,0 +1,11 @@
+# Compiled WebAssembly files
+*.wasm
+
+# npm
+node_modules
+
+# VS Code
+.vscode
+
+# GitHub Pages
+/public
