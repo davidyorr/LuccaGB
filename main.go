@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"syscall/js"
-)
 
-// program counter
-var PC uint16
+	"github.com/davidyorr/EchoGB/cpu"
+)
 
 // 0x0000 - 0x7FFF, dynamically sized
 var cartridgeRom []uint8
@@ -82,7 +81,8 @@ func initPostBootRomState() {
 	ioRegisters[0xFF4A-0xFF00] = 0x00 // WY
 	ioRegisters[0xFF4B-0xFF00] = 0x00 // WX
 	interruptRegister = 0x00          // IE
-	PC = 0x0100
+
+	cpu.Reset()
 }
 
 func readMemory(address uint16) {
