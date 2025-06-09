@@ -10,14 +10,8 @@ import (
 // 0x0000 - 0x7FFF, dynamically sized
 var cartridgeRom []uint8
 
-// 0x8000 - 9FFF
-var videoRam [8192]uint8
-
 // 0xC000 - 0xDFFF
 var workingRam [8192]uint8
-
-// 0xFE00 - 0xFE9F
-var oam [160]uint8
 
 // 0xFF00 - 0xFF7F
 var ioRegisters [128]uint8
