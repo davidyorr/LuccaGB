@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 type CPU struct {
 	// program counter
 	pc uint16
@@ -30,8 +28,6 @@ func New() *CPU {
 }
 
 func (cpu *CPU) Reset() {
-	fmt.Println("Go: cpu.Reset()")
-
 	cpu.a = 0x01
 	cpu.f = 0x80
 	cpu.b = 0x00
