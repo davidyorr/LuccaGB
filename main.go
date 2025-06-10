@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/davidyorr/EchoGB/cpu"
+	"github.com/davidyorr/EchoGB/gameboy"
 )
 
 // 0x0000 - 0x7FFF, dynamically sized
@@ -75,8 +75,6 @@ func initPostBootRomState() {
 	ioRegisters[0xFF4A-0xFF00] = 0x00 // WY
 	ioRegisters[0xFF4B-0xFF00] = 0x00 // WX
 	interruptRegister = 0x00          // IE
-
-	cpu.Reset()
 }
 
 func readMemory(address uint16) {
@@ -92,6 +90,8 @@ func loadRom(this js.Value, args []js.Value) interface{} {
 	jsRomData := args[0]
 	cartridgeRom = make([]byte, jsRomData.Get("length").Int())
 	js.CopyBytesToGo(cartridgeRom, jsRomData)
+
+	gb := gameboy.New()
 
 	initPostBootRomState()
 
