@@ -1,6 +1,13 @@
 package mmu
 
+import (
+	"fmt"
+
+	"github.com/davidyorr/EchoGB/cartridge"
+)
+
 type MMU struct {
+	cartridge *cartridge.Cartridge
 	// 0xC000 - 0xDFFF
 	workingRam [8192]uint8
 	// 0xFF80 - 0xFFFE
@@ -9,8 +16,14 @@ type MMU struct {
 	ioRegisters [128]uint8
 }
 
-func New() *MMU {
+type Bus interface {
+	Read(address uint16) uint8
+	Write(address uint16, value uint8)
+}
+
+func New(cartridge *cartridge.Cartridge) *MMU {
 	mmu := &MMU{}
+	mmu.cartridge = cartridge
 
 	mmu.Reset()
 
@@ -63,8 +76,13 @@ func (mmu *MMU) Reset() {
 	mmu.ioRegisters[0xFF4B-0xFF00] = 0x00 // WX
 }
 
-func (mmu *MMU) ReadMemory(address uint16) {
+func (mmu *MMU) Read(address uint16) uint8 {
+	fmt.Printf("Go: Read( 0x%0X )\n", address)
+	if address <= 0x7FFF {
+	}
+
+	return 0
 }
 
-func (mmu *MMU) WriteMemory(address uint16, value uint8) {
+func (mmu *MMU) Write(address uint16, value uint8) {
 }

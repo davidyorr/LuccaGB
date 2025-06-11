@@ -17,11 +17,17 @@ type Gameboy struct {
 }
 
 func New() *Gameboy {
+	cartridge := cartridge.New()
+	mmu := mmu.New(cartridge)
+	cpu := cpu.New()
+	cpu.ConnectBus(mmu)
+	ppu := ppu.New()
+
 	return &Gameboy{
-		cpu:       cpu.New(),
-		ppu:       ppu.New(),
-		mmu:       mmu.New(),
-		cartridge: cartridge.New(),
+		cpu:       cpu,
+		ppu:       ppu,
+		mmu:       mmu,
+		cartridge: cartridge,
 	}
 }
 
@@ -29,4 +35,5 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 	fmt.Println("Go: load ROM", len(rom))
 
 	gameboy.cartridge.SetRom(rom)
+	gameboy.cpu.Step()
 }

@@ -1,5 +1,7 @@
 package cpu
 
+import "github.com/davidyorr/EchoGB/mmu"
+
 type CPU struct {
 	// program counter
 	pc uint16
@@ -17,6 +19,7 @@ type CPU struct {
 	l uint8
 	// interrupt master enable flag
 	ime bool
+	bus mmu.Bus
 }
 
 func New() *CPU {
@@ -38,4 +41,17 @@ func (cpu *CPU) Reset() {
 	cpu.l = 0x4D
 	cpu.pc = 0x0100
 	cpu.sp = 0xFFFE
+}
+
+func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
+	cpu.bus = bus
+}
+
+func (cpu *CPU) Step() {
+	// fetch
+	cpu.bus.Read(cpu.pc)
+
+	// decode
+
+	// execute
 }
