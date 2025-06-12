@@ -58,7 +58,10 @@ func (cpu *CPU) Step() {
 	fmt.Printf("Go: read byte 0x%0X\n", b)
 	cpu.pc++
 
-	// decode
-
-	// execute
+	instruction := instructions[b]
+	if instruction.execute != nil {
+		instructions[b].execute()
+	} else {
+		fmt.Printf("Go: unimplemented instruction 0x%02X\n", b)
+	}
 }
