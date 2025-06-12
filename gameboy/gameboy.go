@@ -34,6 +34,5 @@ func New() *Gameboy {
 func (gameboy *Gameboy) LoadRom(rom []uint8) {
 	fmt.Println("Go: load ROM", len(rom))
 
-	gameboy.cartridge.SetRom(rom)
-	gameboy.cpu.Step()
+	gameboy.cartridge.LoadRom(rom)
 }

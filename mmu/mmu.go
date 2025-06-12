@@ -1,8 +1,6 @@
 package mmu
 
 import (
-	"fmt"
-
 	"github.com/davidyorr/EchoGB/cartridge"
 )
 
@@ -77,8 +75,8 @@ func (mmu *MMU) Reset() {
 }
 
 func (mmu *MMU) Read(address uint16) uint8 {
-	fmt.Printf("Go: Read( 0x%0X )\n", address)
 	if address <= 0x7FFF {
+		return mmu.cartridge.Read(address)
 	}
 
 	return 0

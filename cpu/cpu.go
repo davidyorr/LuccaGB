@@ -1,6 +1,10 @@
 package cpu
 
-import "github.com/davidyorr/EchoGB/mmu"
+import (
+	"fmt"
+
+	"github.com/davidyorr/EchoGB/mmu"
+)
 
 type CPU struct {
 	// program counter
@@ -48,8 +52,11 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 }
 
 func (cpu *CPU) Step() {
+	fmt.Println("Go: cpu.Step()")
 	// fetch
-	cpu.bus.Read(cpu.pc)
+	b := cpu.bus.Read(cpu.pc)
+	fmt.Printf("Go: read byte 0x%0X\n", b)
+	cpu.pc++
 
 	// decode
 
