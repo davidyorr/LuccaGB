@@ -22,8 +22,9 @@ type CPU struct {
 	h uint8
 	l uint8
 	// interrupt master enable flag
-	ime bool
-	bus mmu.Bus
+	ime            bool
+	immediateValue uint16
+	bus            mmu.Bus
 }
 
 func New() *CPU {
@@ -51,17 +52,28 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 	cpu.bus = bus
 }
 
-func (cpu *CPU) Step() {
+func (cpu *CPU) Step() uint8 {
 	fmt.Println("Go: cpu.Step()")
 	// fetch
-	b := cpu.bus.Read(cpu.pc)
-	fmt.Printf("Go: read byte 0x%0X\n", b)
-	cpu.pc++
+	opcode := cpu.bus.Read(cpu.pc)
+	fmt.Printf("Go: opcode 0x%0X\n", opcode)
+	instruction := instructions[opcode]
 
-	instruction := instructions[b]
-	if instruction.execute != nil {
-		instructions[b].execute()
-	} else {
-		fmt.Printf("Go: unimplemented instruction 0x%02X\n", b)
+	if instruction.execute == nil {
+		fmt.Printf("Go: unimplemented instruction 0x%02X\n", opcode)
+		return 0
 	}
+
+	switch instruction.operandLength {
+	case 1:
+		cpu.immediateValue = uint16(cpu.bus.Read(cpu.pc + 1))
+	case 2:
+		lowByte := cpu.bus.Read(cpu.pc + 1)
+		highByte := cpu.bus.Read(cpu.pc + 2)
+		cpu.immediateValue = (uint16(highByte) << 8) | uint16(lowByte)
+	}
+
+	cpu.pc += 1 + uint16(instruction.operandLength)
+
+	return instruction.execute(cpu)
 }
