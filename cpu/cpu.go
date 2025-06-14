@@ -78,3 +78,22 @@ func (cpu *CPU) Step() uint8 {
 
 	return instruction.execute(cpu)
 }
+
+type Flag uint8
+
+const (
+	FlagZ Flag = 7
+	FlagN Flag = 6
+	FlagH Flag = 5
+	FlagC Flag = 4
+)
+
+func (cpu *CPU) setFlag(flag Flag, value bool) {
+	if value {
+		// set the bit
+		cpu.f |= (1 << flag)
+	} else {
+		// clear the bit
+		cpu.f &= ^(1 << flag)
+	}
+}
