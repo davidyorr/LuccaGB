@@ -1,6 +1,8 @@
 package mmu
 
 import (
+	"fmt"
+
 	"github.com/davidyorr/EchoGB/cartridge"
 )
 
@@ -12,6 +14,8 @@ type MMU struct {
 	highRam [127]uint8
 	// 0xFF00 - 0xFF7F
 	ioRegisters [128]uint8
+	// for test output
+	serialOutputBuffer []uint8
 }
 
 type Bus interface {
@@ -75,6 +79,7 @@ func (mmu *MMU) Reset() {
 }
 
 func (mmu *MMU) Read(address uint16) uint8 {
+	// ROM
 	if address <= 0x7FFF {
 		return mmu.cartridge.Read(address)
 	}
@@ -83,4 +88,27 @@ func (mmu *MMU) Read(address uint16) uint8 {
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
+	fmt.Printf("========================== WRITING %0X %0X\n", address, value)
+	if address <= 0x7FFF {
+		// ROM
+	} else if address <= 0xFFFE {
+		fmt.Println("========================== WRITING TO WORKING RAM")
+		mmu.workingRam[address-0xC000] = value
+		// working RAM
+	} else if address <= 0xFF7F {
+		// IO registers
+		fmt.Println("========================== WRITING TO IO REGISTER")
+		mmu.ioRegisters[address-0xFF00] = value
+	}
+	// SB is the Serial Data register at address 0xFF01
+	// SC is the Serial Control register at address 0xFF02
+	if address == 0xFF02 && value == 0x81 {
+		fmt.Println("========================== WRITING TO SERIAL OUTPUT BUFFER")
+		fmt.Println("                           ", mmu.Read(0xFF01))
+		mmu.serialOutputBuffer = append(mmu.serialOutputBuffer, mmu.Read(0xFF01))
+	}
+}
+
+func (mmu *MMU) SerialOutputBuffer() string {
+	return string(mmu.serialOutputBuffer)
 }

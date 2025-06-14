@@ -53,8 +53,9 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 }
 
 func (cpu *CPU) Step() uint8 {
-	fmt.Println("Go: cpu.Step()")
-	// fetch
+	fmt.Println("Go: cpu.Step() -------------")
+	fmt.Printf("  pc=0x%02X\n", cpu.pc)
+
 	opcode := cpu.bus.Read(cpu.pc)
 	fmt.Printf("Go: opcode 0x%0X\n", opcode)
 	instruction := instructions[opcode]
