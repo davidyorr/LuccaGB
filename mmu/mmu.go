@@ -10,10 +10,10 @@ type MMU struct {
 	cartridge *cartridge.Cartridge
 	// 0xC000 - 0xDFFF
 	workingRam [8192]uint8
-	// 0xFF80 - 0xFFFE
-	highRam [127]uint8
 	// 0xFF00 - 0xFF7F
 	ioRegisters [128]uint8
+	// 0xFF80 - 0xFFFE
+	highRam [127]uint8
 	// for test output
 	serialOutputBuffer []uint8
 }
@@ -88,17 +88,21 @@ func (mmu *MMU) Read(address uint16) uint8 {
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
-	fmt.Printf("========================== WRITING %0X %0X\n", address, value)
+	fmt.Printf("========================== WRITING %d %0X\n", address, value)
 	if address <= 0x7FFF {
 		// ROM
-	} else if address <= 0xFFFE {
+	} else if address >= 0xC000 && address <= 0xDFFF {
+		// working RAM
 		fmt.Println("========================== WRITING TO WORKING RAM")
 		mmu.workingRam[address-0xC000] = value
-		// working RAM
-	} else if address <= 0xFF7F {
+	} else if address >= 0xFF00 && address <= 0xFF7F {
 		// IO registers
 		fmt.Println("========================== WRITING TO IO REGISTER")
 		mmu.ioRegisters[address-0xFF00] = value
+	} else if address >= 0xFF80 && address <= 0xFFFE {
+		// high RAM
+		fmt.Println("========================== WRITING TO HIGH RAM")
+		mmu.highRam[address-0xFF80] = value
 	}
 	// SB is the Serial Data register at address 0xFF01
 	// SC is the Serial Control register at address 0xFF02
