@@ -14,10 +14,16 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for i := range 10 {
-		gb.cpu.Step()
+	for i := range 100 {
+		_, err := gb.cpu.Step()
+		if err != nil {
+			t.Fatal(err)
+		}
 		output := gb.mmu.SerialOutputBuffer()
 		t.Logf("++++++ test output=[%s]\n", output)
+		if len(output) > 0 {
+			t.Fatal(output)
+		}
 		i++
 	}
 }

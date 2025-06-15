@@ -8,14 +8,6 @@ func nop(cpu *CPU) uint8 {
 	return 4
 }
 
-// 0xC3 Jump to address a16; effectively, copy a16 into PC
-func jp_a16(cpu *CPU) uint8 {
-	fmt.Println("Go: jp_a16()")
-	fmt.Printf("  imm=[0x%04X]\n", cpu.immediateValue)
-	cpu.pc = cpu.immediateValue
-	return 16
-}
-
 // 0x31 Copy the value n16 into register SP
 func ld_sp_n16(cpu *CPU) uint8 {
 	cpu.sp = cpu.immediateValue
@@ -54,6 +46,27 @@ func rlca(cpu *CPU) uint8 {
 	fmt.Printf("RCLA: carry=[0x%0X] a=[0x%0X]\n", carry, cpu.a)
 
 	return 4
+}
+
+// 0xC3 Jump to address a16; effectively, copy a16 into PC
+func jp_a16(cpu *CPU) uint8 {
+	fmt.Println("Go: jp_a16()")
+	fmt.Printf("  imm=[0x%04X]\n", cpu.immediateValue)
+	cpu.pc = cpu.immediateValue
+	return 16
+}
+
+// 0xFF Call address 0x38
+func rst_38h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc)
+	cpu.pc = 0x38
+	return 16
+}
+
+// 0x3C Increment the value in register SP by 1
+func inc_sp(cpu *CPU) uint8 {
+	cpu.sp++
+	return 8
 }
 
 // 0xF3 Disable Interrupts by clearing the IME flag

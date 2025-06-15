@@ -52,7 +52,16 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 	cpu.bus = bus
 }
 
-func (cpu *CPU) Step() uint8 {
+func (cpu *CPU) pushToStack16(returnAddress uint16) {
+	highByte := uint8((returnAddress >> 8) & 0xFF)
+	lowByte := uint8(returnAddress & 0xFF)
+	cpu.sp--
+	cpu.bus.Write(cpu.sp, highByte)
+	cpu.sp--
+	cpu.bus.Write(cpu.sp, lowByte)
+}
+
+func (cpu *CPU) Step() (uint8, error) {
 	fmt.Println("Go: cpu.Step() -------------")
 	fmt.Printf("  pc=0x%02X\n", cpu.pc)
 
@@ -62,7 +71,7 @@ func (cpu *CPU) Step() uint8 {
 
 	if instruction.execute == nil {
 		fmt.Printf("Go: unimplemented instruction 0x%02X\n", opcode)
-		return 0
+		return 0, fmt.Errorf("unimplemented instruction 0x%02X", opcode)
 	}
 
 	switch instruction.operandLength {
@@ -74,9 +83,17 @@ func (cpu *CPU) Step() uint8 {
 		cpu.immediateValue = (uint16(highByte) << 8) | uint16(lowByte)
 	}
 
-	cpu.pc += 1 + uint16(instruction.operandLength)
+	originalPc := cpu.pc
+	cycles := instruction.execute(cpu)
 
-	return instruction.execute(cpu)
+	// don't update the PC if the opcode did
+	if cpu.pc == originalPc {
+		cpu.pc += 1 + uint16(instruction.operandLength)
+	} else {
+		fmt.Println("~~~~~~~~~~~~ not updating PC ~~~~~~~~~~~~~~~~~")
+	}
+
+	return cycles, nil
 }
 
 type Flag uint8

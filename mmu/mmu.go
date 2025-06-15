@@ -107,7 +107,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	// SB is the Serial Data register at address 0xFF01
 	// SC is the Serial Control register at address 0xFF02
 	if address == 0xFF02 && value == 0x81 {
-		fmt.Println("========================== WRITING TO SERIAL OUTPUT BUFFER")
+		fmt.Println("========================== WRITING TO SERIAL OUTPUT BUFFER ================================")
 		fmt.Println("                           ", mmu.Read(0xFF01))
 		mmu.serialOutputBuffer = append(mmu.serialOutputBuffer, mmu.Read(0xFF01))
 	}

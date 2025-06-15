@@ -43,3 +43,7 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 func (cartridge *Cartridge) Read(address uint16) uint8 {
 	return cartridge.rom[address]
 }
+
+func (cartridge *Cartridge) Write(address uint16, value uint8) {
+
+}
