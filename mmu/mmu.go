@@ -79,9 +79,18 @@ func (mmu *MMU) Reset() {
 }
 
 func (mmu *MMU) Read(address uint16) uint8 {
-	// ROM
 	if address <= 0x7FFF {
+		// ROM
 		return mmu.cartridge.Read(address)
+	} else if address >= 0xC000 && address <= 0xDFFF {
+		// working RAM
+		return mmu.workingRam[address-0xC000]
+	} else if address >= 0xFF00 && address <= 0xFF7F {
+		// IO registers
+		return mmu.ioRegisters[address-0xFF00]
+	} else if address >= 0xFF80 && address <= 0xFFFE {
+		// high RAM
+		return mmu.highRam[address-0xFF80]
 	}
 
 	return 0
