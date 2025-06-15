@@ -21,6 +21,7 @@ var instructions = [256]instruction{
 
 	// load instructions
 	0x01: {"LD BC, ", 2, nil},
+	0x21: {"LD HL, n16", 2, ld_hl_n16},
 	0x31: {"LD SP, n16", 2, ld_sp_n16},
 	0x3E: {"LD A, n8", 1, ld_a_n8},
 	0xE0: {"LDH (a8), A", 1, ldh_a8_a},

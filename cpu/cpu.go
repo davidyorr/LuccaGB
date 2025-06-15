@@ -52,15 +52,6 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 	cpu.bus = bus
 }
 
-func (cpu *CPU) pushToStack16(returnAddress uint16) {
-	highByte := uint8((returnAddress >> 8) & 0xFF)
-	lowByte := uint8(returnAddress & 0xFF)
-	cpu.sp--
-	cpu.bus.Write(cpu.sp, highByte)
-	cpu.sp--
-	cpu.bus.Write(cpu.sp, lowByte)
-}
-
 func (cpu *CPU) Step() (uint8, error) {
 	fmt.Println("Go: cpu.Step() -------------")
 	fmt.Printf("  pc=0x%02X\n", cpu.pc)
@@ -94,6 +85,42 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	return cycles, nil
+}
+
+func (cpu *CPU) pushToStack16(returnAddress uint16) {
+	highByte := uint8((returnAddress >> 8) & 0xFF)
+	lowByte := uint8(returnAddress & 0xFF)
+	cpu.sp--
+	cpu.bus.Write(cpu.sp, highByte)
+	cpu.sp--
+	cpu.bus.Write(cpu.sp, lowByte)
+}
+
+func (cpu *CPU) getBC() uint16 {
+	return (uint16(cpu.b) << 8) | uint16(cpu.c)
+}
+
+func (cpu *CPU) setBC(value uint16) {
+	cpu.b = uint8(value >> 8)
+	cpu.c = uint8(value & 0xFF00)
+}
+
+func (cpu *CPU) getDE() uint16 {
+	return (uint16(cpu.d) << 8) | uint16(cpu.e)
+}
+
+func (cpu *CPU) setDE(value uint16) {
+	cpu.d = uint8(value >> 8)
+	cpu.e = uint8(value & 0xFF00)
+}
+
+func (cpu *CPU) getHL() uint16 {
+	return (uint16(cpu.h) << 8) | uint16(cpu.l)
+}
+
+func (cpu *CPU) setHL(value uint16) {
+	cpu.h = uint8(value >> 8)
+	cpu.l = uint8(value & 0xFF00)
 }
 
 type Flag uint8

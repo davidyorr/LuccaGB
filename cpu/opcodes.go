@@ -8,6 +8,12 @@ func nop(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0x21 Copy the value n16 into register HL.
+func ld_hl_n16(cpu *CPU) uint8 {
+	cpu.setHL(cpu.immediateValue)
+	return 12
+}
+
 // 0x31 Copy the value n16 into register SP
 func ld_sp_n16(cpu *CPU) uint8 {
 	cpu.sp = cpu.immediateValue
