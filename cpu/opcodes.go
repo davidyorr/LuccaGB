@@ -479,6 +479,108 @@ func sub_a_n8(cpu *CPU) uint8 {
 	return 8
 }
 
+// Set A to the bitwise AND between the value in r8 and A
+func (cpu *CPU) and_a_r8(r8 uint8) {
+	cpu.a &= r8
+	cpu.setFlag(FlagZ, cpu.a == 0)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, true)
+	cpu.setFlag(FlagC, false)
+}
+
+// 0xA0 Set A to the bitwise AND between the value in r8 and A
+func and_a_b(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.b)
+	return 4
+}
+
+// 0xA1 Set A to the bitwise AND between the value in r8 and A
+func and_a_c(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.c)
+	return 4
+}
+
+// 0xA2 Set A to the bitwise AND between the value in r8 and A
+func and_a_d(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.d)
+	return 4
+}
+
+// 0xA3 Set A to the bitwise AND between the value in r8 and A
+func and_a_e(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.e)
+	return 4
+}
+
+// 0xA4 Set A to the bitwise AND between the value in r8 and A
+func and_a_h(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.h)
+	return 4
+}
+
+// 0xA5 Set A to the bitwise AND between the value in r8 and A
+func and_a_l(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.l)
+	return 4
+}
+
+// 0xA7 Set A to the bitwise AND between the value in r8 and A
+func and_a_a(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.a)
+	return 4
+}
+
+// Set A to the bitwise OR between the value in r8 and A
+func (cpu *CPU) or_a_r8(r8 uint8) {
+	cpu.a |= r8
+	cpu.setFlag(FlagZ, cpu.a == 0)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, false)
+}
+
+// 0xB0 Set A to the bitwise OR between the value in r8 and A
+func or_a_b(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.b)
+	return 4
+}
+
+// 0xB1 Set A to the bitwise OR between the value in r8 and A
+func or_a_c(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.c)
+	return 4
+}
+
+// 0xB2 Set A to the bitwise OR between the value in r8 and A
+func or_a_d(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.d)
+	return 4
+}
+
+// 0xB3 Set A to the bitwise OR between the value in r8 and A
+func or_a_e(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.e)
+	return 4
+}
+
+// 0xB4 Set A to the bitwise OR between the value in r8 and A
+func or_a_h(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.h)
+	return 4
+}
+
+// 0xB5 Set A to the bitwise OR between the value in r8 and A
+func or_a_l(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.l)
+	return 4
+}
+
+// 0xB7 Set A to the bitwise OR between the value in r8 and A
+func or_a_a(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.a)
+	return 4
+}
+
 // 0x07 Rotate register A left
 func rlca(cpu *CPU) uint8 {
 	carry := (cpu.a >> 7) & 1
