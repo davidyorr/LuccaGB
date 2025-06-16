@@ -54,11 +54,11 @@ func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
 
 func (cpu *CPU) Step() (uint8, error) {
 	fmt.Println("Go: cpu.Step() -------------")
-	fmt.Printf("  pc=0x%02X\n", cpu.pc)
+	cpu.immediateValue = 0
 
 	opcode := cpu.bus.Read(cpu.pc)
-	fmt.Printf("Go: opcode 0x%0X\n", opcode)
 	instruction := instructions[opcode]
+	fmt.Printf("  PC=0x%04X SP:0x%04X AF:0x%04X BC:0x%04X DE:0x%04X HL:0x%04X | (op:0x%02X, len:%d, imm:0x%04X) %s\n", cpu.pc, cpu.sp, cpu.getAF(), cpu.getBC(), cpu.getDE(), cpu.getHL(), opcode, instruction.operandLength, cpu.immediateValue, instruction.mnemonic)
 
 	if instruction.execute == nil {
 		fmt.Printf("Go: unimplemented instruction 0x%02X\n", opcode)
@@ -80,20 +80,38 @@ func (cpu *CPU) Step() (uint8, error) {
 	// don't update the PC if the opcode did
 	if cpu.pc == originalPc {
 		cpu.pc += 1 + uint16(instruction.operandLength)
-	} else {
-		fmt.Println("~~~~~~~~~~~~ not updating PC ~~~~~~~~~~~~~~~~~")
 	}
 
 	return cycles, nil
 }
 
 func (cpu *CPU) pushToStack16(returnAddress uint16) {
-	highByte := uint8((returnAddress >> 8) & 0xFF)
-	lowByte := uint8(returnAddress & 0xFF)
+	highByte := uint8(returnAddress >> 8)
+	lowByte := uint8(returnAddress & 0x00FF)
 	cpu.sp--
 	cpu.bus.Write(cpu.sp, highByte)
 	cpu.sp--
 	cpu.bus.Write(cpu.sp, lowByte)
+}
+
+func (cpu *CPU) popFromStack16() uint16 {
+	lowByte := cpu.bus.Read(cpu.sp)
+	cpu.sp++
+	highByte := cpu.bus.Read(cpu.sp)
+	cpu.sp++
+
+	return (uint16(highByte) << 8) | uint16(lowByte)
+}
+
+func (cpu *CPU) getAF() uint16 {
+	return (uint16(cpu.a) << 8) | uint16(cpu.f)
+}
+
+func (cpu *CPU) setAF(value uint16) {
+	cpu.a = uint8(value >> 8)
+	lowByte := uint8(value & 0x00FF)
+	// clear the lower 4 bits because the lower 4 bits of the F register must always be 0
+	cpu.f = lowByte & 0xF0
 }
 
 func (cpu *CPU) getBC() uint16 {
@@ -102,7 +120,7 @@ func (cpu *CPU) getBC() uint16 {
 
 func (cpu *CPU) setBC(value uint16) {
 	cpu.b = uint8(value >> 8)
-	cpu.c = uint8(value & 0xFF00)
+	cpu.c = uint8(value & 0x00FF)
 }
 
 func (cpu *CPU) getDE() uint16 {
@@ -111,7 +129,7 @@ func (cpu *CPU) getDE() uint16 {
 
 func (cpu *CPU) setDE(value uint16) {
 	cpu.d = uint8(value >> 8)
-	cpu.e = uint8(value & 0xFF00)
+	cpu.e = uint8(value & 0x00FF)
 }
 
 func (cpu *CPU) getHL() uint16 {
@@ -120,7 +138,7 @@ func (cpu *CPU) getHL() uint16 {
 
 func (cpu *CPU) setHL(value uint16) {
 	cpu.h = uint8(value >> 8)
-	cpu.l = uint8(value & 0xFF00)
+	cpu.l = uint8(value & 0x00FF)
 }
 
 type Flag uint8
@@ -131,6 +149,10 @@ const (
 	FlagH Flag = 5
 	FlagC Flag = 4
 )
+
+func (cpu *CPU) getFlag(flag Flag) bool {
+	return ((cpu.f & (1 << flag)) >> flag) == 1
+}
 
 func (cpu *CPU) setFlag(flag Flag, value bool) {
 	if value {

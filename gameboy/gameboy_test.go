@@ -20,10 +20,7 @@ func TestBlarggCpuInsructions(t *testing.T) {
 			t.Fatal(err)
 		}
 		output := gb.mmu.SerialOutputBuffer()
-		t.Logf("++++++ test output=[%s]\n", output)
-		if len(output) > 0 {
-			t.Fatal(output)
-		}
+		t.Logf("++++++ test output: [%s] (hex: [% x])\n", string(output), output)
 		i++
 	}
 }

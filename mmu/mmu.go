@@ -79,38 +79,37 @@ func (mmu *MMU) Reset() {
 }
 
 func (mmu *MMU) Read(address uint16) uint8 {
+	var value uint8 = 0
 	if address <= 0x7FFF {
 		// ROM
-		return mmu.cartridge.Read(address)
+		value = mmu.cartridge.Read(address)
 	} else if address >= 0xC000 && address <= 0xDFFF {
 		// working RAM
-		return mmu.workingRam[address-0xC000]
+		value = mmu.workingRam[address-0xC000]
 	} else if address >= 0xFF00 && address <= 0xFF7F {
 		// IO registers
-		return mmu.ioRegisters[address-0xFF00]
+		value = mmu.ioRegisters[address-0xFF00]
 	} else if address >= 0xFF80 && address <= 0xFFFE {
 		// high RAM
-		return mmu.highRam[address-0xFF80]
+		value = mmu.highRam[address-0xFF80]
 	}
+	fmt.Printf("  [MMU READ] Address: 0x%04X, Value: 0x%02X\n", address, value)
 
-	return 0
+	return value
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
-	fmt.Printf("========================== WRITING %d %0X\n", address, value)
+	fmt.Printf("  [MMU WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
 	if address <= 0x7FFF {
 		// ROM
 	} else if address >= 0xC000 && address <= 0xDFFF {
 		// working RAM
-		fmt.Println("========================== WRITING TO WORKING RAM")
 		mmu.workingRam[address-0xC000] = value
 	} else if address >= 0xFF00 && address <= 0xFF7F {
 		// IO registers
-		fmt.Println("========================== WRITING TO IO REGISTER")
 		mmu.ioRegisters[address-0xFF00] = value
 	} else if address >= 0xFF80 && address <= 0xFFFE {
 		// high RAM
-		fmt.Println("========================== WRITING TO HIGH RAM")
 		mmu.highRam[address-0xFF80] = value
 	}
 	// SB is the Serial Data register at address 0xFF01
@@ -122,6 +121,6 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	}
 }
 
-func (mmu *MMU) SerialOutputBuffer() string {
-	return string(mmu.serialOutputBuffer)
+func (mmu *MMU) SerialOutputBuffer() []byte {
+	return mmu.serialOutputBuffer
 }
