@@ -32,9 +32,285 @@ func ld_a_n8(cpu *CPU) uint8 {
 	return 8
 }
 
+// 0x40 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_b(cpu *CPU) uint8 {
+	cpu.b = cpu.b
+	return 4
+}
+
+// 0x41 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_c(cpu *CPU) uint8 {
+	cpu.b = cpu.c
+	return 4
+}
+
+// 0x42 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_d(cpu *CPU) uint8 {
+	cpu.b = cpu.d
+	return 4
+}
+
+// 0x43 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_e(cpu *CPU) uint8 {
+	cpu.b = cpu.e
+	return 4
+}
+
+// 0x44 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_h(cpu *CPU) uint8 {
+	cpu.b = cpu.h
+	return 4
+}
+
+// 0x45 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_l(cpu *CPU) uint8 {
+	cpu.b = cpu.l
+	return 4
+}
+
+// 0x47 Copy (aka Load) the value in register on the right into the register on the left
+func ld_b_a(cpu *CPU) uint8 {
+	cpu.b = cpu.a
+	return 4
+}
+
+// 0x48 Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_b(cpu *CPU) uint8 {
+	cpu.c = cpu.b
+	return 4
+}
+
+// 0x49 Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_c(cpu *CPU) uint8 {
+	cpu.c = cpu.c
+	return 4
+}
+
+// 0x4A Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_d(cpu *CPU) uint8 {
+	cpu.c = cpu.d
+	return 4
+}
+
+// 0x4B Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_e(cpu *CPU) uint8 {
+	cpu.c = cpu.e
+	return 4
+}
+
+// 0x4C Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_h(cpu *CPU) uint8 {
+	cpu.c = cpu.h
+	return 4
+}
+
+// 0x4L Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_l(cpu *CPU) uint8 {
+	cpu.c = cpu.l
+	return 4
+}
+
+// 0x4F Copy (aka Load) the value in register on the right into the register on the left
+func ld_c_a(cpu *CPU) uint8 {
+	cpu.c = cpu.a
+	return 4
+}
+
+// 0x50 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_b(cpu *CPU) uint8 {
+	cpu.d = cpu.b
+	return 4
+}
+
+// 0x51 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_c(cpu *CPU) uint8 {
+	cpu.d = cpu.c
+	return 4
+}
+
+// 0x52 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_d(cpu *CPU) uint8 {
+	cpu.d = cpu.d
+	return 4
+}
+
+// 0x53 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_e(cpu *CPU) uint8 {
+	cpu.d = cpu.e
+	return 4
+}
+
+// 0x54 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_h(cpu *CPU) uint8 {
+	cpu.d = cpu.h
+	return 4
+}
+
+// 0x55 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_l(cpu *CPU) uint8 {
+	cpu.d = cpu.l
+	return 4
+}
+
+// 0x57 Copy (aka Load) the value in register on the right into the register on the left
+func ld_d_a(cpu *CPU) uint8 {
+	cpu.d = cpu.a
+	return 4
+}
+
+// 0x58 Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_b(cpu *CPU) uint8 {
+	cpu.e = cpu.b
+	return 4
+}
+
+// 0x59 Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_c(cpu *CPU) uint8 {
+	cpu.e = cpu.c
+	return 4
+}
+
+// 0x5A Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_d(cpu *CPU) uint8 {
+	cpu.e = cpu.d
+	return 4
+}
+
+// 0x5B Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_e(cpu *CPU) uint8 {
+	cpu.e = cpu.e
+	return 4
+}
+
+// 0x5C Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_h(cpu *CPU) uint8 {
+	cpu.e = cpu.h
+	return 4
+}
+
+// 0x5D Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_l(cpu *CPU) uint8 {
+	cpu.e = cpu.l
+	return 4
+}
+
+// 0x5F Copy (aka Load) the value in register on the right into the register on the left
+func ld_e_a(cpu *CPU) uint8 {
+	cpu.e = cpu.a
+	return 4
+}
+
+// 0x60 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_b(cpu *CPU) uint8 {
+	cpu.h = cpu.b
+	return 4
+}
+
+// 0x61 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_c(cpu *CPU) uint8 {
+	cpu.h = cpu.c
+	return 4
+}
+
+// 0x62 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_d(cpu *CPU) uint8 {
+	cpu.h = cpu.d
+	return 4
+}
+
+// 0x63 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_e(cpu *CPU) uint8 {
+	cpu.h = cpu.e
+	return 4
+}
+
+// 0x64 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_h(cpu *CPU) uint8 {
+	cpu.h = cpu.h
+	return 4
+}
+
+// 0x65 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_l(cpu *CPU) uint8 {
+	cpu.h = cpu.l
+	return 4
+}
+
+// 0x67 Copy (aka Load) the value in register on the right into the register on the left
+func ld_h_a(cpu *CPU) uint8 {
+	cpu.h = cpu.a
+	return 4
+}
+
+// 0x68 Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_b(cpu *CPU) uint8 {
+	cpu.l = cpu.b
+	return 4
+}
+
+// 0x69 Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_c(cpu *CPU) uint8 {
+	cpu.l = cpu.c
+	return 4
+}
+
+// 0x6A Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_d(cpu *CPU) uint8 {
+	cpu.l = cpu.d
+	return 4
+}
+
+// 0x6B Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_e(cpu *CPU) uint8 {
+	cpu.l = cpu.e
+	return 4
+}
+
+// 0x6C Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_h(cpu *CPU) uint8 {
+	cpu.l = cpu.h
+	return 4
+}
+
+// 0x6D Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_l(cpu *CPU) uint8 {
+	cpu.l = cpu.l
+	return 4
+}
+
+// 0x6F Copy (aka Load) the value in register on the right into the register on the left
+func ld_l_a(cpu *CPU) uint8 {
+	cpu.l = cpu.a
+	return 4
+}
+
 // 0x78 Copy (aka Load) the value in register on the right into the register on the left
 func ld_a_b(cpu *CPU) uint8 {
 	cpu.a = cpu.b
+	return 4
+}
+
+// 0x79 Copy (aka Load) the value in register on the right into the register on the left
+func ld_a_c(cpu *CPU) uint8 {
+	cpu.a = cpu.c
+	return 4
+}
+
+// 0x7A Copy (aka Load) the value in register on the right into the register on the left
+func ld_a_d(cpu *CPU) uint8 {
+	cpu.a = cpu.d
+	return 4
+}
+
+// 0x7B Copy (aka Load) the value in register on the right into the register on the left
+func ld_a_e(cpu *CPU) uint8 {
+	cpu.a = cpu.e
+	return 4
+}
+
+// 0x7F Copy (aka Load) the value in register on the right into the register on the left
+func ld_a_a(cpu *CPU) uint8 {
+	cpu.a = cpu.a
 	return 4
 }
 
