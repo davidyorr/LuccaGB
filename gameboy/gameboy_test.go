@@ -17,10 +17,12 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	for i := range 100 {
 		_, err := gb.cpu.Step()
 		if err != nil {
+			t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
 			t.Fatal(err)
 		}
 		output := gb.mmu.SerialOutputBuffer()
 		t.Logf("++++++ test output: [%s] (hex: [% x])\n", string(output), output)
 		i++
 	}
+	t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
 }

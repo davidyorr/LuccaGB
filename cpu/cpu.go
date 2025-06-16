@@ -144,9 +144,13 @@ func (cpu *CPU) setHL(value uint16) {
 type Flag uint8
 
 const (
+	// zero flag
 	FlagZ Flag = 7
+	// subtraction flag (BCD)
 	FlagN Flag = 6
+	// half carry flag (BCD)
 	FlagH Flag = 5
+	// carry flag
 	FlagC Flag = 4
 )
 

@@ -346,9 +346,122 @@ func ld_a_hli(cpu *CPU) uint8 {
 	return 8
 }
 
+// Add the value in r8 to A
+func (cpu *CPU) add_a_r8(r8 uint8) {
+	originalA := cpu.a
+	sum := originalA + r8
+	cpu.a = sum
+	cpu.setFlag(FlagZ, sum == 0)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagC, sum < originalA)
+	cpu.setFlag(FlagH, ((originalA&0x0F)+(r8&0x0F)) > 0x0F)
+}
+
+// 0x80 Add the value in r8 to A
+func add_a_b(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.b)
+	return 4
+}
+
+// 0x81 Add the value in r8 to A
+func add_a_c(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.c)
+	return 4
+}
+
+// 0x82 Add the value in r8 to A
+func add_a_d(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.d)
+	return 4
+}
+
+// 0x83 Add the value in r8 to A
+func add_a_e(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.e)
+	return 4
+}
+
+// 0x84 Add the value in r8 to A
+func add_a_h(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.h)
+	return 4
+}
+
+// 0x85 Add the value in r8 to A
+func add_a_l(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.l)
+	return 4
+}
+
+// 0x87 Add the value in r8 to A
+func add_a_a(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.a)
+	return 4
+}
+
+// Subtract the value in r8 from A
+func (cpu *CPU) sub_a_r8(r8 uint8) {
+	originalA := cpu.a
+	difference := originalA - r8
+	cpu.a = difference
+	cpu.setFlag(FlagZ, difference == 0)
+	cpu.setFlag(FlagN, true)
+	cpu.setFlag(FlagC, difference > originalA)
+	cpu.setFlag(FlagH, (originalA&0x0F) < (r8&0x0F))
+}
+
+// 0x90 Subtract the value in r8 from A
+func sub_a_b(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.b)
+	return 4
+}
+
+// 0x91 Subtract the value in r8 from A
+func sub_a_c(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.c)
+	return 4
+}
+
+// 0x92 Subtract the value in r8 from A
+func sub_a_d(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.d)
+	return 4
+}
+
+// 0x93 Subtract the value in r8 from A
+func sub_a_e(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.e)
+	return 4
+}
+
+// 0x94 Subtract the value in r8 from A
+func sub_a_h(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.h)
+	return 4
+}
+
+// 0x95 Subtract the value in r8 from A
+func sub_a_l(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.l)
+	return 4
+}
+
+// 0x97 Subtract the value in r8 from A
+func sub_a_a(cpu *CPU) uint8 {
+	cpu.sub_a_r8(cpu.a)
+	return 4
+}
+
 // 0x03 Increment the value in register r8 by 1
 func inc_bc(cpu *CPU) uint8 {
 	value := cpu.getBC()
+	cpu.setBC(value + 1)
+	return 8
+}
+
+// 0x13 Increment the value in register r8 by 1
+func inc_de(cpu *CPU) uint8 {
+	value := cpu.getDE()
 	cpu.setBC(value + 1)
 	return 8
 }
@@ -393,8 +506,6 @@ func jr_e8(cpu *CPU) uint8 {
 
 // 0xC3 Jump to address a16; effectively, copy a16 into PC
 func jp_a16(cpu *CPU) uint8 {
-	fmt.Println("Go: jp_a16()")
-	fmt.Printf("  imm=[0x%04X]\n", cpu.immediateValue)
 	cpu.pc = cpu.immediateValue
 	return 16
 }

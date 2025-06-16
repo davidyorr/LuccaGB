@@ -80,7 +80,22 @@ var instructions = [256]instruction{
 	0x2A: {"LD A, [HL+]", 0, ld_a_hli},
 
 	// 8-bit arithmetic instructions
+	0x80: {"ADD A, B", 0, add_a_b},
+	0x81: {"ADD A, C", 0, add_a_c},
+	0x82: {"ADD A, D", 0, add_a_d},
+	0x83: {"ADD A, E", 0, add_a_e},
+	0x84: {"ADD A, H", 0, add_a_h},
+	0x85: {"ADD A, L", 0, add_a_l},
+	0x87: {"ADD A, A", 0, add_a_a},
+	0x90: {"SUB A, B", 0, sub_a_b},
+	0x91: {"SUB A, C", 0, sub_a_c},
+	0x92: {"SUB A, D", 0, sub_a_d},
+	0x93: {"SUB A, E", 0, sub_a_e},
+	0x94: {"SUB A, H", 0, sub_a_h},
+	0x95: {"SUB A, L", 0, sub_a_l},
+	0x97: {"SUB A, A", 0, sub_a_a},
 	0x03: {"INC BC", 0, inc_bc},
+	0x13: {"INC DE", 0, inc_de},
 	0x23: {"INC HL", 0, inc_hl},
 	0xD6: {"SUB A, n8", 1, sub_a_n8},
 
@@ -106,4 +121,16 @@ var instructions = [256]instruction{
 
 	// interrupt related instructions
 	0xF3: {"DI", 0, di},
+}
+
+func (cpu *CPU) GetNumberOfUnimplementedInstructions() uint8 {
+	var count uint8 = 0
+	for i := range instructions {
+		if instructions[i].execute == nil {
+			count++
+		}
+		i++
+	}
+
+	return count
 }
