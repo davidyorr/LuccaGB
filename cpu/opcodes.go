@@ -398,56 +398,99 @@ func add_a_a(cpu *CPU) uint8 {
 	return 4
 }
 
-// Subtract the value in r8 from A
-func (cpu *CPU) sub_a_r8(r8 uint8) {
+// ComPare the value in A with the value in r8, then return the difference.
+func (cpu *CPU) cp_a_r8(r8 uint8) uint8 {
 	originalA := cpu.a
 	difference := originalA - r8
-	cpu.a = difference
 	cpu.setFlag(FlagZ, difference == 0)
 	cpu.setFlag(FlagN, true)
 	cpu.setFlag(FlagC, difference > originalA)
 	cpu.setFlag(FlagH, (originalA&0x0F) < (r8&0x0F))
+
+	return difference
+}
+
+// 0xB8 ComPare the value in A with the value in r8
+func cp_a_b(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.b)
+	return 4
+}
+
+// 0xB9 ComPare the value in A with the value in r8
+func cp_a_c(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.c)
+	return 4
+}
+
+// 0xBA ComPare the value in A with the value in r8
+func cp_a_d(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.d)
+	return 4
+}
+
+// 0xBB ComPare the value in A with the value in r8
+func cp_a_e(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.e)
+	return 4
+}
+
+// 0xBC ComPare the value in A with the value in r8
+func cp_a_h(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.h)
+	return 4
+}
+
+// 0xBD ComPare the value in A with the value in r8
+func cp_a_l(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.l)
+	return 4
+}
+
+// 0xBF ComPare the value in A with the value in r8
+func cp_a_a(cpu *CPU) uint8 {
+	cpu.cp_a_r8(cpu.a)
+	return 4
 }
 
 // 0x90 Subtract the value in r8 from A
 func sub_a_b(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.b)
+	cpu.a = cpu.cp_a_r8(cpu.b)
 	return 4
 }
 
 // 0x91 Subtract the value in r8 from A
 func sub_a_c(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.c)
+	cpu.a = cpu.cp_a_r8(cpu.c)
 	return 4
 }
 
 // 0x92 Subtract the value in r8 from A
 func sub_a_d(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.d)
+	cpu.a = cpu.cp_a_r8(cpu.d)
 	return 4
 }
 
 // 0x93 Subtract the value in r8 from A
 func sub_a_e(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.e)
+	cpu.a = cpu.cp_a_r8(cpu.e)
 	return 4
 }
 
 // 0x94 Subtract the value in r8 from A
 func sub_a_h(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.h)
+	cpu.a = cpu.cp_a_r8(cpu.h)
 	return 4
 }
 
 // 0x95 Subtract the value in r8 from A
 func sub_a_l(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.l)
+	cpu.a = cpu.cp_a_r8(cpu.l)
 	return 4
 }
 
 // 0x97 Subtract the value in r8 from A
 func sub_a_a(cpu *CPU) uint8 {
-	cpu.sub_a_r8(cpu.a)
+	cpu.a = cpu.cp_a_r8(cpu.a)
 	return 4
 }
 
