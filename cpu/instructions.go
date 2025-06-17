@@ -107,6 +107,15 @@ var instructions = [256]instruction{
 	0xA4: {"AND A, H", 0, and_a_h},
 	0xA5: {"AND A, L", 0, and_a_l},
 	0xA7: {"AND A, A", 0, and_a_a},
+
+	0xA8: {"XOR A, B", 0, xor_a_b},
+	0xA9: {"XOR A, C", 0, xor_a_c},
+	0xAA: {"XOR A, D", 0, xor_a_d},
+	0xAB: {"XOR A, E", 0, xor_a_e},
+	0xAC: {"XOR A, H", 0, xor_a_h},
+	0xAD: {"XOR A, L", 0, xor_a_l},
+	0xAF: {"XOR A, A", 0, xor_a_a},
+
 	0xB0: {"OR A, B", 0, or_a_b},
 	0xB1: {"OR A, C", 0, or_a_c},
 	0xB2: {"OR A, D", 0, or_a_d},

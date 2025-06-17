@@ -4,7 +4,6 @@ import "fmt"
 
 // 0x00 No OPeration
 func nop(cpu *CPU) uint8 {
-	fmt.Println("Go: nop()")
 	return 4
 }
 
@@ -527,6 +526,57 @@ func and_a_l(cpu *CPU) uint8 {
 // 0xA7 Set A to the bitwise AND between the value in r8 and A
 func and_a_a(cpu *CPU) uint8 {
 	cpu.and_a_r8(cpu.a)
+	return 4
+}
+
+// Set A to the bitwise XOR between the value in r8 and A.
+func (cpu *CPU) xor_a_r8(r8 uint8) {
+	cpu.a ^= r8
+	cpu.setFlag(FlagZ, cpu.a == 0)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, false)
+}
+
+// 0xA8 Set A to the bitwise XOR between the value in r8 and A
+func xor_a_b(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.b)
+	return 4
+}
+
+// 0xA9 Set A to the bitwise XOR between the value in r8 and A
+func xor_a_c(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.c)
+	return 4
+}
+
+// 0xAA Set A to the bitwise XOR between the value in r8 and A
+func xor_a_d(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.d)
+	return 4
+}
+
+// 0xAB Set A to the bitwise XOR between the value in r8 and A
+func xor_a_e(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.e)
+	return 4
+}
+
+// 0xAC Set A to the bitwise XOR between the value in r8 and A
+func xor_a_h(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.h)
+	return 4
+}
+
+// 0xAD Set A to the bitwise XOR between the value in r8 and A
+func xor_a_l(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.l)
+	return 4
+}
+
+// 0xAF Set A to the bitwise XOR between the value in r8 and A
+func xor_a_a(cpu *CPU) uint8 {
+	cpu.xor_a_r8(cpu.a)
 	return 4
 }
 
