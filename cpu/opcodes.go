@@ -325,15 +325,27 @@ func ld_a_l(cpu *CPU) uint8 {
 	return 4
 }
 
-// 0xE0
+// 0xE0 Copy the value in register A into the byte at address n16, provided the address is between $FF00 and $FFFF
 func ldh_a8_a(cpu *CPU) uint8 {
 	cpu.bus.Write(0xFF00+cpu.immediateValue, cpu.a)
 	return 12
 }
 
-// 0xEA Copy the value in register A into the byte at address a16
+// 0xF0 Copy the byte at address n16 into register A, provided the address is between $FF00 and $FFFF
+func ldh_a_a8(cpu *CPU) uint8 {
+	cpu.a = cpu.bus.Read(0xFF00 + cpu.immediateValue)
+	return 12
+}
+
+// 0xEA Copy the value in register A into the byte at address n16
 func ld_a16_a(cpu *CPU) uint8 {
 	cpu.bus.Write(cpu.immediateValue, cpu.a)
+	return 16
+}
+
+// 0xFA Copy the byte at address n16 into register A
+func ld_a_a16(cpu *CPU) uint8 {
+	cpu.a = cpu.bus.Read(cpu.immediateValue)
 	return 16
 }
 
@@ -449,6 +461,12 @@ func cp_a_l(cpu *CPU) uint8 {
 // 0xBF ComPare the value in A with the value in r8
 func cp_a_a(cpu *CPU) uint8 {
 	cpu.cp_a_r8(cpu.a)
+	return 4
+}
+
+// 0xFE ComPare the value in A with the value n8
+func cp_a_n8(cpu *CPU) uint8 {
+	cpu.cp_a_r8(uint8(cpu.immediateValue))
 	return 4
 }
 
@@ -794,10 +812,17 @@ func inc_a(cpu *CPU) uint8 {
 	return 4
 }
 
-// 0xF1 Pop register AF from the stack
-func pop_af(cpu *CPU) uint8 {
+// 0xC1 Pop register r16 from the stack
+func pop_bc(cpu *CPU) uint8 {
 	value := cpu.popFromStack16()
-	cpu.setAF(value)
+	cpu.setBC(value)
+	return 12
+}
+
+// 0xD1 Pop register r16 from the stack
+func pop_de(cpu *CPU) uint8 {
+	value := cpu.popFromStack16()
+	cpu.setDE(value)
 	return 12
 }
 
@@ -808,9 +833,22 @@ func pop_hl(cpu *CPU) uint8 {
 	return 12
 }
 
+// 0xF1 Pop register AF from the stack
+func pop_af(cpu *CPU) uint8 {
+	value := cpu.popFromStack16()
+	cpu.setAF(value)
+	return 12
+}
+
 // 0xC5 Push register r16 into the stack
 func push_bc(cpu *CPU) uint8 {
 	cpu.pushToStack16(cpu.getBC())
+	return 16
+}
+
+// 0xD5 Push register r16 into the stack
+func push_de(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.getDE())
 	return 16
 }
 

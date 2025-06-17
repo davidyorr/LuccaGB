@@ -14,7 +14,7 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for i := range 100 {
+	for i := range 250 {
 		_, err := gb.cpu.Step()
 		if err != nil {
 			t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())

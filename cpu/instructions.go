@@ -75,8 +75,10 @@ var instructions = [256]instruction{
 	0x7C: {"LD A, H", 0, ld_a_h},
 	0x7D: {"LD A, L", 0, ld_a_l},
 	0x7F: {"LD A, A", 0, ld_a_a},
-	0xE0: {"LDH (a8), A", 1, ldh_a8_a},
-	0xEA: {"LD (a16), A", 2, ld_a16_a},
+	0xE0: {"LDH [a8], A", 1, ldh_a8_a},
+	0xF0: {"LDH A, [a8]", 1, ldh_a_a8},
+	0xEA: {"LD [a16], A", 2, ld_a16_a},
+	0xFA: {"LD A, [a16]", 2, ld_a_a16},
 	0x2A: {"LD A, [HL+]", 0, ld_a_hli},
 
 	// 8-bit arithmetic instructions
@@ -87,6 +89,7 @@ var instructions = [256]instruction{
 	0x84: {"ADD A, H", 0, add_a_h},
 	0x85: {"ADD A, L", 0, add_a_l},
 	0x87: {"ADD A, A", 0, add_a_a},
+
 	0xB8: {"CP A, B", 0, cp_a_b},
 	0xB9: {"CP A, C", 0, cp_a_c},
 	0xBA: {"CP A, D", 0, cp_a_d},
@@ -94,6 +97,8 @@ var instructions = [256]instruction{
 	0xBC: {"CP A, H", 0, cp_a_h},
 	0xBD: {"CP A, L", 0, cp_a_l},
 	0xBF: {"CP A, A", 0, cp_a_a},
+	0xFE: {"CP A, n8", 1, cp_a_n8},
+
 	0x90: {"SUB A, B", 0, sub_a_b},
 	0x91: {"SUB A, C", 0, sub_a_c},
 	0x92: {"SUB A, D", 0, sub_a_d},
@@ -101,6 +106,7 @@ var instructions = [256]instruction{
 	0x94: {"SUB A, H", 0, sub_a_h},
 	0x95: {"SUB A, L", 0, sub_a_l},
 	0x97: {"SUB A, A", 0, sub_a_a},
+
 	0x03: {"INC BC", 0, inc_bc},
 	0x13: {"INC DE", 0, inc_de},
 	0x23: {"INC HL", 0, inc_hl},
@@ -148,11 +154,14 @@ var instructions = [256]instruction{
 	// stack manipulation instructions
 	0x33: {"INC SP", 0, inc_sp},
 	0x3C: {"INC A", 0, inc_a},
-	0xF1: {"POP AF", 0, pop_af},
+	0xC1: {"POP BC", 0, pop_bc},
+	0xD1: {"POP DE", 0, pop_de},
 	0xE1: {"POP HL", 0, pop_hl},
-	0xF5: {"PUSH AF", 0, push_af},
+	0xF1: {"POP AF", 0, pop_af},
 	0xC5: {"PUSH BC", 0, push_bc},
+	0xD5: {"PUSH DE", 0, push_de},
 	0xE5: {"PUSH HL", 0, push_hl},
+	0xF5: {"PUSH AF", 0, push_af},
 
 	// interrupt related instructions
 	0xF3: {"DI", 0, di},
