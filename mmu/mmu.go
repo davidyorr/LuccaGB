@@ -4,12 +4,10 @@ import (
 	"fmt"
 
 	"github.com/davidyorr/EchoGB/cartridge"
-	"github.com/davidyorr/EchoGB/timer"
 )
 
 type MMU struct {
 	cartridge *cartridge.Cartridge
-	timer     *timer.Timer
 	// 0xC000 - 0xDFFF
 	workingRam [8192]uint8
 	// 0xFF00 - 0xFF7F
@@ -25,10 +23,9 @@ type Bus interface {
 	Write(address uint16, value uint8)
 }
 
-func New(cartridge *cartridge.Cartridge, timer *timer.Timer) *MMU {
+func New(cartridge *cartridge.Cartridge) *MMU {
 	mmu := &MMU{}
 	mmu.cartridge = cartridge
-	mmu.timer = timer
 
 	mmu.Reset()
 
@@ -36,7 +33,6 @@ func New(cartridge *cartridge.Cartridge, timer *timer.Timer) *MMU {
 }
 
 func (mmu *MMU) Reset() {
-	mmu.timer.Reset()
 	mmu.ioRegisters[0xFF00-0xFF00] = 0xCF // P1
 	mmu.ioRegisters[0xFF01-0xFF00] = 0x00 // SB
 	mmu.ioRegisters[0xFF02-0xFF00] = 0x7E // SC
@@ -82,10 +78,6 @@ func (mmu *MMU) Reset() {
 	mmu.ioRegisters[0xFF4B-0xFF00] = 0x00 // WX
 }
 
-func (mmu *MMU) Step(cycles uint8) {
-	mmu.timer.Step(cycles)
-}
-
 func (mmu *MMU) Read(address uint16) uint8 {
 	var value uint8 = 0
 	if address <= 0x7FFF {
@@ -96,12 +88,7 @@ func (mmu *MMU) Read(address uint16) uint8 {
 		value = mmu.workingRam[address-0xC000]
 	} else if address >= 0xFF00 && address <= 0xFF7F {
 		// IO registers
-		// timers
-		if address >= 0xFF00 && address <= 0xFF07 {
-			value = mmu.timer.Read(address)
-		} else {
-			value = mmu.ioRegisters[address-0xFF00]
-		}
+		value = mmu.ioRegisters[address-0xFF00]
 	} else if address >= 0xFF80 && address <= 0xFFFE {
 		// high RAM
 		value = mmu.highRam[address-0xFF80]
@@ -120,12 +107,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 		mmu.workingRam[address-0xC000] = value
 	} else if address >= 0xFF00 && address <= 0xFF7F {
 		// IO registers
-		// timers
-		if address >= 0xFF00 && address <= 0xFF07 {
-			mmu.timer.Write(address, value)
-		} else {
-			mmu.ioRegisters[address-0xFF00] = value
-		}
+		mmu.ioRegisters[address-0xFF00] = value
 	} else if address >= 0xFF80 && address <= 0xFFFE {
 		// high RAM
 		mmu.highRam[address-0xFF80] = value

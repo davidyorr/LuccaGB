@@ -3,7 +3,7 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/mmu"
+	"github.com/davidyorr/EchoGB/bus"
 )
 
 type CPU struct {
@@ -24,7 +24,7 @@ type CPU struct {
 	// interrupt master enable flag
 	ime            bool
 	immediateValue uint16
-	bus            mmu.Bus
+	bus            *bus.Bus
 }
 
 func New() *CPU {
@@ -48,7 +48,7 @@ func (cpu *CPU) Reset() {
 	cpu.sp = 0xFFFE
 }
 
-func (cpu *CPU) ConnectBus(bus *mmu.MMU) {
+func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 	cpu.bus = bus
 }
 
