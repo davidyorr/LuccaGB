@@ -7,6 +7,7 @@ import (
 	"github.com/davidyorr/EchoGB/cpu"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
+	"github.com/davidyorr/EchoGB/timer"
 )
 
 type Gameboy struct {
@@ -18,7 +19,8 @@ type Gameboy struct {
 
 func New() *Gameboy {
 	cartridge := cartridge.New()
-	mmu := mmu.New(cartridge)
+	timer := timer.New()
+	mmu := mmu.New(cartridge, timer)
 	cpu := cpu.New()
 	cpu.ConnectBus(mmu)
 	ppu := ppu.New()
