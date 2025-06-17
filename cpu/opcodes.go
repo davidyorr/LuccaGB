@@ -597,13 +597,11 @@ func rlca(cpu *CPU) uint8 {
 	return 4
 }
 
-// 0x18 Relative Jump to address e8
-func jr_e8(cpu *CPU) uint8 {
-	operandLength := uint16(2)
-	signedOffset := int8(cpu.immediateValue)
-	destinationAddress := uint16(int(cpu.pc+operandLength) + int(signedOffset))
-	cpu.pc = destinationAddress
-	return 12
+// 0xCD Call address n16
+func call_a16(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 3)
+	cpu.pc = cpu.immediateValue
+	return 24
 }
 
 // 0xC3 Jump to address a16; effectively, copy a16 into PC
@@ -612,23 +610,60 @@ func jp_a16(cpu *CPU) uint8 {
 	return 16
 }
 
-// 0xCD Call address n16
-func call_a16(cpu *CPU) uint8 {
-	cpu.pushToStack16(cpu.pc + 3)
-	cpu.pc = cpu.immediateValue
-	return 24
+// Relative Jump
+func (cpu *CPU) jr() {
+	operandLength := uint16(2)
+	signedOffset := int8(cpu.immediateValue)
+	destinationAddress := uint16(int(cpu.pc+operandLength) + int(signedOffset))
+	cpu.pc = destinationAddress
 }
 
-// 0x30 Relative Jump to address e8 if condition nc is met
+// 0x18 Relative Jump to address e8
+func jr_e8(cpu *CPU) uint8 {
+	cpu.jr()
+	return 12
+}
+
+// 0x20 Relative Jump to address e8 if condition z is not met
+func jr_nz_e8(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagZ) {
+		return 8
+	}
+
+	cpu.jr()
+
+	return 12
+}
+
+// 0x28 Relative Jump to address e8 if condition z is met
+func jr_z_e8(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagZ) {
+		return 8
+	}
+
+	cpu.jr()
+
+	return 12
+}
+
+// 0x30 Relative Jump to address e8 if condition c is not met
 func jr_nc_e8(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagC) {
 		return 8
 	}
 
-	operandLength := uint16(2)
-	signedOffset := int8(cpu.immediateValue)
-	destinationAddress := uint16(int(cpu.pc+operandLength) + int(signedOffset))
-	cpu.pc = destinationAddress
+	cpu.jr()
+
+	return 12
+}
+
+// 0x38 Relative Jump to address e8 if condition c is met
+func jr_c_e8(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagC) {
+		return 8
+	}
+
+	cpu.jr()
 
 	return 12
 }

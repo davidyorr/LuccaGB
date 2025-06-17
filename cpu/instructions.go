@@ -119,10 +119,13 @@ var instructions = [256]instruction{
 	0x07: {"RLCA", 0, rlca},
 
 	// jumps and subroutine instructions
-	0x18: {"JR e8", 1, jr_e8},
-	0xC3: {"JP a16", 2, jp_a16},
 	0xCD: {"CALL a16", 2, call_a16},
+	0xC3: {"JP a16", 2, jp_a16},
+	0x18: {"JR e8", 1, jr_e8},
+	0x20: {"JR NZ, e8", 1, jr_nz_e8},
+	0x28: {"JR Z, e8", 1, jr_z_e8},
 	0x30: {"JR NC, e8", 1, jr_nc_e8},
+	0x38: {"JR C, e8", 1, jr_c_e8},
 	0xC9: {"RET", 0, ret},
 	0xFF: {"RST 38h", 0, rst_38h},
 
