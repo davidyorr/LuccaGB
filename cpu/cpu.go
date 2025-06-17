@@ -155,7 +155,7 @@ const (
 )
 
 func (cpu *CPU) getFlag(flag Flag) bool {
-	return ((cpu.f & (1 << flag)) >> flag) == 1
+	return (cpu.f & (1 << flag)) != 0
 }
 
 func (cpu *CPU) setFlag(flag Flag, value bool) {
