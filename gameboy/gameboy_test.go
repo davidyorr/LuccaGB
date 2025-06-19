@@ -14,14 +14,17 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for i := range 1250 {
+	for i := range 60250 {
 		err := gb.Step()
 		if err != nil {
 			t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
+			// t.Log("cbprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedCbInstructions())
 			t.Fatal(err)
 		}
 		output := gb.mmu.SerialOutputBuffer()
-		t.Logf("++++++ test output: [%s] (hex: [% x])\n", string(output), output)
+		if len(output) > 0 {
+			t.Logf("++++++ test output: [%s] (hex: [% x])\n", string(output), output)
+		}
 		i++
 	}
 	t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())

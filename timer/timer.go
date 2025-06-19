@@ -1,7 +1,5 @@
 package timer
 
-import "fmt"
-
 type Timer struct {
 	// 0xFF04 divider register
 	div uint8
@@ -34,7 +32,6 @@ const threshold = 256 / 4
 
 func (timer *Timer) Step(cycles uint8) {
 	timer.divCounter += uint16(cycles)
-	fmt.Println("STEPPING ------------------------------------------------------------", timer.divCounter)
 
 	if timer.divCounter >= threshold {
 		timer.div++

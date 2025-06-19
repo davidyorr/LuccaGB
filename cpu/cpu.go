@@ -57,6 +57,16 @@ func (cpu *CPU) Step() (uint8, error) {
 	cpu.immediateValue = 0
 
 	opcode := cpu.bus.Read(cpu.pc)
+
+	// handle cb prefixed instructions
+	if opcode == 0xCB {
+		cbOpcode := cpu.bus.Read(cpu.pc + 1)
+		cycles := cpu.executeCbInstruction(cbOpcode)
+		cpu.pc += 2
+
+		return cycles, nil
+	}
+
 	instruction := instructions[opcode]
 	fmt.Printf("  PC=0x%04X SP:0x%04X AF:0x%04X BC:0x%04X DE:0x%04X HL:0x%04X | (op:0x%02X, len:%d, imm:0x%04X) %s\n", cpu.pc, cpu.sp, cpu.getAF(), cpu.getBC(), cpu.getDE(), cpu.getHL(), opcode, instruction.operandLength, cpu.immediateValue, instruction.mnemonic)
 
@@ -139,6 +149,70 @@ func (cpu *CPU) getHL() uint16 {
 func (cpu *CPU) setHL(value uint16) {
 	cpu.h = uint8(value >> 8)
 	cpu.l = uint8(value & 0x00FF)
+}
+
+// return the value and the number of cycles it took
+func (cpu *CPU) get_r8(r8 uint8) (uint8, uint8) {
+	var cycles uint8 = 0
+	var value uint8 = 0
+
+	switch r8 {
+	case 0b000:
+		value = cpu.b
+	case 0b001:
+		value = cpu.c
+	case 0b010:
+		value = cpu.d
+	case 0b011:
+		value = cpu.e
+	case 0b100:
+		value = cpu.h
+	case 0b101:
+		value = cpu.l
+	case 0b111:
+		value = cpu.a
+	case 0b110:
+		// special case
+		value = cpu.bus.Read(cpu.getHL())
+		cycles = 4
+	}
+
+	return value, cycles
+}
+
+// return the number of cycles it took
+func (cpu *CPU) set_r8(r8 uint8, value uint8) uint8 {
+	var cycles uint8 = 0
+
+	switch r8 {
+	case 0b000:
+		cpu.b = value
+		return 8
+	case 0b001:
+		cpu.c = value
+		return 8
+	case 0b010:
+		cpu.d = value
+		return 8
+	case 0b011:
+		cpu.e = value
+		return 8
+	case 0b100:
+		cpu.h = value
+		return 8
+	case 0b101:
+		cpu.l = value
+		return 8
+	case 0b111:
+		cpu.a = value
+		return 8
+	case 0b110:
+		// special case
+		cpu.bus.Write(cpu.getHL(), value)
+		cycles = 4
+	}
+
+	return cycles
 }
 
 type Flag uint8
