@@ -518,6 +518,75 @@ func ld_a_hli(cpu *CPU) uint8 {
 	return 8
 }
 
+// Add the value in r8 plus the carry flag to A
+func (cpu *CPU) adc_a_r8(r8 uint8) {
+	originalA := cpu.a
+	var carryFlag uint8 = 0
+	if cpu.getFlag(FlagC) {
+		carryFlag = 1
+	}
+	sum := originalA + r8 + carryFlag
+	cpu.a = sum
+	cpu.setFlag(FlagZ, sum == 0)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagC, sum < originalA)
+	cpu.setFlag(FlagH, ((originalA&0x0F)+(r8&0x0F)+carryFlag) > 0x0F)
+}
+
+// 0x88 Add the value in r8 plus the carry flag to A
+func adc_a_b(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.b)
+	return 4
+}
+
+// 0x89 Add the value in r8 plus the carry flag to A
+func adc_a_c(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.c)
+	return 4
+}
+
+// 0x8A Add the value in r8 plus the carry flag to A
+func adc_a_d(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.d)
+	return 4
+}
+
+// 0x8B Add the value in r8 plus the carry flag to A
+func adc_a_e(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.e)
+	return 4
+}
+
+// 0x8C Add the value in r8 plus the carry flag to A
+func adc_a_h(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.h)
+	return 4
+}
+
+// 0x8D Add the value in r8 plus the carry flag to A
+func adc_a_l(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.l)
+	return 4
+}
+
+// 0x8F Add the value in r8 plus the carry flag to A
+func adc_a_a(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.a)
+	return 4
+}
+
+// 0xEF Add the byte pointed to by HL plus the carry flag to A
+func adc_a_hl(cpu *CPU) uint8 {
+	cpu.adc_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
+}
+
+// 0xCE Add the byte pointed to by HL plus the carry flag to A
+func adc_a_n8(cpu *CPU) uint8 {
+	cpu.adc_a_r8(uint8(cpu.immediateValue))
+	return 8
+}
+
 // Add the value in r8 to A
 func (cpu *CPU) add_a_r8(r8 uint8) {
 	originalA := cpu.a

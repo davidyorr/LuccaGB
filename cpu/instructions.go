@@ -120,6 +120,16 @@ var instructions = [256]instruction{
 	0x2A: {"LD A, [HL+]", 0, ld_a_hli},
 
 	// 8-bit arithmetic instructions
+	0x88: {"ADC A, B", 0, adc_a_b},
+	0x89: {"ADC A, C", 0, adc_a_c},
+	0x8A: {"ADC A, D", 0, adc_a_d},
+	0x8B: {"ADC A, E", 0, adc_a_e},
+	0x8C: {"ADC A, H", 0, adc_a_h},
+	0x8D: {"ADC A, L", 0, adc_a_l},
+	0x8F: {"ADC A, A", 0, adc_a_a},
+	0x8E: {"ADC A, [HL]", 0, adc_a_hl},
+	0xCE: {"ADC A, n8", 0, adc_a_n8},
+
 	0x80: {"ADD A, B", 0, add_a_b},
 	0x81: {"ADD A, C", 0, add_a_c},
 	0x82: {"ADD A, D", 0, add_a_d},
