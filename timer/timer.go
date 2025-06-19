@@ -27,8 +27,8 @@ func (timer *Timer) Reset() {
 	timer.tac = 0xF8
 }
 
-// there are 4 T-cycles per M-cycle, so T-cycles / M-cycles
-const threshold = 256 / 4
+// 4194304 Hz / 16384 Hz
+const threshold = 256
 
 func (timer *Timer) Step(cycles uint8) {
 	timer.divCounter += uint16(cycles)
