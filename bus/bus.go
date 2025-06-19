@@ -36,6 +36,9 @@ func (bus *Bus) Read(address uint16) uint8 {
 	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
 		value = bus.mmu.Read(address)
+	// PPU
+	case address >= 0xFF40 && address <= 0xFF4B:
+		value = bus.ppu.Read(address)
 	// high RAM
 	case address >= 0xFF80 && address <= 0xFFFE:
 		value = bus.timer.Read(address)

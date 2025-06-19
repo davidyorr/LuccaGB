@@ -758,6 +758,13 @@ func dec_a(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0x35 Decrement the byte pointed to by HL by 1
+func dec_hl(cpu *CPU) uint8 {
+	result := cpu.dec_r8(cpu.bus.Read(cpu.getHL()))
+	cpu.bus.Write(cpu.getHL(), result)
+	return 12
+}
+
 // Increment the value in register r8 by 1
 func (cpu *CPU) inc_r8(r8 uint8) uint8 {
 	result := r8 + 1
@@ -850,6 +857,34 @@ func sub_a_l(cpu *CPU) uint8 {
 func sub_a_a(cpu *CPU) uint8 {
 	cpu.a = cpu.cp_a_r8(cpu.a)
 	return 4
+}
+
+// Add the value in r16 to HL
+func (cpu *CPU) add_hl_r16(r16 uint16) {
+	originalHL := cpu.getHL()
+	sum := cpu.getHL() + r16
+	cpu.setHL(sum)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, ((originalHL&0x0FFF)+(r16&0x0FFF)) > 0x0FFF)
+	cpu.setFlag(FlagC, sum < originalHL)
+}
+
+// 0x09 Add the value in r16 to HL
+func add_hl_bc(cpu *CPU) uint8 {
+	cpu.add_hl_r16(cpu.getBC())
+	return 8
+}
+
+// 0x19 Add the value in r16 to HL
+func add_hl_de(cpu *CPU) uint8 {
+	cpu.add_hl_r16(cpu.getDE())
+	return 8
+}
+
+// 0x29 Add the value in r16 to HL
+func add_hl_hl(cpu *CPU) uint8 {
+	cpu.add_hl_r16(cpu.getHL())
+	return 8
 }
 
 // 0x03 Increment the value in register r8 by 1
@@ -1058,6 +1093,12 @@ func or_a_a(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0xB6 Set A to the bitwise OR between the value in r8 and A
+func or_a_hl(cpu *CPU) uint8 {
+	cpu.or_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
+}
+
 // 0xF6 Set A to the bitwise OR between the value in r8 and A
 func or_a_n8(cpu *CPU) uint8 {
 	cpu.or_a_r8(uint8(cpu.immediateValue))
@@ -1190,6 +1231,12 @@ func rst_38h(cpu *CPU) uint8 {
 	cpu.pushToStack16(cpu.pc + 1)
 	cpu.pc = 0x38
 	return 16
+}
+
+// 0x39 Add the value in SP to HL
+func add_hl_sp(cpu *CPU) uint8 {
+	cpu.add_hl_r16(cpu.sp)
+	return 8
 }
 
 // 0x33 Increment the value in register SP by 1

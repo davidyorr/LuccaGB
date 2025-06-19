@@ -155,6 +155,7 @@ var instructions = [256]instruction{
 	0x25: {"DEC H", 0, dec_h},
 	0x2D: {"DEC L", 0, dec_l},
 	0x3D: {"DEC A", 0, dec_a},
+	0x35: {"DEC [HL]", 0, dec_hl},
 
 	0x04: {"INC B", 0, inc_b},
 	0x0C: {"INC C", 0, inc_c},
@@ -174,6 +175,9 @@ var instructions = [256]instruction{
 	0xD6: {"SUB A, n8", 1, sub_a_n8},
 
 	// 16-bit arithmetic instructions
+	0x09: {"ADD HL, BC", 0, add_hl_bc},
+	0x19: {"ADD HL, DE", 0, add_hl_de},
+	0x29: {"ADD HL, HL", 0, add_hl_hl},
 	0x03: {"INC BC", 0, inc_bc},
 	0x13: {"INC DE", 0, inc_de},
 	0x23: {"INC HL", 0, inc_hl},
@@ -205,6 +209,7 @@ var instructions = [256]instruction{
 	0xB4: {"OR A, H", 0, or_a_h},
 	0xB5: {"OR A, L", 0, or_a_l},
 	0xB7: {"OR A, A", 0, or_a_a},
+	0xB6: {"OR A, [HL]", 0, or_a_hl},
 	0xF6: {"OR A, n8", 1, or_a_n8},
 
 	// bit shift instructions
@@ -224,6 +229,7 @@ var instructions = [256]instruction{
 	0xFF: {"RST 38h", 0, rst_38h},
 
 	// stack manipulation instructions
+	0x39: {"ADD HL, SP", 0, add_hl_sp},
 	0x33: {"INC SP", 0, inc_sp},
 	0xC1: {"POP BC", 0, pop_bc},
 	0xD1: {"POP DE", 0, pop_de},

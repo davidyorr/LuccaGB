@@ -52,6 +52,7 @@ func (gameboy *Gameboy) Step() error {
 	}
 
 	gameboy.timer.Step(cycles)
+	gameboy.ppu.Step(cycles)
 
 	return nil
 }
