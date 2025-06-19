@@ -199,6 +199,7 @@ var instructions = [256]instruction{
 
 	// bit shift instructions
 	0x07: {"RLCA", 0, rlca},
+	0x1F: {"RRA", 0, rra},
 
 	// jumps and subroutine instructions
 	0xCD: {"CALL a16", 2, call_a16},

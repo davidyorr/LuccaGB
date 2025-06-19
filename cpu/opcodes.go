@@ -806,7 +806,14 @@ func inc_hl(cpu *CPU) uint8 {
 
 // 0xD6 Subtract the value n8 from A
 func sub_a_n8(cpu *CPU) uint8 {
-	cpu.a -= uint8(cpu.immediateValue)
+	originalA := cpu.a
+	n8 := uint8(cpu.immediateValue)
+	difference := originalA - n8
+	cpu.a = difference
+	cpu.setFlag(FlagZ, cpu.a == 0)
+	cpu.setFlag(FlagN, true)
+	cpu.setFlag(FlagC, originalA < n8)
+	cpu.setFlag(FlagH, (originalA&0x0F) < (n8&0x0F))
 	return 8
 }
 
@@ -1001,6 +1008,22 @@ func rlca(cpu *CPU) uint8 {
 
 	fmt.Printf("RCLA: carry=[0x%0X] a=[0x%0X]\n", carry, cpu.a)
 
+	return 4
+}
+
+// 0x1F Rotate register A right, through the carry flag
+func rra(cpu *CPU) uint8 {
+	bit0 := cpu.a & 1
+	var mask uint8 = 0
+	if cpu.getFlag(FlagC) {
+		mask = 1
+	}
+	result := (cpu.a >> 1) | (mask << 7)
+	cpu.a = result
+	cpu.setFlag(FlagZ, false)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, bit0 == 1)
 	return 4
 }
 
