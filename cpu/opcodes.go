@@ -646,63 +646,79 @@ func add_a_n8(cpu *CPU) uint8 {
 	return 8
 }
 
-// ComPare the value in A with the value in r8, then return the difference.
-func (cpu *CPU) cp_a_r8(r8 uint8) uint8 {
+// Helper function for opcodes:
+//
+//	CP A,r8
+//	CP A,[HL]
+//	CP A,n8
+//	SUB A,r8
+//	SUB A,[HL]
+//	SUB A,n8
+//
+// Compare the value in A with the given value, then return the difference.
+// This function does not set the value in A because the "CP" opcodes do not.
+func (cpu *CPU) sub(value uint8) uint8 {
 	originalA := cpu.a
-	difference := originalA - r8
+	difference := originalA - value
 	cpu.setFlag(FlagZ, difference == 0)
 	cpu.setFlag(FlagN, true)
-	cpu.setFlag(FlagC, difference > originalA)
-	cpu.setFlag(FlagH, (originalA&0x0F) < (r8&0x0F))
+	cpu.setFlag(FlagC, originalA >= value)
+	cpu.setFlag(FlagH, (originalA&0x0F) < (value&0x0F))
 
 	return difference
 }
 
 // 0xB8 ComPare the value in A with the value in r8
 func cp_a_b(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.b)
+	cpu.sub(cpu.b)
 	return 4
 }
 
 // 0xB9 ComPare the value in A with the value in r8
 func cp_a_c(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.c)
+	cpu.sub(cpu.c)
 	return 4
 }
 
 // 0xBA ComPare the value in A with the value in r8
 func cp_a_d(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.d)
+	cpu.sub(cpu.d)
 	return 4
 }
 
 // 0xBB ComPare the value in A with the value in r8
 func cp_a_e(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.e)
+	cpu.sub(cpu.e)
 	return 4
 }
 
 // 0xBC ComPare the value in A with the value in r8
 func cp_a_h(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.h)
+	cpu.sub(cpu.h)
 	return 4
 }
 
 // 0xBD ComPare the value in A with the value in r8
 func cp_a_l(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.l)
+	cpu.sub(cpu.l)
 	return 4
 }
 
 // 0xBF ComPare the value in A with the value in r8
 func cp_a_a(cpu *CPU) uint8 {
-	cpu.cp_a_r8(cpu.a)
+	cpu.sub(cpu.a)
 	return 4
+}
+
+// 0xBE ComPare the value in A with the byte pointed to by HL
+func cp_a_hl(cpu *CPU) uint8 {
+	cpu.sub(cpu.bus.Read(cpu.getHL()))
+	return 8
 }
 
 // 0xFE ComPare the value in A with the value n8
 func cp_a_n8(cpu *CPU) uint8 {
-	cpu.cp_a_r8(uint8(cpu.immediateValue))
+	cpu.sub(uint8(cpu.immediateValue))
 	return 4
 }
 
@@ -819,44 +835,50 @@ func inc_a(cpu *CPU) uint8 {
 
 // 0x90 Subtract the value in r8 from A
 func sub_a_b(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.b)
+	cpu.a = cpu.sub(cpu.b)
 	return 4
 }
 
 // 0x91 Subtract the value in r8 from A
 func sub_a_c(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.c)
+	cpu.a = cpu.sub(cpu.c)
 	return 4
 }
 
 // 0x92 Subtract the value in r8 from A
 func sub_a_d(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.d)
+	cpu.a = cpu.sub(cpu.d)
 	return 4
 }
 
 // 0x93 Subtract the value in r8 from A
 func sub_a_e(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.e)
+	cpu.a = cpu.sub(cpu.e)
 	return 4
 }
 
 // 0x94 Subtract the value in r8 from A
 func sub_a_h(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.h)
+	cpu.a = cpu.sub(cpu.h)
 	return 4
 }
 
 // 0x95 Subtract the value in r8 from A
 func sub_a_l(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.l)
+	cpu.a = cpu.sub(cpu.l)
 	return 4
 }
 
 // 0x97 Subtract the value in r8 from A
 func sub_a_a(cpu *CPU) uint8 {
-	cpu.a = cpu.cp_a_r8(cpu.a)
+	cpu.a = cpu.sub(cpu.a)
 	return 4
+}
+
+// 0x96 Subtract the byte pointed to by HL from A
+func sub_a_hl(cpu *CPU) uint8 {
+	cpu.a = cpu.sub(cpu.bus.Read(cpu.getHL()))
+	return 8
 }
 
 // Add the value in r16 to HL
@@ -910,14 +932,7 @@ func inc_hl(cpu *CPU) uint8 {
 
 // 0xD6 Subtract the value n8 from A
 func sub_a_n8(cpu *CPU) uint8 {
-	originalA := cpu.a
-	n8 := uint8(cpu.immediateValue)
-	difference := originalA - n8
-	cpu.a = difference
-	cpu.setFlag(FlagZ, cpu.a == 0)
-	cpu.setFlag(FlagN, true)
-	cpu.setFlag(FlagC, originalA < n8)
-	cpu.setFlag(FlagH, (originalA&0x0F) < (n8&0x0F))
+	cpu.a = cpu.sub(uint8(cpu.immediateValue))
 	return 8
 }
 
