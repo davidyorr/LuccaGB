@@ -1182,9 +1182,39 @@ func jp_a16(cpu *CPU) uint8 {
 	return 16
 }
 
+// 0xCA Jump to address n16 if condition cc is met
+func jp_z_a16(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagZ) {
+		return 12
+	}
+
+	cpu.pc = cpu.immediateValue
+	return 16
+}
+
+// 0xDA Jump to address n16 if condition cc is met
+func jp_c_a16(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagC) {
+		return 12
+	}
+
+	cpu.pc = cpu.immediateValue
+	return 16
+}
+
 // 0xC2 Jump to address n16 if condition cc is not met
 func jp_nz_a16(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagZ) {
+		return 12
+	}
+
+	cpu.pc = cpu.immediateValue
+	return 16
+}
+
+// 0xD2 Jump to address n16 if condition cc is not met
+func jp_nc_a16(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagC) {
 		return 12
 	}
 
@@ -1267,6 +1297,29 @@ func rst_38h(cpu *CPU) uint8 {
 // 0x39 Add the value in SP to HL
 func add_hl_sp(cpu *CPU) uint8 {
 	cpu.add_hl_r16(cpu.sp)
+	return 8
+}
+
+// 0xE8 Add the signed value e8 to SP
+func add_sp_e8(cpu *CPU) uint8 {
+	originalSp := cpu.sp
+	e8Signed := int8(cpu.immediateValue)
+	result := int32(cpu.sp) + int32(e8Signed)
+	cpu.sp = uint16(result)
+
+	// flags are based on unsigned addition
+	e8Unsigned := uint16(cpu.immediateValue)
+
+	cpu.setFlag(FlagZ, false)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, ((originalSp&0x0F)+(e8Unsigned&0x0F)) > 0x0F)
+	cpu.setFlag(FlagC, (originalSp&0xFF)+(e8Unsigned&0xFF) > 0xFF)
+	return 16
+}
+
+// 0x3B Decrement the value in register SP by 1
+func dec_sp(cpu *CPU) uint8 {
+	cpu.sp--
 	return 8
 }
 

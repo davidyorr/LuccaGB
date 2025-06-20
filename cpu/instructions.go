@@ -223,7 +223,10 @@ var instructions = [256]instruction{
 	0xC4: {"CALL NZ, a16", 2, call_nz_a16},
 	0xE9: {"JP HL", 0, jp_hl},
 	0xC3: {"JP a16", 2, jp_a16},
+	0xCA: {"JP Z, a16", 2, jp_z_a16},
+	0xDA: {"JP C, a16", 2, jp_c_a16},
 	0xC2: {"JP NZ, a16", 2, jp_nz_a16},
+	0xD2: {"JP NC, a16", 2, jp_nc_a16},
 	0x18: {"JR e8", 1, jr_e8},
 	0x20: {"JR NZ, e8", 1, jr_nz_e8},
 	0x28: {"JR Z, e8", 1, jr_z_e8},
@@ -234,6 +237,8 @@ var instructions = [256]instruction{
 
 	// stack manipulation instructions
 	0x39: {"ADD HL, SP", 0, add_hl_sp},
+	0xE8: {"ADD SP, e8", 1, add_sp_e8},
+	0x3B: {"DEC SP", 0, dec_sp},
 	0x33: {"INC SP", 0, inc_sp},
 	0xC1: {"POP BC", 0, pop_bc},
 	0xD1: {"POP DE", 0, pop_de},
