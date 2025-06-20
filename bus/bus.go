@@ -30,24 +30,15 @@ func (bus *Bus) Read(address uint16) uint8 {
 	var value uint8 = 0
 
 	switch {
-	// ROM
-	case address <= 0x7FFF:
-		value = bus.mmu.Read(address)
-	// working RAM
-	case address >= 0xC000 && address <= 0xDFFF:
-		value = bus.mmu.Read(address)
 	// PPU
 	case address >= 0xFF40 && address <= 0xFF4B:
 		value = bus.ppu.Read(address)
-	// high RAM
-	case address >= 0xFF80 && address <= 0xFFFE:
-		value = bus.timer.Read(address)
 	// timers
-	case address >= 0xFF00 && address <= 0xFF07:
+	case address >= 0xFF04 && address <= 0xFF07:
 		value = bus.timer.Read(address)
+	// handle everything else with the MMU
 	default:
-		fmt.Println("unhandled address while reading ->")
-		value = 0xFF
+		value = bus.mmu.Read(address)
 	}
 
 	fmt.Printf("  [BUS READ] Address: 0x%04X, Value: 0x%02X\n", address, value)
@@ -57,27 +48,13 @@ func (bus *Bus) Read(address uint16) uint8 {
 
 func (bus *Bus) Write(address uint16, value uint8) {
 	switch {
-	// ROM
-	case address <= 0x7FFF:
-		bus.mmu.Write(address, value)
-	// working RAM
-	case address >= 0xC000 && address <= 0xDFFF:
-		bus.mmu.Write(address, value)
-	// high RAM
-	case address >= 0xFF80 && address <= 0xFFFE:
-		bus.timer.Write(address, value)
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		bus.timer.Write(address, value)
+	// handle everything else with the MMU
 	default:
-		fmt.Println("unhandled address while writing ->")
+		bus.mmu.Write(address, value)
 	}
 
 	fmt.Printf("  [BUS WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
-
-	// SB is the Serial Data register at address 0xFF01
-	// SC is the Serial Control register at address 0xFF02
-	if address == 0xFF02 && value == 0x81 {
-		bus.mmu.Write(address, value)
-	}
 }

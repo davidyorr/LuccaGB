@@ -1170,8 +1170,24 @@ func call_nz_a16(cpu *CPU) uint8 {
 	return 24
 }
 
+// 0xE9 Jump to address in HL; effectively, copy the value in register HL into PC
+func jp_hl(cpu *CPU) uint8 {
+	cpu.pc = cpu.getHL()
+	return 4
+}
+
 // 0xC3 Jump to address a16; effectively, copy a16 into PC
 func jp_a16(cpu *CPU) uint8 {
+	cpu.pc = cpu.immediateValue
+	return 16
+}
+
+// 0xC2 Jump to address n16 if condition cc is not met
+func jp_nz_a16(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagZ) {
+		return 12
+	}
+
 	cpu.pc = cpu.immediateValue
 	return 16
 }
@@ -1315,6 +1331,12 @@ func push_af(cpu *CPU) uint8 {
 // 0xF3 Disable Interrupts by clearing the IME flag
 func di(cpu *CPU) uint8 {
 	cpu.ime = false
+	return 4
+}
+
+// 0xFB Enable Interrupts by setting the IME flag
+func ei(cpu *CPU) uint8 {
+	cpu.ScheduleIme()
 	return 4
 }
 

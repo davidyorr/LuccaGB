@@ -6,6 +6,7 @@ import (
 	"github.com/davidyorr/EchoGB/bus"
 	"github.com/davidyorr/EchoGB/cartridge"
 	"github.com/davidyorr/EchoGB/cpu"
+	"github.com/davidyorr/EchoGB/interrupt"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
 	"github.com/davidyorr/EchoGB/timer"
@@ -51,8 +52,16 @@ func (gameboy *Gameboy) Step() error {
 		return err
 	}
 
-	gameboy.timer.Step(cycles)
+	requestInterrupt := gameboy.timer.Step(cycles)
+	if requestInterrupt {
+		gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
+	}
 	gameboy.ppu.Step(cycles)
+
+	fmt.Printf("IME: [%t], IE: [%0X], IF: [%0X]\n", gameboy.cpu.InterruptMasterEnable(), gameboy.mmu.InterruptEnable(), gameboy.mmu.InterruptFlag())
+	if gameboy.cpu.InterruptMasterEnable() && (gameboy.mmu.InterruptEnable()&gameboy.mmu.InterruptFlag() != 0) {
+		gameboy.cpu.HandleInterrupts()
+	}
 
 	return nil
 }

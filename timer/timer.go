@@ -10,7 +10,8 @@ type Timer struct {
 	// 0xFF07 timer control
 	tac uint8
 
-	divCounter uint16
+	divCounter  uint16
+	timaCounter uint16
 }
 
 func New() *Timer {
@@ -30,13 +31,43 @@ func (timer *Timer) Reset() {
 // 4194304 Hz / 16384 Hz
 const threshold = 256
 
-func (timer *Timer) Step(cycles uint8) {
-	timer.divCounter += uint16(cycles)
+// return value of true represents a signal interrupt request
+func (timer *Timer) Step(cycles uint8) bool {
+	cycles16 := uint16(cycles)
+	timer.divCounter += cycles16
+	timer.timaCounter += cycles16
 
 	if timer.divCounter >= threshold {
 		timer.div++
 		timer.divCounter -= threshold
 	}
+
+	// bit 2 -> timer enabled
+	if (timer.tac & 0b0000_0100) != 0 {
+		var frequency uint16 = 1024
+		switch timer.tac & 0b11 {
+		case 0b00:
+			frequency = 1024
+		case 0b01:
+			frequency = 16
+		case 0b10:
+			frequency = 64
+		case 0b11:
+			frequency = 256
+		}
+
+		if timer.timaCounter >= frequency {
+			timer.timaCounter -= frequency
+			timer.tima++
+			// check for overflow
+			if timer.tima == 0 {
+				timer.tima = timer.tma
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (timer *Timer) Read(address uint16) uint8 {
@@ -46,9 +77,10 @@ func (timer *Timer) Read(address uint16) uint8 {
 	case 0x05:
 		return timer.tima
 	case 0x06:
-		return timer.tima
+		return timer.tma
 	case 0x07:
-		return timer.tac
+		// upper 5 bits are unused and should always be set
+		return timer.tac | 0b1111_1000
 	default:
 		return 0
 	}
@@ -60,10 +92,11 @@ func (timer *Timer) Write(address uint16, value uint8) {
 		timer.div = 0
 		timer.divCounter = 0
 	case 0x05:
-		// timer.tima
+		timer.tima = value
 	case 0x06:
-		// timer.tima
+		timer.tma = value
 	case 0x07:
-		// timer.tac
+		// upper 5 bits are unused
+		timer.tac = (value & 0b0000_0111)
 	}
 }

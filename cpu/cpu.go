@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/davidyorr/EchoGB/bus"
+	"github.com/davidyorr/EchoGB/interrupt"
 )
 
 type CPU struct {
@@ -23,6 +24,7 @@ type CPU struct {
 	l uint8
 	// interrupt master enable flag
 	ime            bool
+	imeScheduled   bool
 	immediateValue uint16
 	bus            *bus.Bus
 }
@@ -54,6 +56,10 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 
 func (cpu *CPU) Step() (uint8, error) {
 	fmt.Println("Go: cpu.Step() -------------")
+	if cpu.imeScheduled {
+		cpu.ime = true
+		cpu.imeScheduled = false
+	}
 	cpu.immediateValue = 0
 
 	opcode := cpu.bus.Read(cpu.pc)
@@ -93,6 +99,36 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	return cycles, nil
+}
+
+func (cpu *CPU) HandleInterrupts() {
+	ifRegister := cpu.bus.Read(0xFF0F)
+	ieRegister := cpu.bus.Read(0xFFFF)
+	var interruptType interrupt.Interrupt
+	var vectorAddress uint16
+
+	if (ifRegister&ieRegister)&uint8(interrupt.VBlankInterrupt) != 0 {
+		interruptType = interrupt.VBlankInterrupt
+		vectorAddress = 0x0040
+	} else if (ifRegister&ieRegister)&uint8(interrupt.LcdInterrupt) != 0 {
+		interruptType = interrupt.LcdInterrupt
+		vectorAddress = 0x0048
+	} else if (ifRegister&ieRegister)&uint8(interrupt.TimerInterrupt) != 0 {
+		interruptType = interrupt.TimerInterrupt
+		vectorAddress = 0x0050
+	} else if (ifRegister&ieRegister)&uint8(interrupt.SerialInterrupt) != 0 {
+		interruptType = interrupt.SerialInterrupt
+		vectorAddress = 0x0058
+	} else if (ifRegister&ieRegister)&uint8(interrupt.JoypadInterrupt) != 0 {
+		interruptType = interrupt.JoypadInterrupt
+		vectorAddress = 0x0060
+	}
+
+	cpu.ime = false
+	clearedFlag := ifRegister & ^uint8(interruptType)
+	cpu.bus.Write(0xFF0F, clearedFlag)
+	cpu.pushToStack16(cpu.pc)
+	cpu.pc = vectorAddress
 }
 
 func (cpu *CPU) pushToStack16(returnAddress uint16) {
@@ -240,4 +276,12 @@ func (cpu *CPU) setFlag(flag Flag, value bool) {
 		// clear the bit
 		cpu.f &= ^(1 << flag)
 	}
+}
+
+func (cpu *CPU) InterruptMasterEnable() bool {
+	return cpu.ime
+}
+
+func (cpu *CPU) ScheduleIme() {
+	cpu.imeScheduled = true
 }

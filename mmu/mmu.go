@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/davidyorr/EchoGB/cartridge"
+	"github.com/davidyorr/EchoGB/interrupt"
 )
 
 type MMU struct {
@@ -14,13 +15,12 @@ type MMU struct {
 	ioRegisters [128]uint8
 	// 0xFF80 - 0xFFFE
 	highRam [127]uint8
+	// 0xFFFF - Interrupt enable
+	ieRegister uint8
+	// 0xFF0F - Interrupt flag
+	ifRegister uint8
 	// for test output
 	serialOutputBuffer []uint8
-}
-
-type Bus interface {
-	Read(address uint16) uint8
-	Write(address uint16, value uint8)
 }
 
 func New(cartridge *cartridge.Cartridge) *MMU {
@@ -41,7 +41,7 @@ func (mmu *MMU) Reset() {
 	// mmu.ioRegisters[0xFF05-0xFF00] = 0x00 // TIMA
 	// mmu.ioRegisters[0xFF06-0xFF00] = 0x00 // TMA
 	// mmu.ioRegisters[0xFF07-0xFF00] = 0xF8 // TAC
-	mmu.ioRegisters[0xFF0F-0xFF00] = 0xE1 // IF
+	// mmu.ioRegisters[0xFF0F-0xFF00] = 0xE1 // IF
 	mmu.ioRegisters[0xFF10-0xFF00] = 0x80 // NR10
 	mmu.ioRegisters[0xFF11-0xFF00] = 0xBF // NR11
 	mmu.ioRegisters[0xFF12-0xFF00] = 0xF3 // NR12
@@ -80,19 +80,28 @@ func (mmu *MMU) Reset() {
 
 func (mmu *MMU) Read(address uint16) uint8 {
 	var value uint8 = 0
-	if address <= 0x7FFF {
+	switch {
+	case address <= 0x7FFF:
 		// ROM
 		value = mmu.cartridge.Read(address)
-	} else if address >= 0xC000 && address <= 0xDFFF {
+	case address >= 0xC000 && address <= 0xDFFF:
 		// working RAM
 		value = mmu.workingRam[address-0xC000]
-	} else if address >= 0xFF00 && address <= 0xFF7F {
+	case address == 0xFF0F:
+		value = mmu.ifRegister
+	case address == 0xFFFF:
+		value = mmu.ieRegister
+	case address >= 0xFF00 && address <= 0xFF7F:
 		// IO registers
 		value = mmu.ioRegisters[address-0xFF00]
-	} else if address >= 0xFF80 && address <= 0xFFFE {
+	case address >= 0xFF80 && address <= 0xFFFE:
 		// high RAM
 		value = mmu.highRam[address-0xFF80]
+	default:
+		fmt.Println("unhandled address while reading ->")
+		value = 0xFF
 	}
+
 	fmt.Printf("  [MMU READ] Address: 0x%04X, Value: 0x%02X\n", address, value)
 
 	return value
@@ -100,27 +109,51 @@ func (mmu *MMU) Read(address uint16) uint8 {
 
 func (mmu *MMU) Write(address uint16, value uint8) {
 	fmt.Printf("  [MMU WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
-	if address <= 0x7FFF {
+	switch {
+	case address <= 0x7FFF:
 		// ROM
-	} else if address >= 0xC000 && address <= 0xDFFF {
+	case address >= 0xC000 && address <= 0xDFFF:
 		// working RAM
 		mmu.workingRam[address-0xC000] = value
-	} else if address >= 0xFF00 && address <= 0xFF7F {
+	case address == 0xFF0F:
+		mmu.ifRegister = value
+	case address == 0xFFFF:
+		mmu.ieRegister = value
+	case address >= 0xFF00 && address <= 0xFF7F:
 		// IO registers
 		mmu.ioRegisters[address-0xFF00] = value
-	} else if address >= 0xFF80 && address <= 0xFFFE {
+	case address >= 0xFF80 && address <= 0xFFFE:
 		// high RAM
 		mmu.highRam[address-0xFF80] = value
+	default:
+		fmt.Println("unhandled address while writing <-")
 	}
+
 	// SB is the Serial Data register at address 0xFF01
 	// SC is the Serial Control register at address 0xFF02
 	if address == 0xFF02 && value == 0x81 {
-		fmt.Println("========================== WRITING TO SERIAL OUTPUT BUFFER ================================")
-		fmt.Println("                           ", mmu.Read(0xFF01))
-		mmu.serialOutputBuffer = append(mmu.serialOutputBuffer, mmu.Read(0xFF01))
+		mmu.serialOutputBuffer = append(mmu.serialOutputBuffer, mmu.ioRegisters[0x01])
+		mmu.ioRegisters[0x02] &= 0b0111_1111
+		mmu.RequestInterrupt(interrupt.SerialInterrupt)
 	}
 }
 
 func (mmu *MMU) SerialOutputBuffer() []byte {
 	return mmu.serialOutputBuffer
+}
+
+func (mmu *MMU) RequestInterrupt(interrupt interrupt.Interrupt) {
+	mmu.ifRegister |= uint8(interrupt)
+}
+
+func (mmu *MMU) ClearInterrupt(interrupt interrupt.Interrupt) {
+	mmu.ifRegister &= ^uint8(interrupt)
+}
+
+func (mmu *MMU) InterruptEnable() uint8 {
+	return mmu.ieRegister
+}
+
+func (mmu *MMU) InterruptFlag() uint8 {
+	return mmu.ifRegister
 }

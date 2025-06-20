@@ -146,6 +146,7 @@ var instructions = [256]instruction{
 	0xBC: {"CP A, H", 0, cp_a_h},
 	0xBD: {"CP A, L", 0, cp_a_l},
 	0xBF: {"CP A, A", 0, cp_a_a},
+	0xBE: {"CP A, [HL]", 0, cp_a_hl},
 	0xFE: {"CP A, n8", 1, cp_a_n8},
 
 	0x05: {"DEC B", 0, dec_b},
@@ -172,6 +173,7 @@ var instructions = [256]instruction{
 	0x94: {"SUB A, H", 0, sub_a_h},
 	0x95: {"SUB A, L", 0, sub_a_l},
 	0x97: {"SUB A, A", 0, sub_a_a},
+	0x96: {"SUB A, [HL]", 0, sub_a_hl},
 	0xD6: {"SUB A, n8", 1, sub_a_n8},
 
 	// 16-bit arithmetic instructions
@@ -219,7 +221,9 @@ var instructions = [256]instruction{
 	// jumps and subroutine instructions
 	0xCD: {"CALL a16", 2, call_a16},
 	0xC4: {"CALL NZ, a16", 2, call_nz_a16},
+	0xE9: {"JP HL", 0, jp_hl},
 	0xC3: {"JP a16", 2, jp_a16},
+	0xC2: {"JP NZ, a16", 2, jp_nz_a16},
 	0x18: {"JR e8", 1, jr_e8},
 	0x20: {"JR NZ, e8", 1, jr_nz_e8},
 	0x28: {"JR Z, e8", 1, jr_z_e8},
@@ -242,6 +246,7 @@ var instructions = [256]instruction{
 
 	// interrupt related instructions
 	0xF3: {"DI", 0, di},
+	0xFB: {"EI", 0, ei},
 }
 
 func (cpu *CPU) executeCbInstruction(opcode uint8) uint8 {
