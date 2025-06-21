@@ -299,6 +299,19 @@ var instructions = [256]instruction{
 	// misc instructions
 	0x00: {"NOP", 0, nop},
 	0x27: {"DAA", 0, daa},
+
+	// undefined opcodes
+	0xD3: {"NOP", 0, nop},
+	0xDB: {"NOP", 0, nop},
+	0xDD: {"NOP", 0, nop},
+	0xE3: {"NOP", 0, nop},
+	0xE4: {"NOP", 0, nop},
+	0xEB: {"NOP", 0, nop},
+	0xEC: {"NOP", 0, nop},
+	0xED: {"NOP", 0, nop},
+	0xF4: {"NOP", 0, nop},
+	0xFC: {"NOP", 0, nop},
+	0xFD: {"NOP", 0, nop},
 }
 
 func (cpu *CPU) executeCbInstruction(opcode uint8) uint8 {
