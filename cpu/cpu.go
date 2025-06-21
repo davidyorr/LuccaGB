@@ -5,6 +5,7 @@ import (
 
 	"github.com/davidyorr/EchoGB/bus"
 	"github.com/davidyorr/EchoGB/interrupt"
+	"github.com/davidyorr/EchoGB/logger"
 )
 
 type CPU struct {
@@ -55,7 +56,6 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 }
 
 func (cpu *CPU) Step() (uint8, error) {
-	fmt.Println("Go: cpu.Step() -------------")
 	if cpu.imeScheduled {
 		cpu.ime = true
 		cpu.imeScheduled = false
@@ -74,10 +74,20 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	instruction := instructions[opcode]
-	fmt.Printf("  PC=0x%04X SP:0x%04X AF:0x%04X BC:0x%04X DE:0x%04X HL:0x%04X | (op:0x%02X, len:%d, imm:0x%04X) %s\n", cpu.pc, cpu.sp, cpu.getAF(), cpu.getBC(), cpu.getDE(), cpu.getHL(), opcode, instruction.operandLength, cpu.immediateValue, instruction.mnemonic)
+	logger.Debug(
+		"CPU STEP",
+		"PC", fmt.Sprintf("0x%04X", cpu.pc),
+		"SP", fmt.Sprintf("0x%04X", cpu.sp),
+		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
+		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
+		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
+		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
+		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", opcode, instruction.operandLength, cpu.immediateValue),
+		"instruction", instruction.mnemonic,
+	)
 
 	if instruction.execute == nil {
-		fmt.Printf("Go: unimplemented instruction 0x%02X\n", opcode)
+		logger.Debug("Go: unimplemented instruction 0x%02X\n", opcode)
 		return 0, fmt.Errorf("unimplemented instruction 0x%02X", opcode)
 	}
 

@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
 	"github.com/davidyorr/EchoGB/timer"
@@ -41,7 +42,11 @@ func (bus *Bus) Read(address uint16) uint8 {
 		value = bus.mmu.Read(address)
 	}
 
-	fmt.Printf("  [BUS READ] Address: 0x%04X, Value: 0x%02X\n", address, value)
+	logger.Debug(
+		"BUS READ",
+		"Address", fmt.Sprintf("0x%04X", address),
+		"Value", fmt.Sprintf("0x%02X", value),
+	)
 
 	return value
 }
@@ -56,5 +61,9 @@ func (bus *Bus) Write(address uint16, value uint8) {
 		bus.mmu.Write(address, value)
 	}
 
-	fmt.Printf("  [BUS WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
+	logger.Debug(
+		"BUS WRITE",
+		"Address", fmt.Sprintf("0x%04X", address),
+		"Value", fmt.Sprintf("0x%02X", value),
+	)
 }

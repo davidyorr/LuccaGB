@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 // 0x06 Copy the value n8 into register r8
 func ld_b_n8(cpu *CPU) uint8 {
 	cpu.b = uint8(cpu.immediateValue)
@@ -1017,7 +1015,6 @@ func xor_a_b(cpu *CPU) uint8 {
 
 // 0xA9 Set A to the bitwise XOR between the value in r8 and A
 func xor_a_c(cpu *CPU) uint8 {
-	fmt.Println("--- EXECUTING NEW XOR HANDLER ---")
 	cpu.xor_a_n8(cpu.c)
 	return 4
 }
@@ -1137,8 +1134,6 @@ func rlca(cpu *CPU) uint8 {
 	cpu.setFlag(FlagN, false)
 	cpu.setFlag(FlagH, false)
 	cpu.setFlag(FlagC, carry == 1)
-
-	fmt.Printf("RCLA: carry=[0x%0X] a=[0x%0X]\n", carry, cpu.a)
 
 	return 4
 }

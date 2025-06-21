@@ -5,6 +5,7 @@ import (
 
 	"github.com/davidyorr/EchoGB/cartridge"
 	"github.com/davidyorr/EchoGB/interrupt"
+	"github.com/davidyorr/EchoGB/logger"
 )
 
 type MMU struct {
@@ -98,17 +99,21 @@ func (mmu *MMU) Read(address uint16) uint8 {
 		// high RAM
 		value = mmu.highRam[address-0xFF80]
 	default:
-		fmt.Println("unhandled address while reading ->")
+		logger.Debug("unhandled address while reading ->")
 		value = 0xFF
 	}
 
-	fmt.Printf("  [MMU READ] Address: 0x%04X, Value: 0x%02X\n", address, value)
+	logger.Debug(
+		"MMU READ",
+		"Address", fmt.Sprintf("0x%04X", address),
+		"Value", fmt.Sprintf("0x%02X", value),
+	)
 
 	return value
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
-	fmt.Printf("  [MMU WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
+	logger.Debug("  [MMU WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
 	switch {
 	case address <= 0x7FFF:
 		// ROM
@@ -126,7 +131,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 		// high RAM
 		mmu.highRam[address-0xFF80] = value
 	default:
-		fmt.Println("unhandled address while writing <-")
+		logger.Debug("unhandled address while writing <-")
 	}
 
 	// SB is the Serial Data register at address 0xFF01

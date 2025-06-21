@@ -3,17 +3,17 @@
 package main
 
 import (
-	"fmt"
 	"syscall/js"
 
 	"github.com/davidyorr/EchoGB/gameboy"
+	"github.com/davidyorr/EchoGB/logger"
 )
 
 // 0xFFFF
 var interruptRegister uint8
 
 func main() {
-	fmt.Println("Hello EchoGB!")
+	logger.Info("Hello EchoGB!")
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 

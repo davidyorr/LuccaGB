@@ -3,6 +3,8 @@ package cartridge
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/davidyorr/EchoGB/logger"
 )
 
 type Cartridge struct {
@@ -28,16 +30,19 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 	cartridge.rom = rom
 
 	cartridge.title = bytes.Trim(cartridge.rom[0x0134:0x0143], "\x00")
-	fmt.Printf("Go:   running ROM : %s\n", cartridge.title)
+	logger.Debug(
+		"CARTRIDGE LOAD ROM",
+		"TITLE", string(cartridge.title),
+		"MBC", fmt.Sprintf("0x%02X", cartridge.mbc),
+		"ROM size code", fmt.Sprintf("0x%02X", cartridge.romSizeCode),
+		"RAM size code", fmt.Sprintf("0x%02X", cartridge.ramSizeCode),
+	)
 
 	cartridge.mbc = cartridge.rom[0x147]
-	fmt.Printf("Go:           MBC : 0x%02X\n", cartridge.mbc)
 
 	cartridge.romSizeCode = cartridge.rom[0x148]
-	fmt.Printf("Go: ROM size code : 0x%02X\n", cartridge.romSizeCode)
 
 	cartridge.ramSizeCode = cartridge.rom[0x149]
-	fmt.Printf("Go: RAM size code : 0x%02X\n", cartridge.ramSizeCode)
 }
 
 func (cartridge *Cartridge) Read(address uint16) uint8 {

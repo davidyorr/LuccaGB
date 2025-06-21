@@ -7,6 +7,7 @@ import (
 	"github.com/davidyorr/EchoGB/cartridge"
 	"github.com/davidyorr/EchoGB/cpu"
 	"github.com/davidyorr/EchoGB/interrupt"
+	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
 	"github.com/davidyorr/EchoGB/timer"
@@ -41,7 +42,7 @@ func New() *Gameboy {
 }
 
 func (gameboy *Gameboy) LoadRom(rom []uint8) {
-	fmt.Println("Go: load ROM", len(rom))
+	logger.Debug("GAMEBOY LOAD ROM", "size", len(rom))
 
 	gameboy.cartridge.LoadRom(rom)
 }
@@ -58,7 +59,12 @@ func (gameboy *Gameboy) Step() error {
 	}
 	gameboy.ppu.Step(cycles)
 
-	fmt.Printf("IME: [%t], IE: [%0X], IF: [%0X]\n", gameboy.cpu.InterruptMasterEnable(), gameboy.mmu.InterruptEnable(), gameboy.mmu.InterruptFlag())
+	logger.Debug(
+		"END OF GAMEBOY STEP",
+		"IME", fmt.Sprintf("%t", gameboy.cpu.InterruptMasterEnable()),
+		"IE", fmt.Sprintf("%0X", gameboy.mmu.InterruptEnable()),
+		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
+	)
 	if gameboy.cpu.InterruptMasterEnable() && (gameboy.mmu.InterruptEnable()&gameboy.mmu.InterruptFlag() != 0) {
 		gameboy.cpu.HandleInterrupts()
 	}
