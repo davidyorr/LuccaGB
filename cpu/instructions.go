@@ -75,6 +75,15 @@ var instructions = [256]instruction{
 	0x6D: {"LD L, L", 0, ld_l_l},
 	0x6F: {"LD L, A", 0, ld_l_a},
 
+	0x70: {"LD [HL], B", 0, ld_hl_b},
+	0x71: {"LD [HL], C", 0, ld_hl_c},
+	0x72: {"LD [HL], D", 0, ld_hl_d},
+	0x73: {"LD [HL], E", 0, ld_hl_e},
+	0x74: {"LD [HL], H", 0, ld_hl_h},
+	0x75: {"LD [HL], L", 0, ld_hl_l},
+	0x77: {"LD [HL], A", 0, ld_hl_a},
+	0x36: {"LD [HL], n8", 1, ld_hl_n8},
+
 	0x78: {"LD A, B", 0, ld_a_b},
 	0x79: {"LD A, C", 0, ld_a_c},
 	0x7A: {"LD A, D", 0, ld_a_d},
@@ -96,14 +105,6 @@ var instructions = [256]instruction{
 	0x21: {"LD HL, n16", 2, ld_hl_n16},
 	0x31: {"LD SP, n16", 2, ld_sp_n16},
 
-	0x70: {"LD [HL], B", 0, ld_hl_b},
-	0x71: {"LD [HL], C", 0, ld_hl_c},
-	0x72: {"LD [HL], D", 0, ld_hl_d},
-	0x73: {"LD [HL], E", 0, ld_hl_e},
-	0x74: {"LD [HL], H", 0, ld_hl_h},
-	0x75: {"LD [HL], L", 0, ld_hl_l},
-	0x77: {"LD [HL], A", 0, ld_hl_a},
-
 	0x02: {"LD [BC], A", 0, ld_bc_a},
 	0x12: {"LD [DE], A", 0, ld_de_a},
 	0xEA: {"LD [a16], A", 2, ld_a16_a},
@@ -118,6 +119,7 @@ var instructions = [256]instruction{
 	0x22: {"LD [HL+], A", 0, ld_hli_a},
 	0x32: {"LD [HL-], A", 0, ld_hld_a},
 	0x2A: {"LD A, [HL+]", 0, ld_a_hli},
+	0x3A: {"LD A, [HL-]", 0, ld_a_hld},
 
 	// 8-bit arithmetic instructions
 	0x88: {"ADC A, B", 0, adc_a_b},
@@ -137,6 +139,7 @@ var instructions = [256]instruction{
 	0x84: {"ADD A, H", 0, add_a_h},
 	0x85: {"ADD A, L", 0, add_a_l},
 	0x87: {"ADD A, A", 0, add_a_a},
+	0x86: {"ADD A, [HL]", 0, add_a_at_hl},
 	0xC6: {"ADD A, n8", 1, add_a_n8},
 
 	0xB8: {"CP A, B", 0, cp_a_b},
@@ -156,7 +159,7 @@ var instructions = [256]instruction{
 	0x25: {"DEC H", 0, dec_h},
 	0x2D: {"DEC L", 0, dec_l},
 	0x3D: {"DEC A", 0, dec_a},
-	0x35: {"DEC [HL]", 0, dec_hl},
+	0x35: {"DEC [HL]", 0, dec_at_hl},
 
 	0x04: {"INC B", 0, inc_b},
 	0x0C: {"INC C", 0, inc_c},
@@ -165,6 +168,16 @@ var instructions = [256]instruction{
 	0x24: {"INC H", 0, inc_h},
 	0x2C: {"INC L", 0, inc_l},
 	0x3C: {"INC A", 0, inc_a},
+	0x34: {"INC [HL]", 0, inc_at_hl},
+
+	0x98: {"SBC A, B", 0, sbc_a_b},
+	0x99: {"SBC A, C", 0, sbc_a_c},
+	0x9A: {"SBC A, D", 0, sbc_a_d},
+	0x9B: {"SBC A, E", 0, sbc_a_e},
+	0x9C: {"SBC A, H", 0, sbc_a_h},
+	0x9D: {"SBC A, L", 0, sbc_a_l},
+	0x9F: {"SBC A, A", 0, sbc_a_a},
+	0x9E: {"SBC A, [HL]", 0, sbc_a_at_hl},
 
 	0x90: {"SUB A, B", 0, sub_a_b},
 	0x91: {"SUB A, C", 0, sub_a_c},
@@ -180,6 +193,9 @@ var instructions = [256]instruction{
 	0x09: {"ADD HL, BC", 0, add_hl_bc},
 	0x19: {"ADD HL, DE", 0, add_hl_de},
 	0x29: {"ADD HL, HL", 0, add_hl_hl},
+	0x0B: {"DEC BC", 0, dec_bc},
+	0x1B: {"DEC DE", 0, dec_de},
+	0x2B: {"DEC HL", 0, dec_hl},
 	0x03: {"INC BC", 0, inc_bc},
 	0x13: {"INC DE", 0, inc_de},
 	0x23: {"INC HL", 0, inc_hl},
@@ -192,7 +208,10 @@ var instructions = [256]instruction{
 	0xA4: {"AND A, H", 0, and_a_h},
 	0xA5: {"AND A, L", 0, and_a_l},
 	0xA7: {"AND A, A", 0, and_a_a},
+	0xA6: {"AND A, [HL]", 0, and_a_at_hl},
 	0xE6: {"AND A, n8", 1, and_a_n8},
+
+	0x2F: {"CPL", 1, cpl},
 
 	0xA8: {"XOR A, B", 0, xor_a_b},
 	0xA9: {"XOR A, C", 0, xor_a_c},
@@ -215,12 +234,17 @@ var instructions = [256]instruction{
 	0xF6: {"OR A, n8", 1, or_a_n8},
 
 	// bit shift instructions
+	0x17: {"RLA", 0, rla},
 	0x07: {"RLCA", 0, rlca},
 	0x1F: {"RRA", 0, rra},
+	0x0F: {"RRCA", 0, rrca},
 
 	// jumps and subroutine instructions
 	0xCD: {"CALL a16", 2, call_a16},
+	0xCC: {"CALL Z, a16", 2, call_z_a16},
+	0xDC: {"CALL C, a16", 2, call_c_a16},
 	0xC4: {"CALL NZ, a16", 2, call_nz_a16},
+	0xD4: {"CALL NC, a16", 2, call_nc_a16},
 	0xE9: {"JP HL", 0, jp_hl},
 	0xC3: {"JP a16", 2, jp_a16},
 	0xCA: {"JP Z, a16", 2, jp_z_a16},
@@ -232,10 +256,23 @@ var instructions = [256]instruction{
 	0x28: {"JR Z, e8", 1, jr_z_e8},
 	0x30: {"JR NC, e8", 1, jr_nc_e8},
 	0x38: {"JR C, e8", 1, jr_c_e8},
+	0xC8: {"RET Z", 0, ret_z},
+	0xD8: {"RET C", 0, ret_c},
+	0xC0: {"RET NZ", 0, ret_nz},
+	0xD0: {"RET NC", 0, ret_nc},
 	0xC9: {"RET", 0, ret},
-	0xFF: {"RST 38h", 0, rst_38h},
+	0xD9: {"RETI", 0, reti},
 
-	// jumps and subroutine instructions
+	0xC7: {"RST $00", 0, rst_00h},
+	0xCF: {"RST $08", 0, rst_08h},
+	0xD7: {"RST $10", 0, rst_10h},
+	0xDF: {"RST $18", 0, rst_18h},
+	0xE7: {"RST $20", 0, rst_20h},
+	0xEF: {"RST $28", 0, rst_28h},
+	0xF7: {"RST $30", 0, rst_30h},
+	0xFF: {"RST $38", 0, rst_38h},
+
+	// carry flag instructions
 	0x3F: {"CCF", 0, ccf},
 	0x37: {"SCF", 0, scf},
 
@@ -245,6 +282,7 @@ var instructions = [256]instruction{
 	0x3B: {"DEC SP", 0, dec_sp},
 	0x33: {"INC SP", 0, inc_sp},
 	0xF8: {"LD HL, SP + e8", 1, ld_hl_sp_e8},
+	0xF9: {"LD SP, HL", 0, ld_sp_hl},
 	0xC1: {"POP BC", 0, pop_bc},
 	0xD1: {"POP DE", 0, pop_de},
 	0xE1: {"POP HL", 0, pop_hl},

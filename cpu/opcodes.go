@@ -294,6 +294,62 @@ func ld_l_a(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0x70 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_b(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(uint16(address), cpu.b)
+	return 8
+}
+
+// 0x71 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_c(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.c)
+	return 8
+}
+
+// 0x72 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_d(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.d)
+	return 8
+}
+
+// 0x73 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_e(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.e)
+	return 8
+}
+
+// 0x74 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_h(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.h)
+	return 8
+}
+
+// 0x75 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_l(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.l)
+	return 8
+}
+
+// 0x77 Copy the value in register r8 into the byte pointed to by HL
+func ld_hl_a(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, cpu.a)
+	return 8
+}
+
+// 0x36 Copy the value n8 into the byte pointed to by HL
+func ld_hl_n8(cpu *CPU) uint8 {
+	address := cpu.getHL()
+	cpu.bus.Write(address, uint8(cpu.immediateValue))
+	return 12
+}
+
 // 0x78 Copy (aka Load) the value in register on the right into the register on the left
 func ld_a_b(cpu *CPU) uint8 {
 	cpu.a = cpu.b
@@ -384,55 +440,6 @@ func ld_sp_n16(cpu *CPU) uint8 {
 	return 12
 }
 
-// 0x70 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_b(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.b)
-	return 8
-}
-
-// 0x71 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_c(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.c)
-	return 8
-}
-
-// 0x72 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_d(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.d)
-	return 8
-}
-
-// 0x73 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_e(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.e)
-	return 8
-}
-
-// 0x74 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_h(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.h)
-	return 8
-}
-
-// 0x75 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_l(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.l)
-	return 8
-}
-
-// 0x77 Copy the value in register r8 into the byte pointed to by HL
-func ld_hl_a(cpu *CPU) uint8 {
-	address := cpu.getHL()
-	cpu.bus.Write(uint16(address), cpu.a)
-	return 8
-}
-
 // 0x02 Copy the value in register A into the byte pointed to by r16
 func ld_bc_a(cpu *CPU) uint8 {
 	cpu.bus.Write(cpu.getBC(), cpu.a)
@@ -520,6 +527,14 @@ func ld_a_hli(cpu *CPU) uint8 {
 	value := cpu.getHL()
 	cpu.a = cpu.bus.Read(value)
 	cpu.setHL(value + 1)
+	return 8
+}
+
+// 0x3A Copy the byte pointed to by HL into register A, and decrement HL afterwards
+func ld_a_hld(cpu *CPU) uint8 {
+	value := cpu.getHL()
+	cpu.a = cpu.bus.Read(value)
+	cpu.setHL(value - 1)
 	return 8
 }
 
@@ -643,6 +658,12 @@ func add_a_l(cpu *CPU) uint8 {
 func add_a_a(cpu *CPU) uint8 {
 	cpu.add_a_r8(cpu.a)
 	return 4
+}
+
+// 0x86 Add the byte pointed to by HL to A
+func add_a_at_hl(cpu *CPU) uint8 {
+	cpu.add_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
 }
 
 // 0xC6 Add the value n8 to A
@@ -780,7 +801,7 @@ func dec_a(cpu *CPU) uint8 {
 }
 
 // 0x35 Decrement the byte pointed to by HL by 1
-func dec_hl(cpu *CPU) uint8 {
+func dec_at_hl(cpu *CPU) uint8 {
 	result := cpu.dec_r8(cpu.bus.Read(cpu.getHL()))
 	cpu.bus.Write(cpu.getHL(), result)
 	return 12
@@ -836,6 +857,82 @@ func inc_l(cpu *CPU) uint8 {
 func inc_a(cpu *CPU) uint8 {
 	cpu.a = cpu.inc_r8(cpu.a)
 	return 4
+}
+
+// 0x34 Increment the byte pointed to by HL by 1
+func inc_at_hl(cpu *CPU) uint8 {
+	originalHlByte := cpu.bus.Read(cpu.getHL())
+	result := originalHlByte + 1
+	cpu.bus.Write(cpu.getHL(), result)
+	cpu.setFlag(FlagZ, result == 0)
+	cpu.setFlag(FlagN, false)
+	// if overflow from bit 3
+	cpu.setFlag(FlagH, (originalHlByte&0x0F)+1 > 0x0F)
+	return 12
+}
+
+// Subtract the value in r8 and the carry flag from A
+func (cpu *CPU) sbc_a_r8(r8 uint8) {
+	var carryValue uint8 = 0
+	if cpu.getFlag(FlagC) {
+		carryValue = 1
+	}
+	originalA := cpu.a
+	subtrahend := r8 + carryValue
+	difference := originalA - subtrahend
+	cpu.a = difference
+	cpu.setFlag(FlagZ, difference == 0)
+	cpu.setFlag(FlagN, true)
+	cpu.setFlag(FlagH, (originalA&0x0F) < (r8&0x0F)+carryValue)
+	cpu.setFlag(FlagC, (r8+carryValue) > originalA)
+}
+
+// 0x98 Subtract the value in r8 and the carry flag from A
+func sbc_a_b(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.b)
+	return 4
+}
+
+// 0x99 Subtract the value in r8 and the carry flag from A
+func sbc_a_c(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.c)
+	return 4
+}
+
+// 0x9A Subtract the value in r8 and the carry flag from A
+func sbc_a_d(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.d)
+	return 4
+}
+
+// 0x9B Subtract the value in r8 and the carry flag from A
+func sbc_a_e(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.e)
+	return 4
+}
+
+// 0x9C Subtract the value in r8 and the carry flag from A
+func sbc_a_h(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.h)
+	return 4
+}
+
+// 0x9D Subtract the value in r8 and the carry flag from A
+func sbc_a_l(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.l)
+	return 4
+}
+
+// 0x9F Subtract the value in r8 and the carry flag from A
+func sbc_a_a(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.a)
+	return 4
+}
+
+// 0x9E Subtract the byte pointed to by HL and the carry flag from A
+func sbc_a_at_hl(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
 }
 
 // 0x90 Subtract the value in r8 from A
@@ -914,24 +1011,39 @@ func add_hl_hl(cpu *CPU) uint8 {
 	return 8
 }
 
+// 0x0B Decrement the value in register r16 by 1
+func dec_bc(cpu *CPU) uint8 {
+	cpu.setBC(cpu.getBC() - 1)
+	return 8
+}
+
+// 0x1B Decrement the value in register r16 by 1
+func dec_de(cpu *CPU) uint8 {
+	cpu.setDE(cpu.getDE() - 1)
+	return 8
+}
+
+// 0x2B Decrement the value in register r16 by 1
+func dec_hl(cpu *CPU) uint8 {
+	cpu.setHL(cpu.getHL() - 1)
+	return 8
+}
+
 // 0x03 Increment the value in register r8 by 1
 func inc_bc(cpu *CPU) uint8 {
-	value := cpu.getBC()
-	cpu.setBC(value + 1)
+	cpu.setBC(cpu.getBC() + 1)
 	return 8
 }
 
 // 0x13 Increment the value in register r8 by 1
 func inc_de(cpu *CPU) uint8 {
-	value := cpu.getDE()
-	cpu.setDE(value + 1)
+	cpu.setDE(cpu.getDE() + 1)
 	return 8
 }
 
 // 0x23 Increment the value in register r8 by 1
 func inc_hl(cpu *CPU) uint8 {
-	value := cpu.getHL()
-	cpu.setHL(value + 1)
+	cpu.setHL(cpu.getHL() + 1)
 	return 8
 }
 
@@ -992,10 +1104,24 @@ func and_a_a(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0xA6 Set A to the bitwise AND between the byte pointed to by HL and A
+func and_a_at_hl(cpu *CPU) uint8 {
+	cpu.and_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
+}
+
 // 0xE6 Set A to the bitwise AND between the value n8 and A
 func and_a_n8(cpu *CPU) uint8 {
 	cpu.and_a_r8(uint8(cpu.immediateValue))
 	return 8
+}
+
+// 0x2F ComPLement accumulator (A = ~A); also called bitwise NOT
+func cpl(cpu *CPU) uint8 {
+	cpu.a ^= cpu.a
+	cpu.setFlag(FlagN, true)
+	cpu.setFlag(FlagH, true)
+	return 4
 }
 
 // Set A to the bitwise XOR between n8 and A
@@ -1124,6 +1250,21 @@ func or_a_n8(cpu *CPU) uint8 {
 	return 8
 }
 
+// 0x17 Rotate register A left, through the carry flag
+func rla(cpu *CPU) uint8 {
+	bit7 := (cpu.a & 0b1000_0000)
+	var mask uint8 = 0
+	if cpu.getFlag(FlagC) {
+		mask = 1
+	}
+	cpu.a = (cpu.a << 1) | (mask)
+	cpu.setFlag(FlagZ, false)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, (bit7>>7) == 1)
+	return 4
+}
+
 // 0x07 Rotate register A left
 func rlca(cpu *CPU) uint8 {
 	carry := (cpu.a >> 7) & 1
@@ -1154,6 +1295,17 @@ func rra(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0x0F Rotate register A right
+func rrca(cpu *CPU) uint8 {
+	bit0 := cpu.a & 1
+	cpu.a = (cpu.a >> 1) | (bit0 << 7)
+	cpu.setFlag(FlagZ, false)
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, bit0 == 1)
+	return 4
+}
+
 // 0xCD Call address n16
 func call_a16(cpu *CPU) uint8 {
 	cpu.pushToStack16(cpu.pc + 3)
@@ -1161,9 +1313,42 @@ func call_a16(cpu *CPU) uint8 {
 	return 24
 }
 
-// 0xC4 Call address n16 if condition cc is not met
+// 0xCC Call address n16 if condition cc is met
+func call_z_a16(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagZ) {
+		cpu.pushToStack16(cpu.pc + 3)
+		cpu.pc = cpu.immediateValue
+		return 24
+	}
+
+	return 12
+}
+
+// 0xDC Call address n16 if condition cc is met
+func call_c_a16(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagC) {
+		cpu.pushToStack16(cpu.pc + 3)
+		cpu.pc = cpu.immediateValue
+		return 24
+	}
+
+	return 12
+}
+
+// 0xC4 Call address n16 if condition cc is met
 func call_nz_a16(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagZ) {
+		return 12
+	}
+
+	cpu.pushToStack16(cpu.pc + 3)
+	cpu.pc = cpu.immediateValue
+	return 24
+}
+
+// 0xD4 Call address n16 if condition cc is met
+func call_nc_a16(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagC) {
 		return 12
 	}
 
@@ -1204,7 +1389,7 @@ func jp_c_a16(cpu *CPU) uint8 {
 	return 16
 }
 
-// 0xC2 Jump to address n16 if condition cc is not met
+// 0xC2 Jump to address n16 if condition cc is met
 func jp_nz_a16(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagZ) {
 		return 12
@@ -1214,7 +1399,7 @@ func jp_nz_a16(cpu *CPU) uint8 {
 	return 16
 }
 
-// 0xD2 Jump to address n16 if condition cc is not met
+// 0xD2 Jump to address n16 if condition cc is met
 func jp_nc_a16(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagC) {
 		return 12
@@ -1238,7 +1423,7 @@ func jr_e8(cpu *CPU) uint8 {
 	return 12
 }
 
-// 0x20 Relative Jump to address e8 if condition z is not met
+// 0x20 Relative Jump to address e8 if condition z is met
 func jr_nz_e8(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagZ) {
 		return 8
@@ -1260,7 +1445,7 @@ func jr_z_e8(cpu *CPU) uint8 {
 	return 12
 }
 
-// 0x30 Relative Jump to address e8 if condition c is not met
+// 0x30 Relative Jump to address e8 if condition c is met
 func jr_nc_e8(cpu *CPU) uint8 {
 	if cpu.getFlag(FlagC) {
 		return 8
@@ -1282,14 +1467,121 @@ func jr_c_e8(cpu *CPU) uint8 {
 	return 12
 }
 
-// 0xC9 Return from subroutine
-func ret(cpu *CPU) uint8 {
+// helper function for opcodes:
+//
+//	RET
+//	REC cc
+//	RETI
+//
+// Return from subroutine.
+func (cpu *CPU) return_from_subroutine() {
 	returnAddress := cpu.popFromStack16()
 	cpu.pc = returnAddress
+}
+
+// 0xC8 Return from subroutine if condition cc is met
+func ret_z(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagZ) {
+		cpu.return_from_subroutine()
+		return 20
+	}
+
+	return 8
+}
+
+// 0xD8 Return from subroutine if condition cc is met
+func ret_c(cpu *CPU) uint8 {
+	if cpu.getFlag(FlagC) {
+		cpu.return_from_subroutine()
+		return 20
+	}
+
+	return 8
+}
+
+// 0xC0 Return from subroutine if condition cc is met
+func ret_nz(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagZ) {
+		cpu.return_from_subroutine()
+		return 20
+	}
+
+	return 8
+}
+
+// 0xD0 Return from subroutine if condition cc is met
+func ret_nc(cpu *CPU) uint8 {
+	if !cpu.getFlag(FlagC) {
+		cpu.return_from_subroutine()
+		return 20
+	}
+
+	return 8
+}
+
+// 0xC9 Return from subroutine
+func ret(cpu *CPU) uint8 {
+	cpu.return_from_subroutine()
 	return 16
 }
 
-// 0xFF Call address 0x38
+// 0xD9 Return from subroutine and enable interrupts
+func reti(cpu *CPU) uint8 {
+	cpu.ScheduleIme()
+	cpu.return_from_subroutine()
+	return 16
+}
+
+// 0xC7 Call address vec
+func rst_00h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x00
+	return 16
+}
+
+// 0xCF Call address vec
+func rst_08h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x08
+	return 16
+}
+
+// 0xD7 Call address vec
+func rst_10h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x10
+	return 16
+}
+
+// 0xDF Call address vec
+func rst_18h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x18
+	return 16
+}
+
+// 0xE7 Call address vec
+func rst_20h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x20
+	return 16
+}
+
+// 0xEF Call address vec
+func rst_28h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x28
+	return 16
+}
+
+// 0xF7 Call address vec
+func rst_30h(cpu *CPU) uint8 {
+	cpu.pushToStack16(cpu.pc + 1)
+	cpu.pc = 0x30
+	return 16
+}
+
+// 0xFF Call address vec
 func rst_38h(cpu *CPU) uint8 {
 	cpu.pushToStack16(cpu.pc + 1)
 	cpu.pc = 0x38
@@ -1368,6 +1660,12 @@ func ld_hl_sp_e8(cpu *CPU) uint8 {
 	cpu.setFlag(FlagN, false)
 	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
 	return 12
+}
+
+// 0xF9 Copy register HL into register SP
+func ld_sp_hl(cpu *CPU) uint8 {
+	cpu.sp = cpu.getHL()
+	return 8
 }
 
 // 0xC1 Pop register r16 from the stack

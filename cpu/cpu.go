@@ -74,7 +74,7 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	instruction := instructions[opcode]
-	logger.Debug(
+	logger.Info(
 		"CPU STEP",
 		"PC", fmt.Sprintf("0x%04X", cpu.pc),
 		"SP", fmt.Sprintf("0x%04X", cpu.sp),

@@ -113,7 +113,11 @@ func (mmu *MMU) Read(address uint16) uint8 {
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
-	logger.Debug("  [MMU WRITE] Address: 0x%04X, Value: 0x%02X\n", address, value)
+	logger.Debug(
+		"MMU Write",
+		"Address", fmt.Sprintf("0x%04X", address),
+		"Value", fmt.Sprintf("0x%02X", value),
+	)
 	switch {
 	case address <= 0x7FFF:
 		// ROM

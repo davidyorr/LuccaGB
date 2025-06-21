@@ -30,7 +30,7 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 	cartridge.rom = rom
 
 	cartridge.title = bytes.Trim(cartridge.rom[0x0134:0x0143], "\x00")
-	logger.Debug(
+	logger.Info(
 		"CARTRIDGE LOAD ROM",
 		"TITLE", string(cartridge.title),
 		"MBC", fmt.Sprintf("0x%02X", cartridge.mbc),

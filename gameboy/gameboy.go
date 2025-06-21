@@ -42,7 +42,7 @@ func New() *Gameboy {
 }
 
 func (gameboy *Gameboy) LoadRom(rom []uint8) {
-	logger.Debug("GAMEBOY LOAD ROM", "size", len(rom))
+	logger.Info("GAMEBOY LOAD ROM", "size", len(rom))
 
 	gameboy.cartridge.LoadRom(rom)
 }
