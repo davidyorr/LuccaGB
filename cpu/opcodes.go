@@ -2,11 +2,6 @@ package cpu
 
 import "fmt"
 
-// 0x00 No OPeration
-func nop(cpu *CPU) uint8 {
-	return 4
-}
-
 // 0x06 Copy the value n8 into register r8
 func ld_b_n8(cpu *CPU) uint8 {
 	cpu.b = uint8(cpu.immediateValue)
@@ -437,6 +432,18 @@ func ld_hl_l(cpu *CPU) uint8 {
 func ld_hl_a(cpu *CPU) uint8 {
 	address := cpu.getHL()
 	cpu.bus.Write(uint16(address), cpu.a)
+	return 8
+}
+
+// 0x02 Copy the value in register A into the byte pointed to by r16
+func ld_bc_a(cpu *CPU) uint8 {
+	cpu.bus.Write(cpu.getBC(), cpu.a)
+	return 8
+}
+
+// 0x12 Copy the value in register A into the byte pointed to by r16
+func ld_de_a(cpu *CPU) uint8 {
+	cpu.bus.Write(cpu.getDE(), cpu.a)
 	return 8
 }
 
@@ -1294,10 +1301,36 @@ func rst_38h(cpu *CPU) uint8 {
 	return 16
 }
 
+// 0x3F Complement Carry Flag
+func ccf(cpu *CPU) uint8 {
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, !cpu.getFlag(FlagC))
+	return 4
+}
+
+// 0x37 Set Carry Flag
+func scf(cpu *CPU) uint8 {
+	cpu.setFlag(FlagN, false)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, true)
+	return 4
+}
+
 // 0x39 Add the value in SP to HL
 func add_hl_sp(cpu *CPU) uint8 {
 	cpu.add_hl_r16(cpu.sp)
 	return 8
+}
+
+// helper function for opcodes:
+//
+//	ADD SP,e8
+//	ADD SP,e8
+//	LD HL,SP+e8
+func (cpu *CPU) set_e8_carry_flags(original uint16, e8Unsigned uint16) {
+	cpu.setFlag(FlagH, ((original&0x0F)+(e8Unsigned&0x0F)) > 0x0F)
+	cpu.setFlag(FlagC, (original&0xFF)+(e8Unsigned&0xFF) > 0xFF)
 }
 
 // 0xE8 Add the signed value e8 to SP
@@ -1312,8 +1345,7 @@ func add_sp_e8(cpu *CPU) uint8 {
 
 	cpu.setFlag(FlagZ, false)
 	cpu.setFlag(FlagN, false)
-	cpu.setFlag(FlagH, ((originalSp&0x0F)+(e8Unsigned&0x0F)) > 0x0F)
-	cpu.setFlag(FlagC, (originalSp&0xFF)+(e8Unsigned&0xFF) > 0xFF)
+	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
 	return 16
 }
 
@@ -1327,6 +1359,20 @@ func dec_sp(cpu *CPU) uint8 {
 func inc_sp(cpu *CPU) uint8 {
 	cpu.sp++
 	return 8
+}
+
+// 0xF8 Add the signed value e8 to SP and copy the result in HL
+func ld_hl_sp_e8(cpu *CPU) uint8 {
+	originalSp := cpu.sp
+	e8Signed := int8(cpu.immediateValue)
+	result := uint16(int32(cpu.sp) + int32(e8Signed))
+	cpu.setHL(result)
+
+	e8Unsigned := uint16(cpu.immediateValue)
+	cpu.setFlag(FlagZ, false)
+	cpu.setFlag(FlagN, false)
+	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
+	return 12
 }
 
 // 0xC1 Pop register r16 from the stack
@@ -1390,6 +1436,47 @@ func di(cpu *CPU) uint8 {
 // 0xFB Enable Interrupts by setting the IME flag
 func ei(cpu *CPU) uint8 {
 	cpu.ScheduleIme()
+	return 4
+}
+
+// 0x00 No OPeration
+func nop(cpu *CPU) uint8 {
+	return 4
+}
+
+// 0x27 Decimal Adjust Accumulator
+func daa(cpu *CPU) uint8 {
+	var flagC bool = cpu.getFlag(FlagC)
+
+	if cpu.getFlag(FlagN) {
+		// subtraction
+		var adjustment uint8 = 0
+		if cpu.getFlag(FlagH) {
+			adjustment += 0x6
+		}
+		if cpu.getFlag(FlagC) {
+			adjustment += 0x60
+		}
+		cpu.a -= adjustment
+	} else {
+		// addition
+		var adjustment uint8 = 0
+		if cpu.getFlag(FlagH) || (cpu.a&0xF) > 0x9 {
+			adjustment += 0x6
+		}
+		if cpu.getFlag(FlagC) || (cpu.a > 0x99) {
+			adjustment += 0x60
+			flagC = true
+		} else {
+			flagC = false
+		}
+		cpu.a += adjustment
+	}
+
+	cpu.setFlag(FlagZ, cpu.a == 0)
+	cpu.setFlag(FlagH, false)
+	cpu.setFlag(FlagC, flagC)
+
 	return 4
 }
 

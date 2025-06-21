@@ -18,9 +18,6 @@ type instruction struct {
 // order of the registers: B, C, D, E, H, L, (HL), A
 
 var instructions = [256]instruction{
-	// misc instructions
-	0x00: {"NOP", 0, nop},
-
 	// load instructions
 	0x06: {"LD B, n8", 1, ld_b_n8},
 	0x0E: {"LD C, n8", 1, ld_c_n8},
@@ -107,9 +104,12 @@ var instructions = [256]instruction{
 	0x75: {"LD [HL], L", 0, ld_hl_l},
 	0x77: {"LD [HL], A", 0, ld_hl_a},
 
+	0x02: {"LD [BC], A", 0, ld_bc_a},
+	0x12: {"LD [DE], A", 0, ld_de_a},
+	0xEA: {"LD [a16], A", 2, ld_a16_a},
+
 	0xE0: {"LDH [a8], A", 1, ldh_a8_a},
 	0xF0: {"LDH A, [a8]", 1, ldh_a_a8},
-	0xEA: {"LD [a16], A", 2, ld_a16_a},
 
 	0x0A: {"LD A, [BC]", 0, ld_a_bc},
 	0x1A: {"LD A, [DE]", 0, ld_a_de},
@@ -235,11 +235,16 @@ var instructions = [256]instruction{
 	0xC9: {"RET", 0, ret},
 	0xFF: {"RST 38h", 0, rst_38h},
 
+	// jumps and subroutine instructions
+	0x3F: {"CCF", 0, ccf},
+	0x37: {"SCF", 0, scf},
+
 	// stack manipulation instructions
 	0x39: {"ADD HL, SP", 0, add_hl_sp},
 	0xE8: {"ADD SP, e8", 1, add_sp_e8},
 	0x3B: {"DEC SP", 0, dec_sp},
 	0x33: {"INC SP", 0, inc_sp},
+	0xF8: {"LD HL, SP + e8", 1, ld_hl_sp_e8},
 	0xC1: {"POP BC", 0, pop_bc},
 	0xD1: {"POP DE", 0, pop_de},
 	0xE1: {"POP HL", 0, pop_hl},
@@ -252,6 +257,10 @@ var instructions = [256]instruction{
 	// interrupt related instructions
 	0xF3: {"DI", 0, di},
 	0xFB: {"EI", 0, ei},
+
+	// misc instructions
+	0x00: {"NOP", 0, nop},
+	0x27: {"DAA", 0, daa},
 }
 
 func (cpu *CPU) executeCbInstruction(opcode uint8) uint8 {
