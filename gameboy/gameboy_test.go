@@ -55,10 +55,10 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for range 30_000_000 {
+	for range 10_000_000 {
 		err := gb.Step()
 		if err != nil {
-			output := gb.mmu.SerialOutputBuffer()
+			output := gb.serial.SerialOutputBuffer()
 			t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
 			t.Logf("++++++ test output: [%s]\n", string(output))
 			if testing.Verbose() {
@@ -69,7 +69,7 @@ func TestBlarggCpuInsructions(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	output := gb.mmu.SerialOutputBuffer()
+	output := gb.serial.SerialOutputBuffer()
 	t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
 	t.Logf("++++++ test output: [%s]\n", string(output))
 

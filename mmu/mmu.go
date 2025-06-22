@@ -20,8 +20,6 @@ type MMU struct {
 	ieRegister uint8
 	// 0xFF0F - Interrupt flag
 	ifRegister uint8
-	// for test output
-	serialOutputBuffer []uint8
 }
 
 func New(cartridge *cartridge.Cartridge) *MMU {
@@ -35,8 +33,8 @@ func New(cartridge *cartridge.Cartridge) *MMU {
 
 func (mmu *MMU) Reset() {
 	mmu.ioRegisters[0xFF00-0xFF00] = 0xCF // P1
-	mmu.ioRegisters[0xFF01-0xFF00] = 0x00 // SB
-	mmu.ioRegisters[0xFF02-0xFF00] = 0x7E // SC
+	// mmu.ioRegisters[0xFF01-0xFF00] = 0x00 // SB
+	// mmu.ioRegisters[0xFF02-0xFF00] = 0x7E // SC
 	// ioRegisters[0xFF03-0xFF00] = 0xFF // unused
 	// mmu.ioRegisters[0xFF04-0xFF00] = 0x18 // DIV
 	// mmu.ioRegisters[0xFF05-0xFF00] = 0x00 // TIMA
@@ -137,18 +135,6 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	default:
 		logger.Debug("unhandled address while writing <-")
 	}
-
-	// SB is the Serial Data register at address 0xFF01
-	// SC is the Serial Control register at address 0xFF02
-	if address == 0xFF02 && value == 0x81 {
-		mmu.serialOutputBuffer = append(mmu.serialOutputBuffer, mmu.ioRegisters[0x01])
-		mmu.ioRegisters[0x02] &= 0b0111_1111
-		mmu.RequestInterrupt(interrupt.SerialInterrupt)
-	}
-}
-
-func (mmu *MMU) SerialOutputBuffer() []byte {
-	return mmu.serialOutputBuffer
 }
 
 func (mmu *MMU) RequestInterrupt(interrupt interrupt.Interrupt) {

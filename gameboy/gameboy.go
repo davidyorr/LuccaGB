@@ -10,6 +10,7 @@ import (
 	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
+	"github.com/davidyorr/EchoGB/serial"
 	"github.com/davidyorr/EchoGB/timer"
 )
 
@@ -18,6 +19,7 @@ type Gameboy struct {
 	ppu       *ppu.PPU
 	mmu       *mmu.MMU
 	timer     *timer.Timer
+	serial    *serial.Serial
 	cartridge *cartridge.Cartridge
 }
 
@@ -26,10 +28,11 @@ func New() *Gameboy {
 	cpu := cpu.New()
 	ppu := ppu.New()
 	timer := timer.New()
+	serial := serial.New()
 	bus := bus.New()
 	mmu := mmu.New(cartridge)
 
-	bus.Connect(mmu, timer, ppu)
+	bus.Connect(mmu, timer, serial, ppu)
 	cpu.ConnectBus(bus)
 
 	return &Gameboy{
@@ -37,6 +40,7 @@ func New() *Gameboy {
 		ppu:       ppu,
 		mmu:       mmu,
 		timer:     timer,
+		serial:    serial,
 		cartridge: cartridge,
 	}
 }
@@ -53,10 +57,15 @@ func (gameboy *Gameboy) Step() error {
 		return err
 	}
 
-	requestInterrupt := gameboy.timer.Step(cycles)
-	if requestInterrupt {
+	requestTimerInterrupt := gameboy.timer.Step(cycles)
+	if requestTimerInterrupt {
 		gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
 	}
+	requestSerialInterrupt := gameboy.serial.Step(cycles)
+	if requestSerialInterrupt {
+		gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
+	}
+
 	gameboy.ppu.Step(cycles)
 
 	logger.Debug(

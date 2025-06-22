@@ -56,7 +56,7 @@ func (timer *Timer) Step(cycles uint8) bool {
 			frequency = 256
 		}
 
-		if timer.timaCounter >= frequency {
+		for timer.timaCounter >= frequency {
 			timer.timaCounter -= frequency
 			timer.tima++
 			// check for overflow

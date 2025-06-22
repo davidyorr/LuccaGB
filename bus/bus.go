@@ -6,13 +6,15 @@ import (
 	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
+	"github.com/davidyorr/EchoGB/serial"
 	"github.com/davidyorr/EchoGB/timer"
 )
 
 type Bus struct {
-	ppu   *ppu.PPU
-	mmu   *mmu.MMU
-	timer *timer.Timer
+	ppu    *ppu.PPU
+	mmu    *mmu.MMU
+	timer  *timer.Timer
+	serial *serial.Serial
 }
 
 func New() *Bus {
@@ -21,9 +23,10 @@ func New() *Bus {
 	return bus
 }
 
-func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, ppu *ppu.PPU) {
+func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial, ppu *ppu.PPU) {
 	bus.mmu = mmu
 	bus.timer = timer
+	bus.serial = serial
 	bus.ppu = ppu
 }
 
@@ -37,6 +40,9 @@ func (bus *Bus) Read(address uint16) uint8 {
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		value = bus.timer.Read(address)
+	// serial data transfer
+	case address == 0xFF01 || address == 0xFF02:
+		value = bus.serial.Read(address)
 	// handle everything else with the MMU
 	default:
 		value = bus.mmu.Read(address)
@@ -56,6 +62,9 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		bus.timer.Write(address, value)
+	// serial data transfer
+	case address == 0xFF01 || address == 0xFF02:
+		bus.serial.Write(address, value)
 	// handle everything else with the MMU
 	default:
 		bus.mmu.Write(address, value)
