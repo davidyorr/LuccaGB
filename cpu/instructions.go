@@ -133,7 +133,7 @@ var instructions = [256]instruction{
 	0x8D: {"ADC A, L", 0, adc_a_l},
 	0x8F: {"ADC A, A", 0, adc_a_a},
 	0x8E: {"ADC A, [HL]", 0, adc_a_hl},
-	0xCE: {"ADC A, n8", 0, adc_a_n8},
+	0xCE: {"ADC A, n8", 1, adc_a_n8},
 
 	0x80: {"ADD A, B", 0, add_a_b},
 	0x81: {"ADD A, C", 0, add_a_c},
