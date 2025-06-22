@@ -109,12 +109,15 @@ var instructions = [256]instruction{
 	0x12: {"LD [DE], A", 0, ld_de_a},
 	0xEA: {"LD [a16], A", 2, ld_a16_a},
 
-	0xE0: {"LDH [a8], A", 1, ldh_a8_a},
+	0xE0: {"LDH [a8], A", 1, ldh_at_a8_a},
+	0xE2: {"LDH [C], A", 0, ldh_at_c_a},
 	0xF0: {"LDH A, [a8]", 1, ldh_a_a8},
 
 	0x0A: {"LD A, [BC]", 0, ld_a_bc},
 	0x1A: {"LD A, [DE]", 0, ld_a_de},
 	0xFA: {"LD A, [a16]", 2, ld_a_a16},
+
+	0xF2: {"LDH A, [C]", 0, ldh_a_at_c},
 
 	0x22: {"LD [HL+], A", 0, ld_hli_a},
 	0x32: {"LD [HL-], A", 0, ld_hld_a},
@@ -178,6 +181,7 @@ var instructions = [256]instruction{
 	0x9D: {"SBC A, L", 0, sbc_a_l},
 	0x9F: {"SBC A, A", 0, sbc_a_a},
 	0x9E: {"SBC A, [HL]", 0, sbc_a_at_hl},
+	0xDE: {"SBC A, n8", 1, sbc_a_n8},
 
 	0x90: {"SUB A, B", 0, sub_a_b},
 	0x91: {"SUB A, C", 0, sub_a_c},
@@ -281,8 +285,9 @@ var instructions = [256]instruction{
 	0xE8: {"ADD SP, e8", 1, add_sp_e8},
 	0x3B: {"DEC SP", 0, dec_sp},
 	0x33: {"INC SP", 0, inc_sp},
-	0xF8: {"LD HL, SP + e8", 1, ld_hl_sp_e8},
 	0xF9: {"LD SP, HL", 0, ld_sp_hl},
+	0x08: {"LD [a16], SP", 2, ld_a16_sp},
+	0xF8: {"LD HL, SP + e8", 1, ld_hl_sp_e8},
 	0xC1: {"POP BC", 0, pop_bc},
 	0xD1: {"POP DE", 0, pop_de},
 	0xE1: {"POP HL", 0, pop_hl},
@@ -295,10 +300,12 @@ var instructions = [256]instruction{
 	// interrupt related instructions
 	0xF3: {"DI", 0, di},
 	0xFB: {"EI", 0, ei},
+	0x76: {"HALT", 0, halt},
 
 	// misc instructions
 	0x00: {"NOP", 0, nop},
 	0x27: {"DAA", 0, daa},
+	0x10: {"STOP", 1, stop},
 
 	// undefined opcodes
 	0xD3: {"NOP", 0, nop},
@@ -341,5 +348,6 @@ func (cpu *CPU) GetNumberOfUnimplementedInstructions() int {
 		}
 	}
 
-	return count
+	// subtract the prefix opcode 0xCB
+	return count - 1
 }

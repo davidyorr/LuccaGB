@@ -65,7 +65,14 @@ func (gameboy *Gameboy) Step() error {
 		"IE", fmt.Sprintf("%0X", gameboy.mmu.InterruptEnable()),
 		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
 	)
-	if gameboy.cpu.InterruptMasterEnable() && (gameboy.mmu.InterruptEnable()&gameboy.mmu.InterruptFlag() != 0) {
+
+	pendingInterrupts := gameboy.mmu.InterruptEnable() & gameboy.mmu.InterruptFlag()
+
+	if gameboy.cpu.Halted() && pendingInterrupts != 0 {
+		gameboy.cpu.Unhalt()
+	}
+
+	if gameboy.cpu.InterruptMasterEnable() && (pendingInterrupts != 0) {
 		gameboy.cpu.HandleInterrupts()
 	}
 

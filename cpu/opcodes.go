@@ -465,9 +465,15 @@ func ld_a_l(cpu *CPU) uint8 {
 }
 
 // 0xE0 Copy the value in register A into the byte at address n16, provided the address is between $FF00 and $FFFF
-func ldh_a8_a(cpu *CPU) uint8 {
+func ldh_at_a8_a(cpu *CPU) uint8 {
 	cpu.bus.Write(0xFF00+cpu.immediateValue, cpu.a)
 	return 12
+}
+
+// 0xE2 Copy the value in register A into the byte at address $FF00+C
+func ldh_at_c_a(cpu *CPU) uint8 {
+	cpu.bus.Write(0xFF00+uint16(cpu.c), cpu.a)
+	return 8
 }
 
 // 0xF0 Copy the byte at address n16 into register A, provided the address is between $FF00 and $FFFF
@@ -504,6 +510,12 @@ func ld_a_hl(cpu *CPU) uint8 {
 func ld_a_a16(cpu *CPU) uint8 {
 	cpu.a = cpu.bus.Read(cpu.immediateValue)
 	return 16
+}
+
+// 0xF2 Copy the byte at address $FF00+C into register A
+func ldh_a_at_c(cpu *CPU) uint8 {
+	cpu.a = cpu.bus.Read(0xFF00 + uint16(cpu.c))
+	return 8
 }
 
 // 0x22 Copy the value in register A into the byte pointed by HL and increment HL afterwards
@@ -932,6 +944,12 @@ func sbc_a_a(cpu *CPU) uint8 {
 // 0x9E Subtract the byte pointed to by HL and the carry flag from A
 func sbc_a_at_hl(cpu *CPU) uint8 {
 	cpu.sbc_a_r8(cpu.bus.Read(cpu.getHL()))
+	return 8
+}
+
+// 0xDE Subtract the value n8 and the carry flag from A
+func sbc_a_n8(cpu *CPU) uint8 {
+	cpu.sbc_a_r8(uint8(cpu.immediateValue))
 	return 8
 }
 
@@ -1648,6 +1666,19 @@ func inc_sp(cpu *CPU) uint8 {
 	return 8
 }
 
+// 0xF9 Copy register HL into register SP
+func ld_sp_hl(cpu *CPU) uint8 {
+	cpu.sp = cpu.getHL()
+	return 8
+}
+
+// 0x08 Copy SP & $FF at address n16 and SP >> 8 at address n16 + 1
+func ld_a16_sp(cpu *CPU) uint8 {
+	cpu.bus.Write(cpu.immediateValue, uint8(cpu.sp&0xFF))
+	cpu.bus.Write(cpu.immediateValue+1, uint8(cpu.sp>>8))
+	return 20
+}
+
 // 0xF8 Add the signed value e8 to SP and copy the result in HL
 func ld_hl_sp_e8(cpu *CPU) uint8 {
 	originalSp := cpu.sp
@@ -1660,12 +1691,6 @@ func ld_hl_sp_e8(cpu *CPU) uint8 {
 	cpu.setFlag(FlagN, false)
 	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
 	return 12
-}
-
-// 0xF9 Copy register HL into register SP
-func ld_sp_hl(cpu *CPU) uint8 {
-	cpu.sp = cpu.getHL()
-	return 8
 }
 
 // 0xC1 Pop register r16 from the stack
@@ -1732,6 +1757,24 @@ func ei(cpu *CPU) uint8 {
 	return 4
 }
 
+// 0x76 Enter CPU low-power consumption mode until an interrupt occurs
+func halt(cpu *CPU) uint8 {
+	interruptEnable := cpu.bus.Read(0xFFFF)
+	interruptFlag := cpu.bus.Read(0xFF0F)
+
+	if cpu.InterruptMasterEnable() {
+		cpu.Halt()
+	} else {
+		if (interruptEnable & interruptFlag) != 0 {
+			cpu.haltBugActive = false
+		} else {
+			cpu.Halt()
+		}
+	}
+	cpu.Halt()
+	return 4
+}
+
 // 0x00 No OPeration
 func nop(cpu *CPU) uint8 {
 	return 4
@@ -1770,6 +1813,15 @@ func daa(cpu *CPU) uint8 {
 	cpu.setFlag(FlagH, false)
 	cpu.setFlag(FlagC, flagC)
 
+	return 4
+}
+
+// 0x10 Enter CPU very low power mode
+//
+// Not implementing this for now because:
+//
+//	No licensed rom makes use of STOP outside of CGB speed switching.
+func stop(cpu *CPU) uint8 {
 	return 4
 }
 

@@ -27,6 +27,8 @@ type CPU struct {
 	ime            bool
 	imeScheduled   bool
 	immediateValue uint16
+	halted         bool
+	haltBugActive  bool
 	bus            *bus.Bus
 }
 
@@ -49,6 +51,8 @@ func (cpu *CPU) Reset() {
 	cpu.l = 0x4D
 	cpu.pc = 0x0100
 	cpu.sp = 0xFFFE
+	cpu.halted = false
+	cpu.haltBugActive = false
 }
 
 func (cpu *CPU) ConnectBus(bus *bus.Bus) {
@@ -56,6 +60,13 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 }
 
 func (cpu *CPU) Step() (uint8, error) {
+	if cpu.halted {
+		return 4, nil
+	}
+	haltBugWasActive := cpu.haltBugActive
+	if cpu.haltBugActive {
+		cpu.haltBugActive = false
+	}
 	if cpu.imeScheduled {
 		cpu.ime = true
 		cpu.imeScheduled = false
@@ -105,7 +116,11 @@ func (cpu *CPU) Step() (uint8, error) {
 
 	// don't update the PC if the opcode did
 	if cpu.pc == originalPc {
-		cpu.pc += 1 + uint16(instruction.operandLength)
+		if haltBugWasActive {
+			// don't update the PC if the halt bug was active
+		} else {
+			cpu.pc += 1 + uint16(instruction.operandLength)
+		}
 	}
 
 	return cycles, nil
@@ -294,4 +309,16 @@ func (cpu *CPU) InterruptMasterEnable() bool {
 
 func (cpu *CPU) ScheduleIme() {
 	cpu.imeScheduled = true
+}
+
+func (cpu *CPU) Halt() {
+	cpu.halted = true
+}
+
+func (cpu *CPU) Unhalt() {
+	cpu.halted = false
+}
+
+func (cpu *CPU) Halted() bool {
+	return cpu.halted
 }
