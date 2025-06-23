@@ -1136,7 +1136,7 @@ func and_a_n8(cpu *CPU) uint8 {
 
 // 0x2F ComPLement accumulator (A = ~A); also called bitwise NOT
 func cpl(cpu *CPU) uint8 {
-	cpu.a ^= cpu.a
+	cpu.a = ^cpu.a
 	cpu.setFlag(FlagN, true)
 	cpu.setFlag(FlagH, true)
 	return 4

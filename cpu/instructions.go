@@ -215,7 +215,7 @@ var instructions = [256]instruction{
 	0xA6: {"AND A, [HL]", 0, and_a_at_hl},
 	0xE6: {"AND A, n8", 1, and_a_n8},
 
-	0x2F: {"CPL", 1, cpl},
+	0x2F: {"CPL", 0, cpl},
 
 	0xA8: {"XOR A, B", 0, xor_a_b},
 	0xA9: {"XOR A, C", 0, xor_a_c},
