@@ -248,25 +248,18 @@ func (cpu *CPU) set_r8(r8 uint8, value uint8) uint8 {
 	switch r8 {
 	case 0b000:
 		cpu.b = value
-		return 8
 	case 0b001:
 		cpu.c = value
-		return 8
 	case 0b010:
 		cpu.d = value
-		return 8
 	case 0b011:
 		cpu.e = value
-		return 8
 	case 0b100:
 		cpu.h = value
-		return 8
 	case 0b101:
 		cpu.l = value
-		return 8
 	case 0b111:
 		cpu.a = value
-		return 8
 	case 0b110:
 		// special case
 		cpu.bus.Write(cpu.getHL(), value)

@@ -758,7 +758,7 @@ func cp_a_hl(cpu *CPU) uint8 {
 // 0xFE ComPare the value in A with the value n8
 func cp_a_n8(cpu *CPU) uint8 {
 	cpu.sub(uint8(cpu.immediateValue))
-	return 4
+	return 8
 }
 
 // Decrement the value in register r8 by 1
