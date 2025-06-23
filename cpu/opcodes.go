@@ -700,7 +700,7 @@ func (cpu *CPU) sub(value uint8) uint8 {
 	difference := originalA - value
 	cpu.setFlag(FlagZ, difference == 0)
 	cpu.setFlag(FlagN, true)
-	cpu.setFlag(FlagC, originalA >= value)
+	cpu.setFlag(FlagC, value > originalA)
 	cpu.setFlag(FlagH, (originalA&0x0F) < (value&0x0F))
 
 	return difference
