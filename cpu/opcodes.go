@@ -557,11 +557,12 @@ func (cpu *CPU) adc_a_r8(r8 uint8) {
 	if cpu.getFlag(FlagC) {
 		carryFlag = 1
 	}
-	sum := originalA + r8 + carryFlag
-	cpu.a = sum
-	cpu.setFlag(FlagZ, sum == 0)
+	sum := uint16(originalA) + uint16(r8) + uint16(carryFlag)
+	cpu.a = uint8(sum)
+
+	cpu.setFlag(FlagZ, cpu.a == 0)
 	cpu.setFlag(FlagN, false)
-	cpu.setFlag(FlagC, sum < originalA)
+	cpu.setFlag(FlagC, sum > 0xFF)
 	cpu.setFlag(FlagH, ((originalA&0x0F)+(r8&0x0F)+carryFlag) > 0x0F)
 }
 
@@ -613,7 +614,7 @@ func adc_a_hl(cpu *CPU) uint8 {
 	return 8
 }
 
-// 0xCE Add the byte pointed to by HL plus the carry flag to A
+// 0xCE Add the value n8 plus the carry flag to A
 func adc_a_n8(cpu *CPU) uint8 {
 	cpu.adc_a_r8(uint8(cpu.immediateValue))
 	return 8
@@ -825,7 +826,7 @@ func (cpu *CPU) inc_r8(r8 uint8) uint8 {
 	cpu.setFlag(FlagZ, result == 0)
 	cpu.setFlag(FlagN, false)
 	// if overflow from bit 3
-	cpu.setFlag(FlagH, (r8&0x0F)+1 > 0x0F)
+	cpu.setFlag(FlagH, (r8&0x0F) == 0x0F)
 	return result
 }
 
@@ -890,13 +891,13 @@ func (cpu *CPU) sbc_a_r8(r8 uint8) {
 		carryValue = 1
 	}
 	originalA := cpu.a
-	subtrahend := r8 + carryValue
-	difference := originalA - subtrahend
+	subtrahend := uint16(r8) + uint16(carryValue)
+	difference := originalA - uint8(subtrahend)
 	cpu.a = difference
 	cpu.setFlag(FlagZ, difference == 0)
 	cpu.setFlag(FlagN, true)
 	cpu.setFlag(FlagH, (originalA&0x0F) < (r8&0x0F)+carryValue)
-	cpu.setFlag(FlagC, (r8+carryValue) > originalA)
+	cpu.setFlag(FlagC, uint16(originalA) < subtrahend)
 }
 
 // 0x98 Subtract the value in r8 and the carry flag from A
