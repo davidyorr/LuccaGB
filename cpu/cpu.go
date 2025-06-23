@@ -85,18 +85,6 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	instruction := instructions[opcode]
-	logger.Info(
-		"CPU STEP",
-		"PC", fmt.Sprintf("0x%04X", cpu.pc),
-		"SP", fmt.Sprintf("0x%04X", cpu.sp),
-		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
-		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
-		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
-		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
-		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", opcode, instruction.operandLength, cpu.immediateValue),
-		"instruction", instruction.mnemonic,
-	)
-
 	if instruction.execute == nil {
 		logger.Debug("Go: unimplemented instruction 0x%02X\n", opcode)
 		return 0, fmt.Errorf("unimplemented instruction 0x%02X", opcode)
@@ -110,6 +98,18 @@ func (cpu *CPU) Step() (uint8, error) {
 		highByte := cpu.bus.Read(cpu.pc + 2)
 		cpu.immediateValue = (uint16(highByte) << 8) | uint16(lowByte)
 	}
+
+	logger.Info(
+		"CPU STEP",
+		"PC", fmt.Sprintf("0x%04X", cpu.pc),
+		"SP", fmt.Sprintf("0x%04X", cpu.sp),
+		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
+		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
+		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
+		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
+		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", opcode, instruction.operandLength, cpu.immediateValue),
+		"instruction", instruction.mnemonic,
+	)
 
 	originalPc := cpu.pc
 	cycles := instruction.execute(cpu)
