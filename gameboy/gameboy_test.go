@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -31,10 +32,12 @@ func (lb *logBuffer) LastN(n int) []string {
 	return lb.messages[len(lb.messages)-n:]
 }
 
-func TestBlarggCpuInsructions(t *testing.T) {
-	// 1. Redirect logs to a buffer
-	var logBuffer logBuffer
-	testLogger := slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{
+func initTestLogger() (*logBuffer, *slog.Logger) {
+	// Redirect logs to a buffer
+	logBuffer := &logBuffer{
+		messages: make([]string, 0),
+	}
+	testLogger := slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey {
@@ -44,6 +47,11 @@ func TestBlarggCpuInsructions(t *testing.T) {
 		},
 	}))
 
+	return logBuffer, testLogger
+}
+
+func TestBlarggCpuInsructions(t *testing.T) {
+	logBuffer, testLogger := initTestLogger()
 	logger.Init(testLogger.Handler())
 	defer logger.Init(slog.Default().Handler())
 
@@ -58,24 +66,53 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	for range 10_000_000 {
 		err := gb.Step()
 		if err != nil {
-			output := gb.serial.SerialOutputBuffer()
-			t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
-			t.Logf("++++++ test output: [%s]\n", string(output))
+			output := string(gb.serial.SerialOutputBuffer())
+			t.Logf("\n============\n%s\n============\n", output)
 			if testing.Verbose() {
-				for _, line := range logBuffer.LastN(20) {
+				for _, line := range logBuffer.LastN(40) {
 					fmt.Fprint(os.Stdout, line)
 				}
 			}
 			t.Fatal(err)
 		}
 	}
-	output := gb.serial.SerialOutputBuffer()
-	t.Log("unprefixed instructions remaining:", gb.cpu.GetNumberOfUnimplementedInstructions())
-	t.Logf("++++++ test output: [%s]\n", string(output))
+	output := string(gb.serial.SerialOutputBuffer())
+	t.Logf("\n============\n%s\n============\n", output)
 
 	if testing.Verbose() {
-		for _, line := range logBuffer.LastN(20) {
+		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
 	}
+}
+
+func TestBlarggInstructionTiming(t *testing.T) {
+	logBuffer, testLogger := initTestLogger()
+	logger.Init(testLogger.Handler())
+	defer logger.Init(slog.Default().Handler())
+
+	romBytes, err := os.ReadFile("../roms/test/instr_timing.gb")
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+	}
+
+	gb := New()
+	gb.LoadRom(romBytes)
+
+	for range 1_000_000 {
+		err := gb.Step()
+		output := string(gb.serial.SerialOutputBuffer())
+		if err != nil {
+			t.Logf("\n============\n%s\n============\n", output)
+			for _, line := range logBuffer.LastN(40) {
+				fmt.Fprint(os.Stdout, line)
+			}
+			t.Fatal(err)
+		}
+		if strings.Contains(output, "Passed") {
+			break
+		}
+	}
+	output := string(gb.serial.SerialOutputBuffer())
+	t.Logf("\n============\n%s\n============\n", output)
 }
