@@ -24,12 +24,21 @@ type CPU struct {
 	h uint8
 	l uint8
 	// interrupt master enable flag
-	ime            bool
-	imeScheduled   bool
+	ime          bool
+	imeScheduled bool
+	// the current instruction
+	instruction *instruction
+	// the current opcode
+	opcode uint8
+	// the current CB opcode
+	cbOpcode *uint8
+	// the current immediate value
 	immediateValue uint16
-	halted         bool
-	haltBugActive  bool
-	bus            *bus.Bus
+	// the current M-cycle, 1 indexed
+	mCycle        uint8
+	halted        bool
+	haltBugActive bool
+	bus           *bus.Bus
 }
 
 func New() *CPU {
@@ -59,6 +68,7 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 	cpu.bus = bus
 }
 
+// Return the number of T-Cycles taken
 func (cpu *CPU) Step() (uint8, error) {
 	if cpu.halted {
 		return 4, nil
@@ -71,59 +81,71 @@ func (cpu *CPU) Step() (uint8, error) {
 		cpu.ime = true
 		cpu.imeScheduled = false
 	}
-	cpu.immediateValue = 0
 
-	opcode := cpu.bus.Read(cpu.pc)
+	// start new instruction
+	if cpu.instruction == nil {
+		cpu.opcode = cpu.bus.Read(cpu.pc)
+		cpu.instruction = &instructions[cpu.opcode]
+		cpu.mCycle = 1
+		cpu.immediateValue = 0
+	}
 
 	// handle cb prefixed instructions
-	if opcode == 0xCB {
-		cbOpcode := cpu.bus.Read(cpu.pc + 1)
-		cycles := cpu.executeCbInstruction(cbOpcode)
-		cpu.pc += 2
+	if cpu.opcode == 0xCB {
+		if cpu.cbOpcode == nil {
+			cbOpcode := cpu.bus.Read(cpu.pc + 1)
+			cpu.cbOpcode = &cbOpcode
+		}
+		tCycles, done := cpu.executeCbInstructionStep(*cpu.cbOpcode)
 
-		return cycles, nil
+		if done {
+			cpu.pc += 2
+			cpu.instruction = nil
+			cpu.cbOpcode = nil
+		}
+
+		cpu.mCycle++
+
+		return tCycles, nil
 	}
 
-	instruction := instructions[opcode]
-	if instruction.execute == nil {
-		logger.Debug("Go: unimplemented instruction 0x%02X\n", opcode)
-		return 0, fmt.Errorf("unimplemented instruction 0x%02X", opcode)
+	var cbo uint8 = 0
+	if cpu.cbOpcode != nil {
+		cbo = *cpu.cbOpcode
 	}
 
-	switch instruction.operandLength {
-	case 1:
-		cpu.immediateValue = uint16(cpu.bus.Read(cpu.pc + 1))
-	case 2:
-		lowByte := cpu.bus.Read(cpu.pc + 1)
-		highByte := cpu.bus.Read(cpu.pc + 2)
-		cpu.immediateValue = (uint16(highByte) << 8) | uint16(lowByte)
-	}
+	originalPc := cpu.pc
+	tCycles, done := cpu.instruction.step(cpu)
 
 	logger.Info(
 		"CPU STEP",
-		"PC", fmt.Sprintf("0x%04X", cpu.pc),
+		"PC", fmt.Sprintf("0x%04X", originalPc),
 		"SP", fmt.Sprintf("0x%04X", cpu.sp),
 		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
 		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
 		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
 		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
-		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", opcode, instruction.operandLength, cpu.immediateValue),
-		"instruction", instruction.mnemonic,
+		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", cpu.opcode, cpu.instruction.operandLength, cpu.immediateValue),
+		"cb", fmt.Sprintf("0x%02X", cbo),
+		"instruction", cpu.instruction.mnemonic,
 	)
 
-	originalPc := cpu.pc
-	cycles := instruction.execute(cpu)
-
-	// don't update the PC if the opcode did
-	if cpu.pc == originalPc {
-		if haltBugWasActive {
-			// don't update the PC if the halt bug was active
-		} else {
-			cpu.pc += 1 + uint16(instruction.operandLength)
+	if done {
+		// don't update the PC if the opcode did
+		if cpu.pc == originalPc {
+			if haltBugWasActive {
+				// don't update the PC if the halt bug was active
+			} else {
+				cpu.pc += 1 + uint16(cpu.instruction.operandLength)
+			}
 		}
+		// reset state
+		cpu.instruction = nil
 	}
 
-	return cycles, nil
+	cpu.mCycle++
+
+	return tCycles, nil
 }
 
 func (cpu *CPU) HandleInterrupts() {
@@ -294,6 +316,16 @@ func (cpu *CPU) setFlag(flag Flag, value bool) {
 		// clear the bit
 		cpu.f &= ^(1 << flag)
 	}
+}
+
+func (cpu *CPU) fetchImmLowByte() {
+	lowByte := cpu.bus.Read(cpu.pc + 1)
+	cpu.immediateValue |= uint16(lowByte)
+}
+
+func (cpu *CPU) fetchImmHighByte() {
+	highByte := cpu.bus.Read(cpu.pc + 2)
+	cpu.immediateValue |= (uint16(highByte) << 8)
 }
 
 func (cpu *CPU) InterruptMasterEnable() bool {

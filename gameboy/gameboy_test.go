@@ -63,7 +63,7 @@ func TestBlarggCpuInsructions(t *testing.T) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for range 10_000_000 {
+	for range 20_000_000 {
 		err := gb.Step()
 		if err != nil {
 			output := string(gb.serial.SerialOutputBuffer())
@@ -103,6 +103,37 @@ func TestBlarggInstructionTiming(t *testing.T) {
 		err := gb.Step()
 		output := string(gb.serial.SerialOutputBuffer())
 		if err != nil {
+			t.Logf("\n============\n%s\n============\n", output)
+			for _, line := range logBuffer.LastN(40) {
+				fmt.Fprint(os.Stdout, line)
+			}
+			t.Fatal(err)
+		}
+		if strings.Contains(output, "Passed") {
+			break
+		}
+	}
+	output := string(gb.serial.SerialOutputBuffer())
+	t.Logf("\n============\n%s\n============\n", output)
+}
+
+func TestBlarggMemoryTiming(t *testing.T) {
+	logBuffer, testLogger := initTestLogger()
+	logger.Init(testLogger.Handler())
+	defer logger.Init(slog.Default().Handler())
+
+	romBytes, err := os.ReadFile("../roms/test/01-read_timing.gb")
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+	}
+
+	gb := New()
+	gb.LoadRom(romBytes)
+
+	for range 2_000_000 {
+		err := gb.Step()
+		output := string(gb.serial.SerialOutputBuffer())
+		if err != nil || strings.Contains(output, "Failed") {
 			t.Logf("\n============\n%s\n============\n", output)
 			for _, line := range logBuffer.LastN(40) {
 				fmt.Fprint(os.Stdout, line)
