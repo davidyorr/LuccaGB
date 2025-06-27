@@ -9,6 +9,7 @@ import (
 var (
 	globalLogger *slog.Logger
 	once         sync.Once
+	LogLevel     = "error"
 )
 
 func Init(handler slog.Handler) {
@@ -18,9 +19,25 @@ func Init(handler slog.Handler) {
 }
 
 func logger() *slog.Logger {
-	if globalLogger == nil {
-		Init(slog.NewTextHandler(os.Stderr, nil))
-	}
+	once.Do(func() {
+		var level slog.Level
+		switch LogLevel {
+		case "debug":
+			level = slog.LevelDebug
+		case "info":
+			level = slog.LevelInfo
+		case "warn":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		default:
+			level = slog.LevelError
+		}
+		handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			Level: level,
+		})
+		globalLogger = slog.New(handler)
+	})
 	return globalLogger
 }
 

@@ -51,10 +51,10 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 	gameboy.cartridge.LoadRom(rom)
 }
 
-func (gameboy *Gameboy) Step() error {
+func (gameboy *Gameboy) Step() (uint8, error) {
 	cycles, err := gameboy.cpu.Step()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	requestTimerInterrupt := gameboy.timer.Step(cycles)
@@ -85,5 +85,5 @@ func (gameboy *Gameboy) Step() error {
 		gameboy.cpu.HandleInterrupts()
 	}
 
-	return nil
+	return cycles, nil
 }

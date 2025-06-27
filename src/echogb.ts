@@ -1,12 +1,19 @@
-const go = new Go();
+import type { WasmExports } from "./wasm";
 
-WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
-	(wasmModule) => {
-		go.run(wasmModule.instance);
-	},
-);
+let wasmExports: WasmExports;
+
+(window as any).onRomLoaded = onRomLoaded;
 
 document.addEventListener("DOMContentLoaded", () => {
+	const go = new Go();
+
+	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
+		(wasmModule) => {
+			wasmExports = wasmModule.instance.exports as WasmExports;
+			go.run(wasmModule.instance);
+		},
+	);
+
 	document
 		.getElementById("rom-input")
 		?.addEventListener("change", async (event) => {
@@ -18,3 +25,20 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 });
+
+// ============ GAME LOOP ============
+
+let animationFrameId: number | undefined;
+
+function handleAnimationFrame() {
+	wasmExports.processEmulatorStep();
+}
+
+function startAnimationLoop() {
+	cancelAnimationFrame(animationFrameId!);
+	handleAnimationFrame();
+}
+
+function onRomLoaded() {
+	startAnimationLoop();
+}
