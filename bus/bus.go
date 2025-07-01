@@ -59,6 +59,9 @@ func (bus *Bus) Read(address uint16) uint8 {
 
 func (bus *Bus) Write(address uint16, value uint8) {
 	switch {
+	// PPU
+	case address >= 0xFF40 && address <= 0xFF4B:
+		bus.ppu.Write(address, value)
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		bus.timer.Write(address, value)
