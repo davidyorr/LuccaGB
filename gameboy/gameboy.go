@@ -26,11 +26,11 @@ type Gameboy struct {
 func New() *Gameboy {
 	cartridge := cartridge.New()
 	cpu := cpu.New()
-	ppu := ppu.New()
 	timer := timer.New()
 	serial := serial.New()
 	bus := bus.New()
 	mmu := mmu.New(cartridge)
+	ppu := ppu.New(mmu.RequestInterrupt)
 
 	bus.Connect(mmu, timer, serial, ppu)
 	cpu.ConnectBus(bus)

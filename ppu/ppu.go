@@ -1,5 +1,12 @@
 package ppu
 
+import (
+	"fmt"
+
+	"github.com/davidyorr/EchoGB/interrupt"
+	"github.com/davidyorr/EchoGB/logger"
+)
+
 type PPU struct {
 	// 0x8000 - 0x97FF
 	vramTileData [6144]uint8
@@ -15,6 +22,12 @@ type PPU struct {
 	// 0xFF45 - LYC: LY compare
 	lyc uint8
 	// 0xFF41 - STAT: LCD status
+	//	6 - LYC int select
+	//	5 - Mode 2 int select
+	//	4 - Mode 1 int select
+	//	3 - Mode 0 int select
+	//	2 - LYC == ly
+	//	1 0 - PPU mode
 	stat uint8
 	// 0xFF42 - SCY: Background viewport Y position
 	scy uint8
@@ -23,15 +36,18 @@ type PPU struct {
 	// 0xFF4A - WY: Window Y position
 	wy uint8
 	// 0xFF4B - WX: Window X position plus 7
-	wx      uint8
-	counter uint16
+	wx                 uint8
+	mode               Mode
+	interruptRequester func(interruptType interrupt.Interrupt)
+	counter            uint16
 }
 
 // 1 dot = T-cycle
 const dotsPerScanline = 456
 
-func New() *PPU {
+func New(interruptRequest func(interrupt.Interrupt)) *PPU {
 	ppu := &PPU{}
+	ppu.interruptRequester = interruptRequest
 
 	ppu.Reset()
 
@@ -47,17 +63,45 @@ func (ppu *PPU) Reset() {
 	ppu.scx = 0x00
 	ppu.wy = 0x00
 	ppu.wx = 0x00
+	ppu.mode = OamScan
 	ppu.counter = 0
 }
 
 func (ppu *PPU) Step(cycles uint8) {
+	if !ppu.lcdEnabled() {
+		return
+	}
+
 	ppu.counter += uint16(cycles)
 
-	if ppu.counter > dotsPerScanline {
-		ppu.ly++
-		ppu.counter -= dotsPerScanline
-		if ppu.ly == 154 {
-			ppu.ly = 0
+	switch ppu.mode {
+	case OamScan:
+		if ppu.counter >= 80 {
+			ppu.changeMode(DrawingPixels)
+		}
+	case DrawingPixels:
+		// if counter has reached end of pixel transfer period
+		if ppu.counter >= 252 {
+			ppu.changeMode(HorizontalBlank)
+		}
+	case VerticalBlank:
+	case HorizontalBlank:
+		if ppu.counter >= dotsPerScanline {
+			ppu.ly++
+			ppu.compareLycLy()
+			ppu.counter -= dotsPerScanline
+
+			if ppu.ly < 144 {
+				ppu.changeMode(OamScan)
+			}
+			if ppu.ly == 144 {
+				ppu.changeMode(VerticalBlank)
+				ppu.interruptRequester(interrupt.VBlankInterrupt)
+			}
+			if ppu.ly == 154 {
+				ppu.ly = 0
+				ppu.compareLycLy()
+			}
 		}
 	}
 }
@@ -67,4 +111,61 @@ func (ppu *PPU) Read(address uint16) uint8 {
 		return ppu.ly
 	}
 	return 0
+}
+
+func (ppu *PPU) Write(address uint16, value uint8) {
+	logger.Debug(
+		"PPU Write",
+		"Address", fmt.Sprintf("0x%04X", address),
+		"Value", fmt.Sprintf("0x%02X", value),
+	)
+	switch {
+	case address == 0xFF40:
+		ppu.lcdc = value
+	default:
+		logger.Debug("unhandled address while writing <-")
+	}
+}
+
+type Mode uint8
+
+const (
+	HorizontalBlank Mode = 0b00
+	VerticalBlank   Mode = 0b01
+	OamScan         Mode = 0b10
+	DrawingPixels   Mode = 0b11
+)
+
+func (ppu *PPU) changeMode(mode Mode) {
+	ppu.mode = mode
+	ppu.stat = (ppu.stat & 0b1111_1100) | uint8(mode)
+
+	// Mode 0 (Horizontal Blank)
+	if mode == HorizontalBlank && ((ppu.stat & 0b0000_1000) != 0) {
+		ppu.interruptRequester(interrupt.LcdInterrupt)
+	}
+	// Mode 1 (Vertical Blan)
+	if mode == VerticalBlank && ((ppu.stat & 0b0001_0000) != 0) {
+		ppu.interruptRequester(interrupt.LcdInterrupt)
+	}
+	// Mode 2 (OAM Scan)
+	if mode == OamScan && ((ppu.stat & 0b0010_0000) != 0) {
+		ppu.interruptRequester(interrupt.LcdInterrupt)
+	}
+}
+
+func (ppu *PPU) compareLycLy() {
+	if ppu.lyc == ppu.ly {
+		ppu.stat |= 0b0000_0100
+		// LYC int select
+		if (ppu.stat & 0b0100_0000) != 0 {
+			ppu.interruptRequester(interrupt.LcdInterrupt)
+		}
+	} else {
+		ppu.stat &^= 0b0000_0100
+	}
+}
+
+func (ppu *PPU) lcdEnabled() bool {
+	return (ppu.lcdc & 0b1000_0000) != 0
 }
