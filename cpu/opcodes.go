@@ -2315,7 +2315,7 @@ func (cpu *CPU) bit_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 	case 2:
 		// fetch opcode
 		if !hlOperation {
-			testValue, _ := cpu.get_r8(r8)
+			testValue := cpu.get_r8(r8)
 			cpu.immediateValue = uint16(testValue)
 			bit := (uint8(cpu.immediateValue) >> u3) & 1
 			setFlags(bit)
@@ -2324,7 +2324,7 @@ func (cpu *CPU) bit_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 		return 4, false
 	case 3:
 		// at this point, it should be the special HL case
-		testValue, _ := cpu.get_r8(r8)
+		testValue := cpu.get_r8(r8)
 		cpu.immediateValue = uint16(testValue)
 		bit := (uint8(cpu.immediateValue) >> u3) & 1
 		setFlags(bit)
@@ -2337,20 +2337,50 @@ func (cpu *CPU) bit_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 //
 // RES u3,[HL] - Set bit u3 in the byte pointed by HL to 0.
 func (cpu *CPU) res_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
-	value, fetchCycles := cpu.get_r8(r8)
-	writeCycles := cpu.set_r8(r8, value & ^(1<<u3))
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			cpu.set_r8(r8, value & ^(1<<u3))
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		cpu.set_r8(r8, cpu.mdr & ^(1<<u3))
+		return 4, true
+	}
 
-	return 8 + fetchCycles + writeCycles, true
+	return 4, true
 }
 
 // SET u3,r8 - Set bit u3 in register r8 to 1.
 //
 // SET u3,[HL] - Set bit u3 in the byte pointed by HL to 1.
 func (cpu *CPU) set_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
-	value, fetchCycles := cpu.get_r8(r8)
-	writeCycles := cpu.set_r8(r8, value|(1<<u3))
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			cpu.set_r8(r8, value|(1<<u3))
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		cpu.set_r8(r8, cpu.mdr|(1<<u3))
+		return 4, true
+	}
 
-	return 8 + fetchCycles + writeCycles, true
+	return 4, true
 }
 
 // SLA r8 - Shift Left Arithmetically register r8.
@@ -2381,94 +2411,345 @@ func (cpu *CPU) set_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 //
 // RR [HL] - Rotate the byte pointed to by HL right, through the carry flag.
 func (cpu *CPU) shift_rotate_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
-	value, fetchCycles := cpu.get_r8(r8)
+	var fetchCycles uint8 = 4
 	var writeCycles uint8 = 0
 
 	// parse the middle 3 bits
 	switch u3 {
 	case 0b000:
 		// RLC
-		bit7 := (value & 0b1000_0000)
-		result := (value << 1) | (bit7 >> 7)
-		writeCycles = cpu.set_r8(r8, result)
-		cpu.setFlag(FlagZ, result == 0)
-		cpu.setFlag(FlagN, false)
-		cpu.setFlag(FlagH, false)
-		cpu.setFlag(FlagC, (bit7>>7) == 1)
+		return cpu.rlc(r8)
 	case 0b001:
 		// RRC
-		bit0 := value & 1
-		result := (value >> 1) | (bit0 << 7)
-		writeCycles = cpu.set_r8(r8, result)
-		cpu.setFlag(FlagZ, result == 0)
-		cpu.setFlag(FlagN, false)
-		cpu.setFlag(FlagH, false)
-		cpu.setFlag(FlagC, bit0 == 1)
+		return cpu.rrc(r8)
 	case 0b010:
 		// RL
-		bit7 := (value & 0b1000_0000)
-		var mask uint8 = 0
-		if cpu.getFlag(FlagC) {
-			mask = 1
-		}
-		result := (value << 1) | (mask)
-		writeCycles = cpu.set_r8(r8, result)
-		cpu.setFlag(FlagZ, result == 0)
-		cpu.setFlag(FlagN, false)
-		cpu.setFlag(FlagH, false)
-		cpu.setFlag(FlagC, (bit7>>7) == 1)
+		return cpu.rl(r8)
 	case 0b011:
 		// RR
-		bit0 := value & 1
-		var mask uint8 = 0
-		if cpu.getFlag(FlagC) {
-			mask = 1
-		}
-		result := (value >> 1) | (mask << 7)
-		writeCycles = cpu.set_r8(r8, result)
-		cpu.setFlag(FlagZ, result == 0)
-		cpu.setFlag(FlagN, false)
-		cpu.setFlag(FlagH, false)
-		cpu.setFlag(FlagC, bit0 == 1)
+		return cpu.rr(r8)
 	case 0b100:
 		// SLA
-		bit7 := (value & 0b1000_0000)
-		result := value << 1
-		writeCycles = cpu.set_r8(r8, result)
+		return cpu.sla(r8)
+	case 0b101:
+		// SRA
+		return cpu.sra(r8)
+	case 0b111:
+		// SRL
+		return cpu.srl(r8)
+	case 0b110:
+		// SWAP
+		return cpu.swap(r8)
+	}
+
+	return 8 + fetchCycles + writeCycles, true
+}
+
+func (cpu *CPU) rlc(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit7 uint8) {
 		cpu.setFlag(FlagZ, result == 0)
 		cpu.setFlag(FlagN, false)
 		cpu.setFlag(FlagH, false)
 		cpu.setFlag(FlagC, (bit7>>7) == 1)
-	case 0b101:
-		// SRA
-		bit0 := value & 1
-		bit7 := (value & 0b1000_0000)
-		result := (value >> 1) | bit7
-		writeCycles = cpu.set_r8(r8, result)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit7 := (value & 0b1000_0000)
+			result := (value << 1) | (bit7 >> 7)
+			cpu.set_r8(r8, result)
+			setFlags(result, bit7)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit7 := (cpu.mdr & 0b1000_0000)
+		result := (cpu.mdr << 1) | (bit7 >> 7)
+		cpu.set_r8(r8, result)
+		setFlags(result, bit7)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) rrc(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit0 uint8) {
 		cpu.setFlag(FlagZ, result == 0)
 		cpu.setFlag(FlagN, false)
 		cpu.setFlag(FlagH, false)
 		cpu.setFlag(FlagC, bit0 == 1)
-	case 0b111:
-		// SRL
-		bit0 := value & 1
-		result := value >> 1
-		writeCycles = cpu.set_r8(r8, result)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit0 := value & 1
+			result := (value >> 1) | (bit0 << 7)
+			cpu.set_r8(r8, result)
+			cpu.set_r8(r8, result)
+			setFlags(result, bit0)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit0 := cpu.mdr & 1
+		result := (cpu.mdr >> 1) | (bit0 << 7)
+		cpu.set_r8(r8, result)
+		setFlags(result, bit0)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) rl(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit7 uint8) {
+		cpu.setFlag(FlagZ, result == 0)
+		cpu.setFlag(FlagN, false)
+		cpu.setFlag(FlagH, false)
+		cpu.setFlag(FlagC, (bit7>>7) == 1)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit7 := (value & 0b1000_0000)
+			var mask uint8 = 0
+			if cpu.getFlag(FlagC) {
+				mask = 1
+			}
+			result := (value << 1) | (mask)
+			cpu.set_r8(r8, result)
+			setFlags(result, bit7)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit7 := (cpu.mdr & 0b1000_0000)
+		var mask uint8 = 0
+		if cpu.getFlag(FlagC) {
+			mask = 1
+		}
+		result := (cpu.mdr << 1) | (mask)
+		cpu.set_r8(r8, result)
+		setFlags(result, bit7)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) rr(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit0 uint8) {
 		cpu.setFlag(FlagZ, result == 0)
 		cpu.setFlag(FlagN, false)
 		cpu.setFlag(FlagH, false)
 		cpu.setFlag(FlagC, bit0 == 1)
-	case 0b110:
-		// SWAP
-		upperNibble := value & 0xF0
-		lowerNibble := value & 0x0F
-		result := (lowerNibble << 4) | (upperNibble >> 4)
-		writeCycles = cpu.set_r8(r8, result)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit0 := value & 1
+			var mask uint8 = 0
+			if cpu.getFlag(FlagC) {
+				mask = 1
+			}
+			result := (value >> 1) | (mask << 7)
+			cpu.set_r8(r8, result)
+			setFlags(result, bit0)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit0 := cpu.mdr & 1
+		var mask uint8 = 0
+		if cpu.getFlag(FlagC) {
+			mask = 1
+		}
+		result := (cpu.mdr >> 1) | (mask << 7)
+		cpu.set_r8(r8, result)
+		setFlags(result, bit0)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) sla(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit7 uint8) {
+		cpu.setFlag(FlagZ, result == 0)
+		cpu.setFlag(FlagN, false)
+		cpu.setFlag(FlagH, false)
+		cpu.setFlag(FlagC, (bit7>>7) == 1)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit7 := (value & 0b1000_0000)
+			result := value << 1
+			cpu.set_r8(r8, result)
+			setFlags(result, bit7)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit7 := (cpu.mdr & 0b1000_0000)
+		result := cpu.mdr << 1
+		cpu.set_r8(r8, result)
+		setFlags(result, bit7)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) sra(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit0 uint8) {
+		cpu.setFlag(FlagZ, result == 0)
+		cpu.setFlag(FlagN, false)
+		cpu.setFlag(FlagH, false)
+		cpu.setFlag(FlagC, bit0 == 1)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit0 := value & 1
+			bit7 := (value & 0b1000_0000)
+			result := (value >> 1) | bit7
+			cpu.set_r8(r8, result)
+			setFlags(result, bit0)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit0 := cpu.mdr & 1
+		bit7 := (cpu.mdr & 0b1000_0000)
+		result := (cpu.mdr >> 1) | bit7
+		cpu.set_r8(r8, result)
+		setFlags(result, bit0)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) srl(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8, bit0 uint8) {
+		cpu.setFlag(FlagZ, result == 0)
+		cpu.setFlag(FlagN, false)
+		cpu.setFlag(FlagH, false)
+		cpu.setFlag(FlagC, bit0 == 1)
+	}
+
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			bit0 := value & 1
+			result := value >> 1
+			cpu.set_r8(r8, result)
+			setFlags(result, bit0)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		bit0 := cpu.mdr & 1
+		result := cpu.mdr >> 1
+		cpu.set_r8(r8, result)
+		setFlags(result, bit0)
+		return 4, true
+	}
+
+	return 4, true
+}
+
+func (cpu *CPU) swap(r8 uint8) (uint8, bool) {
+	var setFlags = func(result uint8) {
 		cpu.setFlag(FlagZ, result == 0)
 		cpu.setFlag(FlagN, false)
 		cpu.setFlag(FlagH, false)
 		cpu.setFlag(FlagC, false)
 	}
 
-	return 8 + fetchCycles + writeCycles, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if r8 != 0b110 {
+			value := cpu.get_r8(r8)
+			upperNibble := value & 0xF0
+			lowerNibble := value & 0x0F
+			result := (lowerNibble << 4) | (upperNibble >> 4)
+			cpu.set_r8(r8, result)
+			setFlags(result)
+			return 4, true
+		}
+		// fetch the CB opcode
+		return 4, false
+	case 3:
+		cpu.mdr = cpu.get_r8(r8)
+		return 4, false
+	case 4:
+		upperNibble := cpu.mdr & 0xF0
+		lowerNibble := cpu.mdr & 0x0F
+		result := (lowerNibble << 4) | (upperNibble >> 4)
+		cpu.set_r8(r8, result)
+		setFlags(result)
+		return 4, true
+	}
+
+	return 4, true
 }

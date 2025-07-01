@@ -239,8 +239,7 @@ func (cpu *CPU) setHL(value uint16) {
 }
 
 // return the value and the number of cycles it took
-func (cpu *CPU) get_r8(r8 uint8) (uint8, uint8) {
-	var cycles uint8 = 0
+func (cpu *CPU) get_r8(r8 uint8) uint8 {
 	var value uint8 = 0
 
 	switch r8 {
@@ -261,16 +260,13 @@ func (cpu *CPU) get_r8(r8 uint8) (uint8, uint8) {
 	case 0b110:
 		// special case
 		value = cpu.bus.Read(cpu.getHL())
-		cycles = 4
 	}
 
-	return value, cycles
+	return value
 }
 
 // return the number of cycles it took
-func (cpu *CPU) set_r8(r8 uint8, value uint8) uint8 {
-	var cycles uint8 = 0
-
+func (cpu *CPU) set_r8(r8 uint8, value uint8) {
 	switch r8 {
 	case 0b000:
 		cpu.b = value
@@ -289,10 +285,7 @@ func (cpu *CPU) set_r8(r8 uint8, value uint8) uint8 {
 	case 0b110:
 		// special case
 		cpu.bus.Write(cpu.getHL(), value)
-		cycles = 4
 	}
-
-	return cycles
 }
 
 type Flag uint8
