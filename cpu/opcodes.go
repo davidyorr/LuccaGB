@@ -1252,6 +1252,7 @@ func inc_at_hl(cpu *CPU) (uint8, bool) {
 		cpu.setFlag(FlagN, false)
 		// if overflow from bit 3
 		cpu.setFlag(FlagH, (cpu.mdr&0x0F)+1 > 0x0F)
+		return 4, true
 	}
 	return 12, true
 }
