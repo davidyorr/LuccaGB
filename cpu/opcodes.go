@@ -1175,9 +1175,12 @@ func dec_at_hl(cpu *CPU) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		result := cpu.dec_r8(cpu.bus.Read(cpu.getHL()))
+		cpu.mdr = cpu.bus.Read(cpu.getHL())
+		return 4, false
+	case 3:
+		result := cpu.dec_r8(cpu.mdr)
 		cpu.bus.Write(cpu.getHL(), result)
-		return 8, true
+		return 4, true
 	}
 	return 12, true
 }
@@ -1236,13 +1239,20 @@ func inc_a(cpu *CPU) (uint8, bool) {
 
 // 0x34 Increment the byte pointed to by HL by 1
 func inc_at_hl(cpu *CPU) (uint8, bool) {
-	originalHlByte := cpu.bus.Read(cpu.getHL())
-	result := originalHlByte + 1
-	cpu.bus.Write(cpu.getHL(), result)
-	cpu.setFlag(FlagZ, result == 0)
-	cpu.setFlag(FlagN, false)
-	// if overflow from bit 3
-	cpu.setFlag(FlagH, (originalHlByte&0x0F)+1 > 0x0F)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.mdr = cpu.bus.Read(cpu.getHL())
+		return 4, false
+	case 3:
+		result := cpu.mdr + 1
+		cpu.bus.Write(cpu.getHL(), result)
+		cpu.setFlag(FlagZ, result == 0)
+		cpu.setFlag(FlagN, false)
+		// if overflow from bit 3
+		cpu.setFlag(FlagH, (cpu.mdr&0x0F)+1 > 0x0F)
+	}
 	return 12, true
 }
 

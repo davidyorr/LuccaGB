@@ -35,7 +35,11 @@ type CPU struct {
 	// the current immediate value
 	immediateValue uint16
 	// the current M-cycle, 1 indexed
-	mCycle        uint8
+	mCycle uint8
+	// Memory Data Register
+	//	for storing temporary values used across different M-cycles
+	//	the Game Boy hardware does not have a MDR, but instead uses latches
+	mdr           uint8
 	halted        bool
 	haltBugActive bool
 	bus           *bus.Bus
