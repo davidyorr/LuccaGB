@@ -74,36 +74,46 @@ func (ppu *PPU) Step(cycles uint8) {
 
 	ppu.counter += uint16(cycles)
 
-	switch ppu.mode {
-	case OamScan:
-		if ppu.counter >= 80 {
-			ppu.changeMode(DrawingPixels)
-		}
-	case DrawingPixels:
-		// if counter has reached end of pixel transfer period
-		if ppu.counter >= 252 {
-			ppu.changeMode(HorizontalBlank)
-		}
-	case VerticalBlank:
-	case HorizontalBlank:
-		if ppu.counter >= dotsPerScanline {
-			ppu.ly++
-			ppu.compareLycLy()
-			ppu.counter -= dotsPerScanline
+	if ppu.counter >= dotsPerScanline {
+		ppu.counter -= dotsPerScanline
+		ppu.ly++
 
-			if ppu.ly < 144 {
+		if ppu.ly == 144 {
+			ppu.changeMode(VerticalBlank)
+			ppu.interruptRequester(interrupt.VBlankInterrupt)
+		} else if ppu.ly >= 154 {
+			ppu.ly = 0
+		}
+
+		ppu.compareLycLy()
+	}
+
+	if ppu.ly < 144 {
+		if ppu.counter < 80 {
+			if ppu.mode != OamScan {
 				ppu.changeMode(OamScan)
 			}
-			if ppu.ly == 144 {
-				ppu.changeMode(VerticalBlank)
-				ppu.interruptRequester(interrupt.VBlankInterrupt)
+			ppu.compareLycLy()
+		} else if ppu.counter < ppu.getMode3Duration() {
+			if ppu.mode != DrawingPixels {
+				ppu.changeMode(DrawingPixels)
 			}
-			if ppu.ly == 154 {
-				ppu.ly = 0
-				ppu.compareLycLy()
+			ppu.compareLycLy()
+		} else {
+			if ppu.mode != HorizontalBlank {
+				ppu.changeMode(HorizontalBlank)
 			}
 		}
 	}
+}
+
+func (ppu *PPU) getMode3Duration() uint16 {
+	var baseDuration uint16 = 172
+	var backgroundScrollingPenalty uint16 = 0
+	var windowPenalty uint16 = 0
+	var objectsPenalty uint16 = 0
+
+	return baseDuration + backgroundScrollingPenalty + windowPenalty + objectsPenalty
 }
 
 func (ppu *PPU) Read(address uint16) uint8 {
