@@ -75,15 +75,5 @@ func (gameboy *Gameboy) Step() (uint8, error) {
 		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
 	)
 
-	pendingInterrupts := gameboy.mmu.InterruptEnable() & gameboy.mmu.InterruptFlag()
-
-	if gameboy.cpu.Halted() && pendingInterrupts != 0 {
-		gameboy.cpu.Unhalt()
-	}
-
-	if gameboy.cpu.InterruptMasterEnable() && (pendingInterrupts != 0) {
-		gameboy.cpu.HandleInterrupts()
-	}
-
 	return cycles, nil
 }

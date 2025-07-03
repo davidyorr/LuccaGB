@@ -39,10 +39,14 @@ type CPU struct {
 	// Memory Data Register
 	//	for storing temporary values used across different M-cycles
 	//	the Game Boy hardware does not have a MDR, but instead uses latches
-	mdr           uint8
-	halted        bool
-	haltBugActive bool
-	bus           *bus.Bus
+	mdr                         uint8
+	halted                      bool
+	haltBugActive               bool
+	isServicingInterrupt        bool
+	interruptServiceRoutineStep uint8
+	interruptToService          uint16
+	interruptTypeToClear        interrupt.Interrupt
+	bus                         *bus.Bus
 }
 
 func New() *CPU {
@@ -75,6 +79,7 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 // Return the number of T-Cycles taken
 func (cpu *CPU) Step() (uint8, error) {
 	if cpu.halted {
+		cpu.halted = false
 		return 4, nil
 	}
 	haltBugWasActive := cpu.haltBugActive
@@ -84,6 +89,11 @@ func (cpu *CPU) Step() (uint8, error) {
 	if cpu.imeScheduled {
 		cpu.ime = true
 		cpu.imeScheduled = false
+	}
+
+	if cpu.isServicingInterrupt {
+		cycles := cpu.executeInterruptServiceRoutineStep()
+		return cycles, nil
 	}
 
 	// start new instruction
@@ -145,6 +155,14 @@ func (cpu *CPU) Step() (uint8, error) {
 		}
 		// reset state
 		cpu.instruction = nil
+
+		interruptsPending := (cpu.bus.Read(0xFFFF) & cpu.bus.Read(0xFF0F)) != 0
+		if cpu.ime && interruptsPending {
+			cpu.isServicingInterrupt = true
+			cpu.interruptServiceRoutineStep = 1
+			cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
+			return 0, nil
+		}
 	}
 
 	cpu.mCycle++
@@ -152,7 +170,42 @@ func (cpu *CPU) Step() (uint8, error) {
 	return tCycles, nil
 }
 
-func (cpu *CPU) HandleInterrupts() {
+func (cpu *CPU) executeInterruptServiceRoutineStep() uint8 {
+	switch cpu.interruptServiceRoutineStep {
+	case 1:
+		cpu.ime = false
+		cpu.interruptServiceRoutineStep++
+		return 4
+	case 2:
+		ifRegister := cpu.bus.Read(0xFF0F)
+		clearedFlag := ifRegister & ^uint8(cpu.interruptTypeToClear)
+		cpu.bus.Write(0xFF0F, clearedFlag)
+		cpu.interruptServiceRoutineStep++
+		return 4
+	case 3:
+		cpu.sp--
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.interruptServiceRoutineStep++
+		return 4
+	case 4:
+		cpu.sp--
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.interruptServiceRoutineStep++
+		return 4
+	case 5:
+		cpu.pc = cpu.interruptToService
+		cpu.isServicingInterrupt = false
+		cpu.interruptServiceRoutineStep = 0
+		return 4
+	}
+
+	return 4
+}
+
+// Return the interrupt type and the vector address
+func (cpu *CPU) getPendingInterrupt() (interrupt.Interrupt, uint16) {
 	ifRegister := cpu.bus.Read(0xFF0F)
 	ieRegister := cpu.bus.Read(0xFFFF)
 	var interruptType interrupt.Interrupt
@@ -175,11 +228,7 @@ func (cpu *CPU) HandleInterrupts() {
 		vectorAddress = 0x0060
 	}
 
-	cpu.ime = false
-	clearedFlag := ifRegister & ^uint8(interruptType)
-	cpu.bus.Write(0xFF0F, clearedFlag)
-	cpu.pushToStack16(cpu.pc)
-	cpu.pc = vectorAddress
+	return interruptType, vectorAddress
 }
 
 func (cpu *CPU) pushToStack16(returnAddress uint16) {

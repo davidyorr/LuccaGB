@@ -2230,17 +2230,14 @@ func ei(cpu *CPU) (uint8, bool) {
 func halt(cpu *CPU) (uint8, bool) {
 	interruptEnable := cpu.bus.Read(0xFFFF)
 	interruptFlag := cpu.bus.Read(0xFF0F)
+	interruptsPending := (interruptFlag & interruptEnable) != 0
 
-	if cpu.InterruptMasterEnable() {
-		cpu.Halt()
+	if !cpu.ime && interruptsPending {
+		cpu.haltBugActive = true
 	} else {
-		if (interruptEnable & interruptFlag) != 0 {
-			cpu.haltBugActive = false
-		} else {
-			cpu.Halt()
-		}
+		cpu.halted = true
 	}
-	cpu.Halt()
+
 	return 4, true
 }
 
