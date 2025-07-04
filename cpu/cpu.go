@@ -78,10 +78,27 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 
 // Return the number of T-Cycles taken
 func (cpu *CPU) Step() (uint8, error) {
+	interruptsPending := (cpu.bus.Read(0xFFFF) & cpu.bus.Read(0xFF0F)) != 0
+
 	if cpu.halted {
+		if !interruptsPending {
+			return 4, nil
+		}
 		cpu.halted = false
-		return 4, nil
+		// finish this Step only when IME=0
+		if !cpu.ime {
+			return 4, nil
+		}
+		// fall through to interrupt handling otherwise
 	}
+
+	if cpu.ime && interruptsPending {
+		cpu.isServicingInterrupt = true
+		cpu.interruptServiceRoutineStep = 1
+		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
+		return 0, nil
+	}
+
 	haltBugWasActive := cpu.haltBugActive
 	if cpu.haltBugActive {
 		cpu.haltBugActive = false
@@ -155,14 +172,6 @@ func (cpu *CPU) Step() (uint8, error) {
 		}
 		// reset state
 		cpu.instruction = nil
-
-		interruptsPending := (cpu.bus.Read(0xFFFF) & cpu.bus.Read(0xFF0F)) != 0
-		if cpu.ime && interruptsPending {
-			cpu.isServicingInterrupt = true
-			cpu.interruptServiceRoutineStep = 1
-			cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
-			return 0, nil
-		}
 	}
 
 	cpu.mCycle++
