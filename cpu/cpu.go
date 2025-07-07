@@ -146,10 +146,10 @@ func (cpu *CPU) executeInstructionStep() {
 	if cpu.opcode == 0xCB {
 		// the CB opcode does not get fetched until M-cycle 2
 		if cpu.mCycle >= 2 {
-			_, done = cpu.executeCbInstructionStep(*cpu.cbOpcode)
+			done = cpu.executeCbInstructionStep(*cpu.cbOpcode)
 		}
 	} else {
-		_, done = cpu.instruction.step(cpu)
+		done = cpu.instruction.step(cpu)
 	}
 
 	// for logging

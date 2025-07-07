@@ -3,7 +3,7 @@ package cpu
 type instruction struct {
 	mnemonic      string
 	operandLength uint8
-	step          func(cpu *CPU) (uint8, bool)
+	step          func(cpu *CPU) bool
 }
 
 // how to read opcode table
@@ -321,7 +321,7 @@ var instructions = [256]instruction{
 	0xFD: {"NOP", 0, nop},
 }
 
-func (cpu *CPU) executeCbInstructionStep(opcode uint8) (uint8, bool) {
+func (cpu *CPU) executeCbInstructionStep(opcode uint8) bool {
 	operation := opcode >> 6
 	u3 := (opcode & 0b0011_1000) >> 3
 	r8 := (opcode & 0b0000_0111)
@@ -337,7 +337,7 @@ func (cpu *CPU) executeCbInstructionStep(opcode uint8) (uint8, bool) {
 		return cpu.set_u3_r8(u3, r8)
 	}
 
-	return 4, true
+	return false
 }
 
 func (cpu *CPU) GetNumberOfUnimplementedInstructions() int {
