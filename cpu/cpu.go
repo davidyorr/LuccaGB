@@ -42,7 +42,6 @@ type CPU struct {
 	mdr                         uint8
 	halted                      bool
 	haltBugActive               bool
-	instructionInitialPc        uint16
 	isServicingInterrupt        bool
 	interruptServiceRoutineStep uint8
 	interruptToService          uint16
@@ -77,34 +76,32 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 	cpu.bus = bus
 }
 
-// Return the number of T-Cycles taken
-func (cpu *CPU) Step() (uint8, error) {
-	interruptsPending := (cpu.bus.Read(0xFFFF) & cpu.bus.Read(0xFF0F)) != 0
-
+func (cpu *CPU) Step() {
 	if cpu.halted {
-		if interruptsPending {
+		if cpu.interruptsPending() {
 			cpu.halted = false
+		} else {
+			return
 		}
-		return 4, nil
 	}
 
 	if cpu.instruction != nil {
 		cpu.executeInstructionStep()
-		return 4, nil
+		return
 	}
 
-	if cpu.ime && interruptsPending {
+	if cpu.ime && cpu.interruptsPending() {
 		cpu.isServicingInterrupt = true
 		cpu.interruptServiceRoutineStep = 1
 		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
 		cpu.ime = false
 		cpu.executeInterruptServiceRoutineStep()
-		return 4, nil
+		return
 	}
 
 	if cpu.isServicingInterrupt {
 		cpu.executeInterruptServiceRoutineStep()
-		return 4, nil
+		return
 	}
 
 	if cpu.imeScheduled {
@@ -113,12 +110,9 @@ func (cpu *CPU) Step() (uint8, error) {
 	}
 
 	// start new instruction
-	cpu.instructionInitialPc = cpu.pc
 	cpu.mCycle = 0
 	cpu.immediateValue = 0
-
 	cpu.executeInstructionStep()
-	return 4, nil
 }
 
 // Perform 1 M-cycle of work for the current instruction
@@ -126,14 +120,21 @@ func (cpu *CPU) executeInstructionStep() {
 	cpu.mCycle++
 
 	var done bool
-	pcForLog := cpu.pc - 1
+	pcForLog := cpu.pc
 	mCycleForLog := cpu.mCycle
 
 	// fetch the opcode
 	if cpu.mCycle == 1 {
 		cpu.opcode = cpu.bus.Read(cpu.pc)
 		cpu.instruction = &instructions[cpu.opcode]
-		cpu.pc++
+
+		// the first byte of the bugged instruction is read twice, so skip incrementing the PC
+		if cpu.haltBugActive {
+			logger.Info("halt bug active so not incrementing PC during M-cycle 1")
+			cpu.haltBugActive = false
+		} else {
+			cpu.pc++
+		}
 	}
 
 	// fetch the CB opcode
@@ -173,10 +174,6 @@ func (cpu *CPU) executeInstructionStep() {
 	)
 
 	if done {
-		if cpu.haltBugActive {
-			cpu.pc = cpu.instructionInitialPc
-			cpu.haltBugActive = false
-		}
 		// reset state
 		cpu.instruction = nil
 		cpu.cbOpcode = nil
@@ -207,6 +204,12 @@ func (cpu *CPU) executeInterruptServiceRoutineStep() {
 		cpu.isServicingInterrupt = false
 		cpu.interruptServiceRoutineStep = 0
 	}
+}
+
+func (cpu *CPU) interruptsPending() bool {
+	interruptEnable := cpu.bus.Read(0xFFFF)
+	interruptFlag := cpu.bus.Read(0xFF0F)
+	return (interruptEnable & interruptFlag) != 0
 }
 
 // Return the interrupt type and the vector address

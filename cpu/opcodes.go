@@ -1,5 +1,7 @@
 package cpu
 
+import "github.com/davidyorr/EchoGB/logger"
+
 // 0x06 Copy the value n8 into register r8
 func ld_b_n8(cpu *CPU) bool {
 	switch cpu.mCycle {
@@ -2846,14 +2848,12 @@ func ei(cpu *CPU) bool {
 
 // 0x76 Enter CPU low-power consumption mode until an interrupt occurs
 func halt(cpu *CPU) bool {
-	interruptEnable := cpu.bus.Read(0xFFFF)
-	interruptFlag := cpu.bus.Read(0xFF0F)
-	interruptsPending := (interruptFlag & interruptEnable) != 0
-
-	if !cpu.ime && interruptsPending {
+	if !cpu.ime && cpu.interruptsPending() {
 		cpu.haltBugActive = true
+		logger.Info("halt()", "halt bug active", cpu.haltBugActive)
 	} else {
 		cpu.halted = true
+		logger.Info("halt()", "halted", cpu.halted)
 	}
 
 	return true

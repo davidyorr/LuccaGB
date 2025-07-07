@@ -32,9 +32,10 @@ func (timer *Timer) Step(cycles uint8) bool {
 	cycles16 := uint16(cycles)
 
 	for cycles16 > 0 {
-		if timer.isTimerEnabled() {
-			currentTimerBitState := timer.getTimerBitState()
+		timer.counter++
+		currentTimerBitState := timer.getTimerBitState()
 
+		if timer.isTimerEnabled() {
 			if timer.previousTimerBitState && !currentTimerBitState {
 				timer.tima++
 				// check for overflow
@@ -44,15 +45,13 @@ func (timer *Timer) Step(cycles uint8) bool {
 				}
 			}
 
-			timer.previousTimerBitState = currentTimerBitState
 		}
 
-		timer.counter++
+		timer.previousTimerBitState = currentTimerBitState
 		cycles16--
 	}
 
 	return interrupt
-
 }
 
 func (timer *Timer) Read(address uint16) uint8 {
@@ -90,13 +89,13 @@ func (timer *Timer) getTimerBitState() bool {
 	var bitIndex uint8 = 9
 
 	switch timer.tac & 0b11 {
-	case 0b00:
+	case 0b00: // 4096 Hz
 		bitIndex = 9
-	case 0b01:
+	case 0b01: // 262144 Hz
 		bitIndex = 3
-	case 0b10:
+	case 0b10: // 65536 Hz
 		bitIndex = 5
-	case 0b11:
+	case 0b11: // 16384 Hz
 		bitIndex = 7
 	}
 

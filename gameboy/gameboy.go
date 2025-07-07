@@ -52,21 +52,17 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 }
 
 func (gameboy *Gameboy) Step() (uint8, error) {
-	cycles, err := gameboy.cpu.Step()
-	if err != nil {
-		return 0, err
-	}
+	gameboy.cpu.Step()
 
-	requestTimerInterrupt := gameboy.timer.Step(cycles)
+	requestTimerInterrupt := gameboy.timer.Step(4)
 	if requestTimerInterrupt {
 		gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
 	}
-	requestSerialInterrupt := gameboy.serial.Step(cycles)
+	requestSerialInterrupt := gameboy.serial.Step(4)
 	if requestSerialInterrupt {
 		gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
 	}
-
-	gameboy.ppu.Step(cycles)
+	gameboy.ppu.Step(4)
 
 	logger.Debug(
 		"END OF GAMEBOY STEP",
@@ -75,5 +71,5 @@ func (gameboy *Gameboy) Step() (uint8, error) {
 		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
 	)
 
-	return cycles, nil
+	return 4, nil
 }
