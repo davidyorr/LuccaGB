@@ -98,13 +98,13 @@ func (cpu *CPU) Step() (uint8, error) {
 		cpu.interruptServiceRoutineStep = 1
 		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
 		cpu.ime = false
-		tCycles := cpu.executeInterruptServiceRoutineStep()
-		return tCycles, nil
+		cpu.executeInterruptServiceRoutineStep()
+		return 4, nil
 	}
 
 	if cpu.isServicingInterrupt {
-		tCycles := cpu.executeInterruptServiceRoutineStep()
-		return tCycles, nil
+		cpu.executeInterruptServiceRoutineStep()
+		return 4, nil
 	}
 
 	if cpu.imeScheduled {
@@ -183,37 +183,30 @@ func (cpu *CPU) executeInstructionStep() {
 	}
 }
 
-func (cpu *CPU) executeInterruptServiceRoutineStep() uint8 {
+func (cpu *CPU) executeInterruptServiceRoutineStep() {
 	switch cpu.interruptServiceRoutineStep {
 	case 1:
 		cpu.interruptServiceRoutineStep++
-		return 4
 	case 2:
 		ifRegister := cpu.bus.Read(0xFF0F)
 		clearedFlag := ifRegister & ^uint8(cpu.interruptTypeToClear)
 		cpu.bus.Write(0xFF0F, clearedFlag)
 		cpu.interruptServiceRoutineStep++
-		return 4
 	case 3:
 		cpu.sp--
 		highByte := uint8(cpu.pc >> 8)
 		cpu.bus.Write(cpu.sp, highByte)
 		cpu.interruptServiceRoutineStep++
-		return 4
 	case 4:
 		cpu.sp--
 		lowByte := uint8(cpu.pc & 0x00FF)
 		cpu.bus.Write(cpu.sp, lowByte)
 		cpu.interruptServiceRoutineStep++
-		return 4
 	case 5:
 		cpu.pc = cpu.interruptToService
 		cpu.isServicingInterrupt = false
 		cpu.interruptServiceRoutineStep = 0
-		return 4
 	}
-
-	return 4
 }
 
 // Return the interrupt type and the vector address
