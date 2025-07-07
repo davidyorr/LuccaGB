@@ -42,6 +42,7 @@ type CPU struct {
 	mdr                         uint8
 	halted                      bool
 	haltBugActive               bool
+	instructionInitialPc        uint16
 	isServicingInterrupt        bool
 	interruptServiceRoutineStep uint8
 	interruptToService          uint16
@@ -81,76 +82,86 @@ func (cpu *CPU) Step() (uint8, error) {
 	interruptsPending := (cpu.bus.Read(0xFFFF) & cpu.bus.Read(0xFF0F)) != 0
 
 	if cpu.halted {
-		if !interruptsPending {
-			return 4, nil
+		if interruptsPending {
+			cpu.halted = false
 		}
-		cpu.halted = false
-		// finish this Step only when IME=0
-		if !cpu.ime {
-			return 4, nil
-		}
-		// fall through to interrupt handling otherwise
+		return 4, nil
+	}
+
+	if cpu.instruction != nil {
+		cpu.executeInstructionStep()
+		return 4, nil
 	}
 
 	if cpu.ime && interruptsPending {
 		cpu.isServicingInterrupt = true
 		cpu.interruptServiceRoutineStep = 1
 		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
-		return 0, nil
+		cpu.ime = false
+		tCycles := cpu.executeInterruptServiceRoutineStep()
+		return tCycles, nil
 	}
 
-	haltBugWasActive := cpu.haltBugActive
-	if cpu.haltBugActive {
-		cpu.haltBugActive = false
+	if cpu.isServicingInterrupt {
+		tCycles := cpu.executeInterruptServiceRoutineStep()
+		return tCycles, nil
 	}
+
 	if cpu.imeScheduled {
 		cpu.ime = true
 		cpu.imeScheduled = false
 	}
 
-	if cpu.isServicingInterrupt {
-		cycles := cpu.executeInterruptServiceRoutineStep()
-		return cycles, nil
-	}
-
 	// start new instruction
-	if cpu.instruction == nil {
+	cpu.instructionInitialPc = cpu.pc
+	cpu.mCycle = 0
+	cpu.immediateValue = 0
+
+	cpu.executeInstructionStep()
+	return 4, nil
+}
+
+// Perform 1 M-cycle of work for the current instruction
+func (cpu *CPU) executeInstructionStep() {
+	cpu.mCycle++
+
+	var done bool
+	pcForLog := cpu.pc - 1
+	mCycleForLog := cpu.mCycle
+
+	// fetch the opcode
+	if cpu.mCycle == 1 {
 		cpu.opcode = cpu.bus.Read(cpu.pc)
 		cpu.instruction = &instructions[cpu.opcode]
-		cpu.mCycle = 1
-		cpu.immediateValue = 0
+		cpu.pc++
 	}
 
-	// handle cb prefixed instructions
+	// fetch the CB opcode
+	if cpu.mCycle == 2 && cpu.opcode == 0xCB {
+		cbOpcode := cpu.bus.Read(cpu.pc)
+		cpu.cbOpcode = &cbOpcode
+		cpu.pc++
+	}
+
 	if cpu.opcode == 0xCB {
-		if cpu.cbOpcode == nil {
-			cbOpcode := cpu.bus.Read(cpu.pc + 1)
-			cpu.cbOpcode = &cbOpcode
+		// the CB opcode does not get fetched until M-cycle 2
+		if cpu.mCycle >= 2 {
+			_, done = cpu.executeCbInstructionStep(*cpu.cbOpcode)
 		}
-		tCycles, done := cpu.executeCbInstructionStep(*cpu.cbOpcode)
-
-		if done {
-			cpu.pc += 2
-			cpu.instruction = nil
-			cpu.cbOpcode = nil
-		}
-
-		cpu.mCycle++
-
-		return tCycles, nil
+	} else {
+		_, done = cpu.instruction.step(cpu)
 	}
 
+	// for logging
 	var cbo uint8 = 0
 	if cpu.cbOpcode != nil {
 		cbo = *cpu.cbOpcode
 	}
 
-	originalPc := cpu.pc
-	tCycles, done := cpu.instruction.step(cpu)
-
 	logger.Info(
-		"CPU STEP",
-		"PC", fmt.Sprintf("0x%04X", originalPc),
+		"INSTRUCTION STEP",
+		"M-CYCLE", mCycleForLog,
+		"PC", fmt.Sprintf("0x%04X", pcForLog),
 		"SP", fmt.Sprintf("0x%04X", cpu.sp),
 		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
 		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
@@ -162,27 +173,19 @@ func (cpu *CPU) Step() (uint8, error) {
 	)
 
 	if done {
-		// don't update the PC if the opcode did
-		if cpu.pc == originalPc {
-			if haltBugWasActive {
-				// don't update the PC if the halt bug was active
-			} else {
-				cpu.pc += 1 + uint16(cpu.instruction.operandLength)
-			}
+		if cpu.haltBugActive {
+			cpu.pc = cpu.instructionInitialPc
+			cpu.haltBugActive = false
 		}
 		// reset state
 		cpu.instruction = nil
+		cpu.cbOpcode = nil
 	}
-
-	cpu.mCycle++
-
-	return tCycles, nil
 }
 
 func (cpu *CPU) executeInterruptServiceRoutineStep() uint8 {
 	switch cpu.interruptServiceRoutineStep {
 	case 1:
-		cpu.ime = false
 		cpu.interruptServiceRoutineStep++
 		return 4
 	case 2:
@@ -238,24 +241,6 @@ func (cpu *CPU) getPendingInterrupt() (interrupt.Interrupt, uint16) {
 	}
 
 	return interruptType, vectorAddress
-}
-
-func (cpu *CPU) pushToStack16(returnAddress uint16) {
-	highByte := uint8(returnAddress >> 8)
-	lowByte := uint8(returnAddress & 0x00FF)
-	cpu.sp--
-	cpu.bus.Write(cpu.sp, highByte)
-	cpu.sp--
-	cpu.bus.Write(cpu.sp, lowByte)
-}
-
-func (cpu *CPU) popFromStack16() uint16 {
-	lowByte := cpu.bus.Read(cpu.sp)
-	cpu.sp++
-	highByte := cpu.bus.Read(cpu.sp)
-	cpu.sp++
-
-	return (uint16(highByte) << 8) | uint16(lowByte)
 }
 
 func (cpu *CPU) getAF() uint16 {
@@ -374,13 +359,23 @@ func (cpu *CPU) setFlag(flag Flag, value bool) {
 }
 
 func (cpu *CPU) fetchImmLowByte() {
-	lowByte := cpu.bus.Read(cpu.pc + 1)
+	lowByte := cpu.bus.Read(cpu.pc)
 	cpu.immediateValue |= uint16(lowByte)
+	cpu.pc++
 }
 
 func (cpu *CPU) fetchImmHighByte() {
-	highByte := cpu.bus.Read(cpu.pc + 2)
+	highByte := cpu.bus.Read(cpu.pc)
 	cpu.immediateValue |= (uint16(highByte) << 8)
+	cpu.pc++
+}
+
+func (cpu *CPU) setImmLowByte(value uint8) {
+	cpu.immediateValue = uint16(value)
+}
+
+func (cpu *CPU) setImmHighByte(value uint8) {
+	cpu.immediateValue |= uint16(value) << 8
 }
 
 func (cpu *CPU) InterruptMasterEnable() bool {

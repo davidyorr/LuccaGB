@@ -163,7 +163,7 @@ func ld_c_h(cpu *CPU) (uint8, bool) {
 	return 4, true
 }
 
-// 0x4L Copy (aka Load) the value in register on the right into the register on the left
+// 0x4D Copy (aka Load) the value in register on the right into the register on the left
 func ld_c_l(cpu *CPU) (uint8, bool) {
 	cpu.c = cpu.l
 	return 4, true
@@ -350,7 +350,7 @@ func ld_hl_b(cpu *CPU) (uint8, bool) {
 		return 4, false
 	case 2:
 		address := cpu.getHL()
-		cpu.bus.Write(uint16(address), cpu.b)
+		cpu.bus.Write(address, cpu.b)
 		return 4, true
 	default:
 		return 4, true
@@ -694,12 +694,11 @@ func ldh_at_c_a(cpu *CPU) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		cpu.fetchImmLowByte()
 		cpu.bus.Write(0xFF00+uint16(cpu.c), cpu.a)
 		return 4, true
-	default:
-		return 4, true
 	}
+
+	return 8, true
 }
 
 // 0xF0 Copy the byte at address n16 into register A, provided the address is between $FF00 and $FFFF
@@ -1394,67 +1393,143 @@ func sub_a_hl(cpu *CPU) (uint8, bool) {
 	return 4, true
 }
 
-// Add the value in r16 to HL
-func (cpu *CPU) add_hl_r16(r16 uint16) {
-	originalHL := cpu.getHL()
-	sum := cpu.getHL() + r16
-	cpu.setHL(sum)
-	cpu.setFlag(FlagN, false)
-	cpu.setFlag(FlagH, ((originalHL&0x0FFF)+(r16&0x0FFF)) > 0x0FFF)
-	cpu.setFlag(FlagC, sum < originalHL)
+func (cpu *CPU) set_add_carry_flags(hl uint16, register uint16, result uint32) {
+	cpu.setFlag(FlagH, ((hl&0x0FFF)+(register&0x0FFF)) > 0x0FFF)
+	cpu.setFlag(FlagC, result > 0xFFFF)
 }
 
 // 0x09 Add the value in r16 to HL
 func add_hl_bc(cpu *CPU) (uint8, bool) {
-	cpu.add_hl_r16(cpu.getBC())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		hl := cpu.getHL()
+		bc := cpu.getBC()
+
+		result32 := uint32(hl) + uint32(bc)
+		result16 := uint16(result32)
+
+		cpu.setFlag(FlagN, false)
+		cpu.set_add_carry_flags(hl, bc, result32)
+		cpu.setHL(result16)
+
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x19 Add the value in r16 to HL
 func add_hl_de(cpu *CPU) (uint8, bool) {
-	cpu.add_hl_r16(cpu.getDE())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		hl := cpu.getHL()
+		de := cpu.getDE()
+
+		result32 := uint32(hl) + uint32(de)
+		result16 := uint16(result32)
+
+		cpu.setFlag(FlagN, false)
+		cpu.set_add_carry_flags(hl, de, result32)
+		cpu.setHL(result16)
+
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x29 Add the value in r16 to HL
 func add_hl_hl(cpu *CPU) (uint8, bool) {
-	cpu.add_hl_r16(cpu.getHL())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		hl := cpu.getHL()
+		register := cpu.getHL()
+
+		result32 := uint32(hl) + uint32(register)
+		result16 := uint16(result32)
+
+		cpu.setFlag(FlagN, false)
+		cpu.set_add_carry_flags(hl, register, result32)
+		cpu.setHL(result16)
+
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x0B Decrement the value in register r16 by 1
 func dec_bc(cpu *CPU) (uint8, bool) {
-	cpu.setBC(cpu.getBC() - 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setBC(cpu.getBC() - 1)
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x1B Decrement the value in register r16 by 1
 func dec_de(cpu *CPU) (uint8, bool) {
-	cpu.setDE(cpu.getDE() - 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setDE(cpu.getDE() - 1)
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x2B Decrement the value in register r16 by 1
 func dec_hl(cpu *CPU) (uint8, bool) {
-	cpu.setHL(cpu.getHL() - 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setHL(cpu.getHL() - 1)
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x03 Increment the value in register r8 by 1
 func inc_bc(cpu *CPU) (uint8, bool) {
-	cpu.setBC(cpu.getBC() + 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setBC(cpu.getBC() + 1)
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x13 Increment the value in register r8 by 1
 func inc_de(cpu *CPU) (uint8, bool) {
-	cpu.setDE(cpu.getDE() + 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setDE(cpu.getDE() + 1)
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x23 Increment the value in register r8 by 1
 func inc_hl(cpu *CPU) (uint8, bool) {
-	cpu.setHL(cpu.getHL() + 1)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.setHL(cpu.getHL() + 1)
+		return 4, true
+	}
 	return 8, true
 }
 
@@ -1765,62 +1840,158 @@ func rrca(cpu *CPU) (uint8, bool) {
 
 // 0xCD Call address n16
 func call_a16(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 3)
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		return 4, false
+	case 4:
+		cpu.sp--
+		return 4, false
+	case 5:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 6:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = cpu.immediateValue
+		return 4, true
+	}
+
 	return 24, true
 }
 
 // 0xCC Call address n16 if condition cc is met
 func call_z_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagZ) {
-		cpu.pushToStack16(cpu.pc + 3)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
 		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
 		cpu.fetchImmHighByte()
+		if !cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.sp--
+		return 4, false
+	case 5:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 6:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
 		cpu.pc = cpu.immediateValue
-		return 24, true
+		return 4, true
 	}
 
-	return 12, true
+	return 24, true
 }
 
 // 0xDC Call address n16 if condition cc is met
 func call_c_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagC) {
-		cpu.pushToStack16(cpu.pc + 3)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
 		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
 		cpu.fetchImmHighByte()
+		if !cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.sp--
+		return 4, false
+	case 5:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 6:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
 		cpu.pc = cpu.immediateValue
-		return 24, true
+		return 4, true
 	}
 
-	return 12, true
+	return 24, true
 }
 
 // 0xC4 Call address n16 if condition cc is met
 func call_nz_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagZ) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.sp--
+		return 4, false
+	case 5:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 6:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.pushToStack16(cpu.pc + 3)
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 24, true
 }
 
 // 0xD4 Call address n16 if condition cc is met
 func call_nc_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagC) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.sp--
+		return 4, false
+	case 5:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 6:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.pushToStack16(cpu.pc + 3)
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 24, true
 }
 
@@ -1832,242 +2003,540 @@ func jp_hl(cpu *CPU) (uint8, bool) {
 
 // 0xC3 Jump to address a16; effectively, copy a16 into PC
 func jp_a16(cpu *CPU) (uint8, bool) {
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xCA Jump to address n16 if condition cc is met
 func jp_z_a16(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagZ) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if !cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 16, true
 }
 
 // 0xDA Jump to address n16 if condition cc is met
 func jp_c_a16(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagC) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if !cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 16, true
 }
 
 // 0xC2 Jump to address n16 if condition cc is met
 func jp_nz_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagZ) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 16, true
 }
 
 // 0xD2 Jump to address n16 if condition cc is met
 func jp_nc_a16(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagC) {
-		return 12, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		if cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.pc = cpu.immediateValue
 	return 16, true
 }
 
 // Relative Jump
 func (cpu *CPU) jr() {
-	operandLength := uint16(2)
-	cpu.fetchImmLowByte()
 	signedOffset := int8(cpu.immediateValue)
-	destinationAddress := uint16(int(cpu.pc+operandLength) + int(signedOffset))
+	destinationAddress := uint16(int(cpu.pc) + int(signedOffset))
 	cpu.pc = destinationAddress
 }
 
 // 0x18 Relative Jump to address e8
 func jr_e8(cpu *CPU) (uint8, bool) {
-	cpu.fetchImmLowByte()
-	cpu.jr()
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.jr()
+		return 4, true
+	}
 	return 12, true
 }
 
 // 0x20 Relative Jump to address e8 if condition z is met
 func jr_nz_e8(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagZ) {
-		return 8, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		if cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.jr()
+		return 4, true
 	}
-
-	cpu.fetchImmLowByte()
-	cpu.jr()
 
 	return 12, true
 }
 
 // 0x28 Relative Jump to address e8 if condition z is met
 func jr_z_e8(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagZ) {
-		return 8, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		if !cpu.getFlag(FlagZ) {
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.jr()
+		return 4, true
 	}
-
-	cpu.fetchImmLowByte()
-	cpu.jr()
 
 	return 12, true
 }
 
 // 0x30 Relative Jump to address e8 if condition c is met
 func jr_nc_e8(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagC) {
-		return 8, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		if cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.jr()
+		return 4, true
 	}
-
-	cpu.fetchImmLowByte()
-	cpu.jr()
 
 	return 12, true
 }
 
 // 0x38 Relative Jump to address e8 if condition c is met
 func jr_c_e8(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagC) {
-		return 8, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		if !cpu.getFlag(FlagC) {
+			return 4, true
+		}
+		return 4, false
+	case 3:
+		cpu.jr()
+		return 4, true
 	}
-
-	cpu.fetchImmLowByte()
-	cpu.jr()
 
 	return 12, true
 }
 
-// helper function for opcodes:
-//
-//	RET
-//	REC cc
-//	RETI
-//
-// Return from subroutine.
-func (cpu *CPU) return_from_subroutine() {
-	returnAddress := cpu.popFromStack16()
-	cpu.pc = returnAddress
-}
-
 // 0xC8 Return from subroutine if condition cc is met
 func ret_z(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagZ) {
-		cpu.return_from_subroutine()
-		return 20, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if cpu.getFlag(FlagZ) {
+			return 4, false
+		}
+		return 4, true
+	case 3:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 5:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	return 8, true
+	return 20, true
 }
 
 // 0xD8 Return from subroutine if condition cc is met
 func ret_c(cpu *CPU) (uint8, bool) {
-	if cpu.getFlag(FlagC) {
-		cpu.return_from_subroutine()
-		return 20, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if cpu.getFlag(FlagC) {
+			return 4, false
+		}
+		return 4, true
+	case 3:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 5:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	return 8, true
+	return 20, true
 }
 
 // 0xC0 Return from subroutine if condition cc is met
 func ret_nz(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagZ) {
-		cpu.return_from_subroutine()
-		return 20, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if !cpu.getFlag(FlagZ) {
+			return 4, false
+		}
+		return 4, true
+	case 3:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 5:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	return 8, true
+	return 20, true
 }
 
 // 0xD0 Return from subroutine if condition cc is met
 func ret_nc(cpu *CPU) (uint8, bool) {
-	if !cpu.getFlag(FlagC) {
-		cpu.return_from_subroutine()
-		return 20, true
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		if !cpu.getFlag(FlagC) {
+			return 4, false
+		}
+		return 4, true
+	case 3:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 5:
+		cpu.pc = cpu.immediateValue
+		return 4, true
 	}
 
-	return 8, true
+	return 20, true
 }
 
 // 0xC9 Return from subroutine
 func ret(cpu *CPU) (uint8, bool) {
-	cpu.return_from_subroutine()
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		return 4, true
+	}
+
 	return 16, true
 }
 
 // 0xD9 Return from subroutine and enable interrupts
 func reti(cpu *CPU) (uint8, bool) {
-	cpu.ScheduleIme()
-	cpu.return_from_subroutine()
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		return 4, false
+	case 4:
+		cpu.pc = cpu.immediateValue
+		cpu.ime = true
+		return 4, true
+	}
+
 	return 16, true
 }
 
 // 0xC7 Call address vec
 func rst_00h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x00
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x00
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xCF Call address vec
 func rst_08h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x08
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x08
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xD7 Call address vec
 func rst_10h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x10
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x10
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xDF Call address vec
 func rst_18h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x18
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x18
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xE7 Call address vec
 func rst_20h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x20
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x20
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xEF Call address vec
 func rst_28h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x28
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x28
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xF7 Call address vec
 func rst_30h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x30
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x30
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xFF Call address vec
 func rst_38h(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.pc + 1)
-	cpu.pc = 0x38
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.pc >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.pc & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		cpu.pc = 0x38
+		return 4, true
+	}
 	return 16, true
 }
 
@@ -2089,7 +2558,21 @@ func scf(cpu *CPU) (uint8, bool) {
 
 // 0x39 Add the value in SP to HL
 func add_hl_sp(cpu *CPU) (uint8, bool) {
-	cpu.add_hl_r16(cpu.sp)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		hl := cpu.getHL()
+		sp := cpu.sp
+
+		result32 := uint32(hl) + uint32(sp)
+		result16 := uint16(result32)
+		cpu.setHL(result16)
+
+		cpu.setFlag(FlagN, false)
+		cpu.set_add_carry_flags(hl, sp, result32)
+		return 4, true
+	}
 	return 8, true
 }
 
@@ -2105,112 +2588,274 @@ func (cpu *CPU) set_e8_carry_flags(original uint16, e8Unsigned uint16) {
 
 // 0xE8 Add the signed value e8 to SP
 func add_sp_e8(cpu *CPU) (uint8, bool) {
-	originalSp := cpu.sp
-	cpu.fetchImmLowByte()
-	e8Signed := int8(cpu.immediateValue)
-	result := int32(cpu.sp) + int32(e8Signed)
-	cpu.sp = uint16(result)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		e8Unsigned := uint16(uint8(cpu.immediateValue))
 
-	// flags are based on unsigned addition
-	e8Unsigned := uint16(cpu.immediateValue)
+		cpu.setFlag(FlagZ, false)
+		cpu.setFlag(FlagN, false)
+		cpu.set_e8_carry_flags(cpu.sp, e8Unsigned)
+		return 4, false
+	case 4:
+		e8Signed := int8(uint8(cpu.immediateValue))
+		result := uint16(int32(cpu.sp) + int32(e8Signed))
+		cpu.sp = result
+		return 4, true
+	}
 
-	cpu.setFlag(FlagZ, false)
-	cpu.setFlag(FlagN, false)
-	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
 	return 16, true
 }
 
 // 0x3B Decrement the value in register SP by 1
 func dec_sp(cpu *CPU) (uint8, bool) {
-	cpu.sp--
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x33 Increment the value in register SP by 1
 func inc_sp(cpu *CPU) (uint8, bool) {
-	cpu.sp++
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp++
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0xF9 Copy register HL into register SP
 func ld_sp_hl(cpu *CPU) (uint8, bool) {
-	cpu.sp = cpu.getHL()
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp = cpu.getHL()
+		return 4, true
+	}
 	return 8, true
 }
 
 // 0x08 Copy SP & $FF at address n16 and SP >> 8 at address n16 + 1
 func ld_a16_sp(cpu *CPU) (uint8, bool) {
-	cpu.fetchImmLowByte()
-	cpu.fetchImmHighByte()
-	cpu.bus.Write(cpu.immediateValue, uint8(cpu.sp&0xFF))
-	cpu.bus.Write(cpu.immediateValue+1, uint8(cpu.sp>>8))
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		cpu.fetchImmHighByte()
+		return 4, false
+	case 4:
+		cpu.bus.Write(cpu.immediateValue, uint8(cpu.sp&0xFF))
+		return 4, false
+	case 5:
+		cpu.bus.Write(cpu.immediateValue+1, uint8(cpu.sp>>8))
+		return 4, true
+	}
 	return 20, true
 }
 
 // 0xF8 Add the signed value e8 to SP and copy the result in HL
 func ld_hl_sp_e8(cpu *CPU) (uint8, bool) {
-	originalSp := cpu.sp
-	cpu.fetchImmLowByte()
-	e8Signed := int8(cpu.immediateValue)
-	result := uint16(int32(cpu.sp) + int32(e8Signed))
-	cpu.setHL(result)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.fetchImmLowByte()
+		return 4, false
+	case 3:
+		e8Unsigned := uint16(uint8(cpu.immediateValue))
+		e8Signed := int8(cpu.immediateValue)
 
-	e8Unsigned := uint16(cpu.immediateValue)
-	cpu.setFlag(FlagZ, false)
-	cpu.setFlag(FlagN, false)
-	cpu.set_e8_carry_flags(originalSp, e8Unsigned)
+		result := uint16(int32(cpu.sp) + int32(e8Signed))
+		cpu.setHL(result)
+
+		cpu.setFlag(FlagZ, false)
+		cpu.setFlag(FlagN, false)
+		cpu.set_e8_carry_flags(cpu.sp, e8Unsigned)
+		return 4, true
+	}
 	return 12, true
 }
 
 // 0xC1 Pop register r16 from the stack
 func pop_bc(cpu *CPU) (uint8, bool) {
-	value := cpu.popFromStack16()
-	cpu.setBC(value)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		cpu.setBC(cpu.immediateValue)
+		return 4, true
+	}
+
 	return 12, true
 }
 
 // 0xD1 Pop register r16 from the stack
 func pop_de(cpu *CPU) (uint8, bool) {
-	value := cpu.popFromStack16()
-	cpu.setDE(value)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		cpu.setDE(cpu.immediateValue)
+		return 4, true
+	}
+
 	return 12, true
 }
 
 // 0xE1 Pop register r16 from the stack
 func pop_hl(cpu *CPU) (uint8, bool) {
-	value := cpu.popFromStack16()
-	cpu.setHL(value)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		cpu.setHL(cpu.immediateValue)
+		return 4, true
+	}
+
 	return 12, true
 }
 
 // 0xF1 Pop register AF from the stack
 func pop_af(cpu *CPU) (uint8, bool) {
-	value := cpu.popFromStack16()
-	cpu.setAF(value)
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		lowByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmLowByte(lowByte)
+		cpu.sp++
+		return 4, false
+	case 3:
+		highByte := cpu.bus.Read(cpu.sp)
+		cpu.setImmHighByte(highByte)
+		cpu.sp++
+		cpu.setAF(cpu.immediateValue)
+		return 4, true
+	}
+
 	return 12, true
 }
 
 // 0xC5 Push register r16 into the stack
 func push_bc(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.getBC())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.getBC() >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.getBC() & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xD5 Push register r16 into the stack
 func push_de(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.getDE())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.getDE() >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.getDE() & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xE5 Push register r16 into the stack
 func push_hl(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.getHL())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.getHL() >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.getHL() & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		return 4, true
+	}
 	return 16, true
 }
 
 // 0xF5 Push register r16 into the stack
 func push_af(cpu *CPU) (uint8, bool) {
-	cpu.pushToStack16(cpu.getAF())
+	switch cpu.mCycle {
+	case 1:
+		return 4, false
+	case 2:
+		cpu.sp--
+		return 4, false
+	case 3:
+		highByte := uint8(cpu.getAF() >> 8)
+		cpu.bus.Write(cpu.sp, highByte)
+		cpu.sp--
+		return 4, false
+	case 4:
+		lowByte := uint8(cpu.getAF() & 0x00FF)
+		cpu.bus.Write(cpu.sp, lowByte)
+		return 4, true
+	}
 	return 16, true
 }
 
@@ -2297,8 +2942,6 @@ func stop(cpu *CPU) (uint8, bool) {
 //
 // BIT u3,[HL] - Test bit u3 in the byte pointed by HL, set the zero flag if bit not set.
 func (cpu *CPU) bit_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
-	hlOperation := r8 == 0b110
-
 	setFlags := func(bit uint8) {
 		cpu.setFlag(FlagZ, bit == 0)
 		cpu.setFlag(FlagN, false)
@@ -2307,10 +2950,9 @@ func (cpu *CPU) bit_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 
 	switch cpu.mCycle {
 	case 1:
-		// fetch CB prefix
 		return 4, false
 	case 2:
-		// fetch opcode
+		hlOperation := r8 == 0b110
 		if !hlOperation {
 			testValue := cpu.get_r8(r8)
 			cpu.immediateValue = uint16(testValue)
@@ -2338,7 +2980,8 @@ func (cpu *CPU) res_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			cpu.set_r8(r8, value & ^(1<<u3))
 			return 4, true
@@ -2363,7 +3006,8 @@ func (cpu *CPU) set_u3_r8(u3 uint8, r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			cpu.set_r8(r8, value|(1<<u3))
 			return 4, true
@@ -2454,7 +3098,8 @@ func (cpu *CPU) rlc(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit7 := (value & 0b1000_0000)
 			result := (value << 1) | (bit7 >> 7)
@@ -2490,7 +3135,8 @@ func (cpu *CPU) rrc(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit0 := value & 1
 			result := (value >> 1) | (bit0 << 7)
@@ -2527,7 +3173,8 @@ func (cpu *CPU) rl(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit7 := (value & 0b1000_0000)
 			var mask uint8 = 0
@@ -2571,7 +3218,8 @@ func (cpu *CPU) rr(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit0 := value & 1
 			var mask uint8 = 0
@@ -2615,7 +3263,8 @@ func (cpu *CPU) sla(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit7 := (value & 0b1000_0000)
 			result := value << 1
@@ -2651,7 +3300,8 @@ func (cpu *CPU) sra(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit0 := value & 1
 			bit7 := (value & 0b1000_0000)
@@ -2689,7 +3339,8 @@ func (cpu *CPU) srl(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			bit0 := value & 1
 			result := value >> 1
@@ -2725,7 +3376,8 @@ func (cpu *CPU) swap(r8 uint8) (uint8, bool) {
 	case 1:
 		return 4, false
 	case 2:
-		if r8 != 0b110 {
+		hlOperation := r8 == 0b110
+		if !hlOperation {
 			value := cpu.get_r8(r8)
 			upperNibble := value & 0xF0
 			lowerNibble := value & 0x0F
