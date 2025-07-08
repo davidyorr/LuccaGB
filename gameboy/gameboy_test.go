@@ -11,6 +11,13 @@ import (
 	"github.com/davidyorr/EchoGB/logger"
 )
 
+type TestType string
+
+const (
+	TestTypeBlargg  TestType = "blargg"
+	TestTypeMooneye TestType = "mooneye"
+)
+
 type logBuffer struct {
 	messages []string
 	mu       sync.Mutex
@@ -51,22 +58,26 @@ func initTestLogger() (*logBuffer, *slog.Logger) {
 }
 
 func TestBlarggCpuInsructions(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000)
+	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000, TestTypeBlargg)
 }
 
 func TestBlarggInstructionTiming(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/instr_timing", 1_000_000)
+	loadRomAndRunSteps(t, "blargg/instr_timing", 1_000_000, TestTypeBlargg)
 }
 
 func TestBlarggMemoryTiming(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/mem_timing", 2_000_000)
+	loadRomAndRunSteps(t, "blargg/mem_timing", 2_000_000, TestTypeBlargg)
 }
 
 func TestBlarggHaltBug(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/halt_bug", 4_000_000)
+	loadRomAndRunSteps(t, "blargg/halt_bug", 4_000_000, TestTypeBlargg)
 }
 
-func loadRomAndRunSteps(t *testing.T, romName string, stepCount int) {
+func TestMooneyeInstrDaa(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/instr/daa", 500_000, TestTypeMooneye)
+}
+
+func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType TestType) {
 	logBuffer, testLogger := initTestLogger()
 	logger.Init(testLogger.Handler())
 	defer logger.Init(slog.Default().Handler())
@@ -86,7 +97,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int) {
 		gb.Step()
 		output := string(gb.serial.SerialOutputBuffer())
 
-		passed, failed := checkResult(output)
+		passed, failed := checkResult(output, testType)
 		if failed {
 			t.Logf("❌ TEST FAILED after %d steps", i+1)
 			t.Fatal()
@@ -112,8 +123,15 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int) {
 	t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
 }
 
-func checkResult(output string) (passed bool, failed bool) {
-	passed = strings.Contains(output, "Passed\n") || strings.Contains(output, "Passed all tests\n")
-	failed = strings.Contains(output, "Failed")
+func checkResult(output string, testType TestType) (passed bool, failed bool) {
+	switch testType {
+	case TestTypeBlargg:
+		passed = strings.Contains(output, "Passed\n") || strings.Contains(output, "Passed all tests\n")
+		failed = strings.Contains(output, "Failed")
+	case TestTypeMooneye:
+		// check for Fibonacci sequence (3,5,8,13,21,34) in hex
+		passed = strings.Contains(output, "\x03\x05\x08\x0D\x15\x22")
+		failed = strings.Contains(output, "\x42\x42\x42\x42\x42\x42")
+	}
 	return
 }
