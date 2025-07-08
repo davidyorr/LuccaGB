@@ -51,51 +51,19 @@ func initTestLogger() (*logBuffer, *slog.Logger) {
 }
 
 func TestBlarggCpuInsructions(t *testing.T) {
-	logBuffer, testLogger := initTestLogger()
-	logger.Init(testLogger.Handler())
-	defer logger.Init(slog.Default().Handler())
-
-	romBytes, err := os.ReadFile("../roms/test/cpu_instrs.gb")
-	if err != nil {
-		t.Fatal("Error reading file:", err)
-	}
-
-	gb := New()
-	gb.LoadRom(romBytes)
-
-	for range 20_000_000 {
-		_, err := gb.Step()
-		if err != nil {
-			output := string(gb.serial.SerialOutputBuffer())
-			t.Logf("\n============\n%s\n============\n", output)
-			if testing.Verbose() {
-				for _, line := range logBuffer.LastN(40) {
-					fmt.Fprint(os.Stdout, line)
-				}
-			}
-			t.Fatal(err)
-		}
-	}
-	output := string(gb.serial.SerialOutputBuffer())
-	t.Logf("\n============\n%s\n============\n", output)
-
-	if testing.Verbose() {
-		for _, line := range logBuffer.LastN(40) {
-			fmt.Fprint(os.Stdout, line)
-		}
-	}
+	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000)
 }
 
 func TestBlarggInstructionTiming(t *testing.T) {
-	loadRomAndRunSteps(t, "instr_timing", 1_000_000)
+	loadRomAndRunSteps(t, "blargg/instr_timing", 1_000_000)
 }
 
 func TestBlarggMemoryTiming(t *testing.T) {
-	loadRomAndRunSteps(t, "mem_timing", 5_000_000)
+	loadRomAndRunSteps(t, "blargg/mem_timing", 2_000_000)
 }
 
 func TestBlarggHaltBug(t *testing.T) {
-	loadRomAndRunSteps(t, "halt_bug", 40_000_000)
+	loadRomAndRunSteps(t, "blargg/halt_bug", 4_000_000)
 }
 
 func loadRomAndRunSteps(t *testing.T, romName string, stepCount int) {
@@ -111,26 +79,41 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int) {
 	gb := New()
 	gb.LoadRom(romBytes)
 
-	for range stepCount {
-		_, err := gb.Step()
+	// track if the test emitted any pass/fail signal
+	testComplete := false
+
+	for i := range stepCount {
+		gb.Step()
 		output := string(gb.serial.SerialOutputBuffer())
-		if err != nil || strings.Contains(output, "Failed") {
-			t.Logf("\n============\n%s\n============\n", output)
-			for _, line := range logBuffer.LastN(10) {
-				fmt.Fprint(os.Stdout, line)
-			}
-			t.Fatal(err)
+
+		passed, failed := checkResult(output)
+		if failed {
+			t.Logf("❌ TEST FAILED after %d steps", i+1)
+			t.Fatal()
 		}
-		if strings.Contains(output, "Passed") {
+		if passed {
+			testComplete = true
+			t.Logf("✅ TEST PASSED after %d steps", i+1)
 			break
 		}
 	}
-	output := string(gb.serial.SerialOutputBuffer())
-	t.Logf("\n============\n%s\n============\n", output)
 
-	if testing.Verbose() {
-		for _, line := range logBuffer.LastN(10) {
+	if !testComplete {
+		output := string(gb.serial.SerialOutputBuffer())
+		t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
+		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
+		t.Logf("❌ TIMED OUT after %d steps", stepCount)
+		t.Fatal("Test timed out (no pass/fail signal detected)")
 	}
+
+	output := string(gb.serial.SerialOutputBuffer())
+	t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
+}
+
+func checkResult(output string) (passed bool, failed bool) {
+	passed = strings.Contains(output, "Passed\n") || strings.Contains(output, "Passed all tests\n")
+	failed = strings.Contains(output, "Failed")
+	return
 }
