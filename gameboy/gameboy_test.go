@@ -18,45 +18,6 @@ const (
 	TestTypeMooneye TestType = "mooneye"
 )
 
-type logBuffer struct {
-	messages []string
-	mu       sync.Mutex
-}
-
-func (lb *logBuffer) Write(p []byte) (n int, err error) {
-	lb.mu.Lock()
-	defer lb.mu.Unlock()
-	lb.messages = append(lb.messages, string(p))
-	return len(p), nil
-}
-
-func (lb *logBuffer) LastN(n int) []string {
-	lb.mu.Lock()
-	defer lb.mu.Unlock()
-	if len(lb.messages) <= n {
-		return lb.messages
-	}
-	return lb.messages[len(lb.messages)-n:]
-}
-
-func initTestLogger() (*logBuffer, *slog.Logger) {
-	// Redirect logs to a buffer
-	logBuffer := &logBuffer{
-		messages: make([]string, 0),
-	}
-	testLogger := slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return slog.String(a.Key, a.Value.Time().Format("15:04:05.000"))
-			}
-			return a
-		},
-	}))
-
-	return logBuffer, testLogger
-}
-
 func TestBlarggCpuInsructions(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000, TestTypeBlargg)
 }
@@ -115,6 +76,9 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
+		if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
+			fmt.Printf("Failed to write test output: %v\n", err)
+		}
 		t.Logf("❌ TIMED OUT after %d steps", stepCount)
 		t.Fatal("Test timed out (no pass/fail signal detected)")
 	}
@@ -134,4 +98,43 @@ func checkResult(output string, testType TestType) (passed bool, failed bool) {
 		failed = strings.Contains(output, "\x42\x42\x42\x42\x42\x42")
 	}
 	return
+}
+
+type logBuffer struct {
+	messages []string
+	mu       sync.Mutex
+}
+
+func (lb *logBuffer) Write(p []byte) (n int, err error) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	lb.messages = append(lb.messages, string(p))
+	return len(p), nil
+}
+
+func (lb *logBuffer) LastN(n int) []string {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	if len(lb.messages) <= n {
+		return lb.messages
+	}
+	return lb.messages[len(lb.messages)-n:]
+}
+
+func initTestLogger() (*logBuffer, *slog.Logger) {
+	// Redirect logs to a buffer
+	logBuffer := &logBuffer{
+		messages: make([]string, 0),
+	}
+	testLogger := slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.String(a.Key, a.Value.Time().Format("15:04:05.000"))
+			}
+			return a
+		},
+	}))
+
+	return logBuffer, testLogger
 }
