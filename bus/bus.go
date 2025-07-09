@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/davidyorr/EchoGB/dma"
 	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/mmu"
 	"github.com/davidyorr/EchoGB/ppu"
@@ -13,6 +14,7 @@ import (
 type Bus struct {
 	ppu    *ppu.PPU
 	mmu    *mmu.MMU
+	dma    *dma.DMA
 	timer  *timer.Timer
 	serial *serial.Serial
 }
@@ -23,8 +25,9 @@ func New() *Bus {
 	return bus
 }
 
-func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial, ppu *ppu.PPU) {
+func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial, ppu *ppu.PPU, dma *dma.DMA) {
 	bus.mmu = mmu
+	bus.dma = dma
 	bus.timer = timer
 	bus.serial = serial
 	bus.ppu = ppu
@@ -59,6 +62,9 @@ func (bus *Bus) Read(address uint16) uint8 {
 
 func (bus *Bus) Write(address uint16, value uint8) {
 	switch {
+	// DMA
+	case address == 0xFF46:
+		bus.dma.StartTransfer(value)
 	// PPU
 	case address >= 0xFF40 && address <= 0xFF4B:
 		bus.ppu.Write(address, value)
@@ -78,4 +84,8 @@ func (bus *Bus) Write(address uint16, value uint8) {
 		"Address", fmt.Sprintf("0x%04X", address),
 		"Value", fmt.Sprintf("0x%02X", value),
 	)
+}
+
+func (bus *Bus) DmaIsActive() bool {
+	return bus.dma.Active()
 }

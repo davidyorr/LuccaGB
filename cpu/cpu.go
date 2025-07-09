@@ -77,6 +77,9 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 }
 
 func (cpu *CPU) Step() {
+	if cpu.bus.DmaIsActive() {
+		return
+	}
 	if cpu.halted {
 		if cpu.interruptsPending() {
 			cpu.halted = false
