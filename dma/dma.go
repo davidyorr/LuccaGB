@@ -7,6 +7,7 @@ type DMA struct {
 	sourceAddress uint16
 	progress      uint8
 	startDelay    uint8
+	tCycleCounter uint8
 	bus           MemoryBus
 }
 
@@ -38,32 +39,41 @@ func (dma *DMA) ConnectBus(bus MemoryBus) {
 	dma.bus = bus
 }
 
-func (dma *DMA) Step(cycles uint8) {
-	for range cycles {
-		if !dma.active {
-			return
-		}
+// Perform 1 T-cycle of work
+func (dma *DMA) Step() {
+	dma.tCycleCounter++
 
-		if dma.startDelay > 0 {
-			dma.startDelay--
-			return
-		}
+	if dma.tCycleCounter == 4 {
+		dma.tCycleCounter = 0
+		dma.executeMachineCycle()
+	}
+}
 
-		// Source:      $XX00 - $XX9F
-		// Destination: $FE00 - $FE9F
+// Perform 1 M-cycle of work
+func (dma *DMA) executeMachineCycle() {
+	if !dma.active {
+		return
+	}
 
-		source := dma.sourceAddress + uint16(dma.progress)
-		destination := 0xFE00 + uint16(dma.progress)
+	if dma.startDelay > 0 {
+		dma.startDelay--
+		return
+	}
 
-		sourceByte := dma.bus.Read(source)
-		dma.bus.Write(destination, sourceByte)
+	// Source:      $XX00 - $XX9F
+	// Destination: $FE00 - $FE9F
 
-		dma.progress++
+	source := dma.sourceAddress + uint16(dma.progress)
+	destination := 0xFE00 + uint16(dma.progress)
 
-		if dma.progress == transferDuration {
-			logger.Info("FINISHED DMA TRANSFER")
-			dma.active = false
-		}
+	sourceByte := dma.bus.Read(source)
+	dma.bus.Write(destination, sourceByte)
+
+	dma.progress++
+
+	if dma.progress == transferDuration {
+		logger.Info("FINISHED DMA TRANSFER")
+		dma.active = false
 	}
 }
 

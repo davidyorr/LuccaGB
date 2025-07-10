@@ -67,12 +67,13 @@ func (ppu *PPU) Reset() {
 	ppu.counter = 0
 }
 
-func (ppu *PPU) Step(cycles uint8) {
+// Perform 1 T-cycle of work
+func (ppu *PPU) Step() {
 	if !ppu.lcdEnabled() {
 		return
 	}
 
-	ppu.counter += uint16(cycles)
+	ppu.counter++
 
 	if ppu.counter >= dotsPerScanline {
 		ppu.counter -= dotsPerScanline

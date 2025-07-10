@@ -30,24 +30,25 @@ func (serial *Serial) Reset() {
 	serial.sc = 0x7E
 }
 
-// return value of true represents a serial interrupt request
-func (serial *Serial) Step(cycles uint8) bool {
+// Perform 1 T-cycle of work
+func (serial *Serial) Step() (requestInterrupt bool) {
 	if !serial.transferInProgress {
 		return false
 	}
 
-	serial.transferCyclesRemaining -= uint16(cycles)
+	serial.transferCyclesRemaining--
+	requestInterrupt = false
 
-	if serial.transferCyclesRemaining <= 0 {
+	if serial.transferCyclesRemaining == 0 {
 		serial.transferInProgress = false
 		serial.transferCyclesRemaining = 0
 		serial.sb = 0xFF
 		// clear the transfer bit
 		serial.sc &^= 0b1000_0000
-		return true
+		requestInterrupt = true
 	}
 
-	return false
+	return requestInterrupt
 }
 
 func (serial *Serial) Read(address uint16) uint8 {

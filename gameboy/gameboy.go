@@ -56,19 +56,21 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 	gameboy.cartridge.LoadRom(rom)
 }
 
+// Advance the entire system by 1 M-cycle (4 T-cycles)
 func (gameboy *Gameboy) Step() (uint8, error) {
-	gameboy.cpu.Step()
-
-	requestTimerInterrupt := gameboy.timer.Step(1)
-	if requestTimerInterrupt {
-		gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
+	for range 4 {
+		gameboy.cpu.Step()
+		requestTimerInterrupt := gameboy.timer.Step()
+		if requestTimerInterrupt {
+			gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
+		}
+		requestSerialInterrupt := gameboy.serial.Step()
+		if requestSerialInterrupt {
+			gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
+		}
+		gameboy.ppu.Step()
+		gameboy.dma.Step()
 	}
-	requestSerialInterrupt := gameboy.serial.Step(1)
-	if requestSerialInterrupt {
-		gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
-	}
-	gameboy.ppu.Step(1)
-	gameboy.dma.Step(1)
 
 	logger.Debug(
 		"END OF GAMEBOY STEP",

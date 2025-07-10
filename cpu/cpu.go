@@ -46,6 +46,7 @@ type CPU struct {
 	interruptServiceRoutineStep uint8
 	interruptToService          uint16
 	interruptTypeToClear        interrupt.Interrupt
+	tCycleCounter               uint8
 	bus                         *bus.Bus
 }
 
@@ -76,7 +77,18 @@ func (cpu *CPU) ConnectBus(bus *bus.Bus) {
 	cpu.bus = bus
 }
 
+// Perform 1 T-cycle of work
 func (cpu *CPU) Step() {
+	cpu.tCycleCounter++
+
+	if cpu.tCycleCounter == 4 {
+		cpu.tCycleCounter = 0
+		cpu.executeMachineCycle()
+	}
+}
+
+// Perform 1 M-cycle of work
+func (cpu *CPU) executeMachineCycle() {
 	if cpu.bus.DmaIsActive() {
 		return
 	}

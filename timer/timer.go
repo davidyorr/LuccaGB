@@ -26,32 +26,26 @@ func (timer *Timer) Reset() {
 	timer.previousTimerBitState = false
 }
 
-// return value of true represents a signal interrupt request
-func (timer *Timer) Step(cycles uint8) bool {
-	var interrupt bool = false
-	cycles16 := uint16(cycles)
+// Perform 1 T-cycle of work
+func (timer *Timer) Step() (requestInterrupt bool) {
+	timer.counter++
+	currentTimerBitState := timer.getTimerBitState()
 
-	for cycles16 > 0 {
-		timer.counter++
-		currentTimerBitState := timer.getTimerBitState()
-
-		if timer.isTimerEnabled() {
-			if timer.previousTimerBitState && !currentTimerBitState {
-				timer.tima++
-				// check for overflow
-				if timer.tima == 0 {
-					timer.tima = timer.tma
-					interrupt = true
-				}
+	if timer.isTimerEnabled() {
+		if timer.previousTimerBitState && !currentTimerBitState {
+			timer.tima++
+			// check for overflow
+			if timer.tima == 0 {
+				timer.tima = timer.tma
+				requestInterrupt = true
 			}
-
 		}
 
-		timer.previousTimerBitState = currentTimerBitState
-		cycles16--
 	}
 
-	return interrupt
+	timer.previousTimerBitState = currentTimerBitState
+
+	return requestInterrupt
 }
 
 func (timer *Timer) Read(address uint16) uint8 {
