@@ -8,10 +8,7 @@ import (
 )
 
 type PPU struct {
-	// 0x8000 - 0x97FF
-	vramTileData [6144]uint8
-
-	// 0x8000 - 9FFF
+	// 0x8000 - 0x9FFF
 	videoRam [8192]uint8
 	// 0xFE00 - 0xFE9F
 	oam [160]uint8
@@ -118,8 +115,22 @@ func (ppu *PPU) getMode3Duration() uint16 {
 }
 
 func (ppu *PPU) Read(address uint16) uint8 {
-	if address == 0xFF44 {
+	switch {
+	// LY
+	case address == 0xFF44:
 		return ppu.ly
+	// VRAM
+	case address >= 0x8000 && address <= 0x9FFF:
+		if ppu.vramIsAccessible() {
+			return ppu.videoRam[address-0x8000]
+		}
+		return 0xFF
+	// OAM
+	case address >= 0xFE00 && address <= 0xFE9F:
+		if ppu.oamIsAccessible() {
+			return ppu.oam[address-0xFE00]
+		}
+		return 0xFF
 	}
 	return 0
 }
@@ -131,8 +142,19 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		"Value", fmt.Sprintf("0x%02X", value),
 	)
 	switch {
+	// LCDC
 	case address == 0xFF40:
 		ppu.lcdc = value
+	// VRAM
+	case address >= 0x8000 && address <= 0x9FFF:
+		if ppu.vramIsAccessible() {
+			ppu.videoRam[address-0x8000] = value
+		}
+	// OAM
+	case address >= 0xFE00 && address <= 0xFE9F:
+		if ppu.oamIsAccessible() {
+			ppu.oam[address-0xFE00] = value
+		}
 	default:
 		logger.Debug("unhandled address while writing <-")
 	}
@@ -179,4 +201,12 @@ func (ppu *PPU) compareLycLy() {
 
 func (ppu *PPU) lcdEnabled() bool {
 	return (ppu.lcdc & 0b1000_0000) != 0
+}
+
+func (ppu *PPU) vramIsAccessible() bool {
+	return ppu.mode != DrawingPixels
+}
+
+func (ppu *PPU) oamIsAccessible() bool {
+	return ppu.mode != OamScan && ppu.mode != DrawingPixels
 }
