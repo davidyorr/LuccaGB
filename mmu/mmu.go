@@ -62,8 +62,7 @@ func (mmu *MMU) Reset() {
 	// ioRegisters[0xFF49-0xFF00] = 0x00 // OBP1
 }
 
-func (mmu *MMU) Read(address uint16) uint8 {
-	var value uint8 = 0
+func (mmu *MMU) Read(address uint16) (value uint8) {
 	switch {
 	case address <= 0x7FFF:
 		// ROM

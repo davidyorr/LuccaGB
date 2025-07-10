@@ -33,12 +33,16 @@ func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial,
 	bus.ppu = ppu
 }
 
-func (bus *Bus) Read(address uint16) uint8 {
-	var value uint8 = 0
-
+func (bus *Bus) Read(address uint16) (value uint8) {
 	switch {
-	// PPU
+	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
+		value = bus.ppu.Read(address)
+	// PPU VRAM
+	case address >= 0x8000 && address <= 0x9FFF:
+		value = bus.ppu.Read(address)
+	// PPU OAM
+	case address >= 0xFE00 && address <= 0xFE9F:
 		value = bus.ppu.Read(address)
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
@@ -65,8 +69,14 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	// DMA
 	case address == 0xFF46:
 		bus.dma.StartTransfer(value)
-	// PPU
+	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
+		bus.ppu.Write(address, value)
+	// PPU VRAM
+	case address >= 0x8000 && address <= 0x9FFF:
+		bus.ppu.Write(address, value)
+	// PPU OAM
+	case address >= 0xFE00 && address <= 0xFE9F:
 		bus.ppu.Write(address, value)
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:

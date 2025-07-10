@@ -42,9 +42,6 @@ type PPU struct {
 	counter            uint16
 }
 
-// 1 dot = T-cycle
-const dotsPerScanline = 456
-
 func New(interruptRequest func(interrupt.Interrupt)) *PPU {
 	ppu := &PPU{}
 	ppu.interruptRequester = interruptRequest
@@ -66,6 +63,9 @@ func (ppu *PPU) Reset() {
 	ppu.mode = OamScan
 	ppu.counter = 0
 }
+
+// 1 dot = T-cycle
+const dotsPerScanline = 456
 
 // Perform 1 T-cycle of work
 func (ppu *PPU) Step() {
