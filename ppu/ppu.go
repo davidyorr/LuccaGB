@@ -78,8 +78,8 @@ func (ppu *PPU) Step() {
 
 	ppu.counter++
 
-	if ppu.counter >= dotsPerScanline {
-		ppu.counter -= dotsPerScanline
+	if ppu.counter == dotsPerScanline {
+		ppu.counter = 0
 		ppu.ly++
 
 		if ppu.ly == 144 {
@@ -97,12 +97,10 @@ func (ppu *PPU) Step() {
 			if ppu.mode != OamScan {
 				ppu.changeMode(OamScan)
 			}
-			ppu.compareLycLy()
 		} else if ppu.counter < ppu.getMode3Duration() {
 			if ppu.mode != DrawingPixels {
 				ppu.changeMode(DrawingPixels)
 			}
-			ppu.compareLycLy()
 		} else {
 			if ppu.mode != HorizontalBlank {
 				ppu.changeMode(HorizontalBlank)
