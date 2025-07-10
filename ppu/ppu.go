@@ -33,7 +33,13 @@ type PPU struct {
 	// 0xFF4A - WY: Window Y position
 	wy uint8
 	// 0xFF4B - WX: Window X position plus 7
-	wx                 uint8
+	wx uint8
+	// 0xFF47 - BGP: Background palette data
+	bgp uint8
+	// 0xFF48 - OBP0: Object palette 0 data
+	obp0 uint8
+	// 0xFF49 - OBP1: Object palette 1 data
+	obp1               uint8
 	mode               Mode
 	interruptRequester func(interruptType interrupt.Interrupt)
 	counter            uint16
@@ -116,9 +122,28 @@ func (ppu *PPU) getMode3Duration() uint16 {
 
 func (ppu *PPU) Read(address uint16) uint8 {
 	switch {
-	// LY
+	case address == 0xFF40:
+		return ppu.lcdc
+	case address == 0xFF41:
+		return ppu.stat
+	case address == 0xFF42:
+		return ppu.scy
+	case address == 0xFF43:
+		return ppu.scx
 	case address == 0xFF44:
 		return ppu.ly
+	case address == 0xFF45:
+		return ppu.lyc
+	case address == 0xFF47:
+		return ppu.bgp
+	case address == 0xFF48:
+		return ppu.obp0
+	case address == 0xFF49:
+		return ppu.obp1
+	case address == 0xFF4A:
+		return ppu.wy
+	case address == 0xFF4B:
+		return ppu.wx
 	// VRAM
 	case address >= 0x8000 && address <= 0x9FFF:
 		if ppu.vramIsAccessible() {
@@ -142,9 +167,27 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		"Value", fmt.Sprintf("0x%02X", value),
 	)
 	switch {
-	// LCDC
 	case address == 0xFF40:
 		ppu.lcdc = value
+	case address == 0xFF41:
+		ppu.stat = (ppu.stat & 0b1000_0111) | (value & 0b0111_1000)
+	case address == 0xFF42:
+		ppu.scy = value
+	case address == 0xFF43:
+		ppu.scx = value
+	case address == 0xFF45:
+		ppu.lyc = value
+		ppu.compareLycLy()
+	case address == 0xFF47:
+		ppu.bgp = value
+	case address == 0xFF48:
+		ppu.obp0 = value
+	case address == 0xFF49:
+		ppu.obp1 = value
+	case address == 0xFF4A:
+		ppu.wy = value
+	case address == 0xFF4B:
+		ppu.wx = value
 	// VRAM
 	case address >= 0x8000 && address <= 0x9FFF:
 		if ppu.vramIsAccessible() {
