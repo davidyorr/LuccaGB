@@ -10,8 +10,11 @@ import (
 type PPU struct {
 	// 0x8000 - 0x9FFF
 	videoRam [8192]uint8
-	// 0xFE00 - 0xFE9F
+	// 0xFE00 - 0xFE9F - Object Attribute Memory
+	//	40 sprites (objects), each 4 bytes long
 	oam [160]uint8
+	// 10 sprites can be displayed per scanline
+	visibleSprites []uint8
 	// 0xFF40 - LCDC: LCD control
 	lcdc uint8
 	// 0xFF44 - LY: LCD Y coordinate [read-only]
@@ -93,15 +96,32 @@ func (ppu *PPU) Step() {
 	}
 
 	if ppu.ly < 144 {
-		if ppu.counter < 80 {
+		switch {
+		// Mode 2: OAM scan
+		case ppu.counter < 80:
 			if ppu.mode != OamScan {
 				ppu.changeMode(OamScan)
+				ppu.visibleSprites = nil
 			}
-		} else if ppu.counter < ppu.getMode3Duration() {
+			if ppu.counter%2 == 0 {
+				if len(ppu.visibleSprites) < 10 {
+					oamIndex := ppu.counter / 2
+					spriteY := ppu.oam[oamIndex*4]
+					var height uint8 = 8
+					if ((ppu.lcdc & 0b0000_0100) >> 2) == 1 {
+						height = 16
+					}
+					if ppu.ly+16 >= spriteY && ppu.ly+16 < spriteY+height {
+						ppu.visibleSprites = append(ppu.visibleSprites, uint8(oamIndex))
+					}
+				}
+			}
+		// Mode 3: Drawing Pixels
+		case ppu.counter < ppu.getMode3Duration():
 			if ppu.mode != DrawingPixels {
 				ppu.changeMode(DrawingPixels)
 			}
-		} else {
+		default:
 			if ppu.mode != HorizontalBlank {
 				ppu.changeMode(HorizontalBlank)
 			}
@@ -111,11 +131,51 @@ func (ppu *PPU) Step() {
 
 func (ppu *PPU) getMode3Duration() uint16 {
 	var baseDuration uint16 = 172
-	var backgroundScrollingPenalty uint16 = 0
+	var backgroundScrollingPenalty uint16 = uint16(ppu.scx) % 8
 	var windowPenalty uint16 = 0
 	var objectsPenalty uint16 = 0
 
-	return baseDuration + backgroundScrollingPenalty + windowPenalty + objectsPenalty
+	windowEnabled := ppu.lcdc&0b0010_0000>>5 == 1
+	if windowEnabled && ppu.ly >= ppu.wy && ppu.wx < 167 && ppu.wx > 7 {
+		windowPenalty = 6
+	}
+
+	type Position struct {
+		x, y uint16
+	}
+
+	var processedBackgroundTiles map[Position]bool = make(map[Position]bool)
+	for _, oamIndex := range ppu.visibleSprites {
+		// each sprite is 4 bytes long
+		baseAddress := oamIndex * 4
+		spriteX := ppu.oam[baseAddress+1]
+
+		if spriteX == 0 {
+			objectsPenalty += 11
+			continue
+		}
+
+		objectsPenalty += 6
+
+		screenX := int(spriteX) - 8
+		// ensure a positive result
+		backgroundX := uint16(((int(screenX)+int(ppu.scx))%256 + 256) % 256)
+		backgroundTileX := backgroundX / 8
+		backgroundY := (uint16(ppu.ly) + uint16(ppu.scy)) % 256
+		backgroundTileY := backgroundY / 8
+		pos := Position{x: backgroundTileX, y: backgroundTileY}
+
+		if processedBackgroundTiles[pos] {
+			continue
+		}
+
+		processedBackgroundTiles[pos] = true
+		fineX := backgroundX % 8
+		penalty := max(0, 5-fineX)
+		objectsPenalty += penalty
+	}
+
+	return min(baseDuration+backgroundScrollingPenalty+windowPenalty+objectsPenalty, 289)
 }
 
 func (ppu *PPU) Read(address uint16) uint8 {
@@ -166,7 +226,22 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 	)
 	switch {
 	case address == 0xFF40:
+		lcdWasEnabled := ppu.lcdEnabled()
 		ppu.lcdc = value
+		lcdIsEnabled := ppu.lcdEnabled()
+
+		// LCD ON -> LCD OFF
+		if lcdWasEnabled && !lcdIsEnabled {
+			ppu.ly = 0
+			ppu.compareLycLy()
+			ppu.counter = 0
+			ppu.changeMode(VerticalBlank)
+		}
+		// LCD OFF -> LCD ON
+		if !lcdWasEnabled && lcdIsEnabled {
+			ppu.changeMode(OamScan)
+			ppu.compareLycLy()
+		}
 	case address == 0xFF41:
 		ppu.stat = (ppu.stat & 0b1000_0111) | (value & 0b0111_1000)
 	case address == 0xFF42:
