@@ -18,24 +18,55 @@ const (
 	TestTypeMooneye TestType = "mooneye"
 )
 
-func TestBlarggCpuInsructions(t *testing.T) {
+func TestBlargg__cpu_instrs(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000, TestTypeBlargg)
 }
 
-func TestBlarggInstructionTiming(t *testing.T) {
+func TestBlargg__instr_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/instr_timing", 1_000_000, TestTypeBlargg)
 }
 
-func TestBlarggMemoryTiming(t *testing.T) {
+func TestBlargg__mem_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/mem_timing", 2_000_000, TestTypeBlargg)
 }
 
-func TestBlarggHaltBug(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/halt_bug", 4_000_000, TestTypeBlargg)
+func TestBlargg__halt_bug(t *testing.T) {
+	loadRomAndRunSteps(t, "blargg/halt_bug", 2_000_000, TestTypeBlargg)
 }
 
-func TestMooneyeInstrDaa(t *testing.T) {
+func TestMooneye__add_sp_e_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/add_sp_e_timing", 140_335, TestTypeMooneye)
+}
+
+func TestMooneye__instr__daa(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/instr/daa", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__hblank_ly_scx_timing_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 540_335, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__intr_1_2_timing_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_1_2_timing-GS", 540_335, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__intr_2_0_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_0_timing", 540_335, TestTypeMooneye)
+}
+func TestMooneye__ppu__intr_2_mode0_timing_sprites(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode0_timing_sprites", 540_335, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__intr_2_mode0_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode0_timing", 540_335, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__intr_2_mode3_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode3_timing", 220_758, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__vblank_stat_intr_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/vblank_stat_intr-GS", 420_758, TestTypeMooneye)
 }
 
 func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType TestType) {
