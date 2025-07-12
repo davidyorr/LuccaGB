@@ -1,0 +1,86 @@
+name: Run Go Tests and Generate Report
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+
+      - name: Run Tests
+        id: run-tests
+        run: |
+          go test -json -v ./... > test_results.json
+        continue-on-error: true
+
+      - name: Generate Markdown report from JSON
+        id: generate-report
+        run: |
+          (
+            echo "# Test Results"
+            echo ""
+            echo "| Test Name | Status |"
+            echo "|-----------|--------|"
+            jq -r -s '
+              # 1. Define the regex for finding the custom name
+              ("(?<prefix>(SKIPPING )?TESTCASE): (?<name>[^\\n]*)") as $regex |
+              # 2. Create a dictionary of tests by iterating through all test events
+              reduce (.[] | select(.Test != null)) as $event ({};
+                ( $event.Test ) as $key |
+                # For pass/fail/skip events, record the status
+                if $event.Action == "pass" or $event.Action == "fail" or $event.Action == "skip" then
+                  .[$key] += {status: $event.Action}
+                # For output lines with a custom name, record it
+                elif $event.Action == "output" and ($event.Output | test($regex)) then
+                  # THIS IS THE CORRECTED LINE: capture() now uses the real regex
+                  .[$key] += {custom_name: ($event.Output | capture($regex) | .name) }
+                # For all other events, just make sure an entry for the test exists
+                else
+                  .[$key] += {go_name: $key}
+                end
+              )
+              # 3. Convert the dictionary to an array and format the output
+              | to_entries | .[] | .value
+              | select(.status) # Only process tests that have a final status
+              | "| `\(.custom_name // .go_name)` | \(if .status == "pass" then "✅" elif .status == "fail" then "❌" elif .status == "skip" then "⏩" else "❓" end) |"
+            ' test_results.json
+          ) > TESTS.md
+          echo "--- Generated TESTS.md ---"
+          cat TESTS.md
+          echo "--------------------------"
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            TESTS.md
+            test_results.json
+
+      - name: Commit and Push TESTS.md
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TESTS.md
+          # Commit only if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Update test results [skip ci]"
+            # Pull with rebase to avoid race conditions
+            git pull --rebase
+            git push
+          else
+            echo "No changes to test results, skipping commit."
+          fi
