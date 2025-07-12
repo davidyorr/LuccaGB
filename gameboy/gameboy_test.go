@@ -45,6 +45,28 @@ func TestMooneye__add_sp_e_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/add_sp_e_timing", 140_335, TestTypeMooneye)
 }
 
+func TestMooneye__call_cc_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/call_cc_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__call_cc_timing2(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/call_cc_timing2", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__call_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/call_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__call_timing2(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/call_timing2", 400_000, TestTypeMooneye)
+}
+
+// This tests DI instruction timing by setting up a vblank interrupt
+// interrupt with a write to IE.
+//
+// This test is for DMG/MGB, so DI is expected to disable interrupts
+// immediately
+// On CGB/GBA DI has a delay and this test fails in round 2!!
 func TestMooneye__di_timing_GS(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/di_timing-GS", 269_971, TestTypeMooneye)
 }
@@ -57,37 +79,101 @@ func TestMooneye__ei_sequence(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ei_sequence", 185_642, TestTypeMooneye)
 }
 
+// This tests EI instruction timing by forcing a serial
+// interrupt with a write to IE/IF.
 func TestMooneye__ei_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ei_timing", 185_635, TestTypeMooneye)
 }
 
+// This tests the behaviour of IE and IF flags by forcing a serial
+// interrupt with a write to IF. The interrupt handler increments
+// E, so we can track how many times the interrupt has been
+// triggered
+func TestMooneye__if_ie_registers(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/if_ie_registers", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__intr_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/intr_timing", 185_649, TestTypeMooneye)
+}
+func TestMooneye__jp_cc_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/jp_cc_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__jp_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/jp_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__ld_hl_sp_e_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ld_hl_sp_e_timing", 400_000, TestTypeMooneye)
+}
+func TestMooneye__pop_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/pop_timing", 185_876, TestTypeMooneye)
+}
+
+func TestMooneye__push_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/push_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__ret_cc_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ret_cc_timing", 400_000, TestTypeMooneye)
+}
+
+func TestMooneye__ret_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ret_timing", 400_000, TestTypeMooneye)
+}
+
+// Tests the DAA instruction with all possible input combinations
 func TestMooneye__instr__daa(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/instr/daa", 392_793, TestTypeMooneye)
 }
 
+// Tests how SCX affects the duration between STAT mode=0 interrupt and LY increment.
+// No sprites or window.
+//
+// Expected behaviour:
+//
+//	(SCX mod 8) = 0   => LY increments 51 cycles after STAT interrupt
+//	(SCX mod 8) = 1-4 => LY increments 50 cycles after STAT interrupt
+//	(SCX mod 8) = 5-7 => LY increments 49 cycles after STAT interrupt
 func TestMooneye__ppu__hblank_ly_scx_timing_GS(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 300_000, TestTypeMooneye)
 }
 
+// Tests how long does it take to get from STAT mode=1 interrupt to STAT mode=2 interrupt
+// No sprites, scroll or window.
 func TestMooneye__ppu__intr_1_2_timing_GS(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_1_2_timing-GS", 238_312, TestTypeMooneye)
 }
 
+// Tests how long does it take to get from STAT mode=2 interrupt to STAT mode=0 interrupt
+// No sprites, scroll or window.
 func TestMooneye__ppu__intr_2_0_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_0_timing", 300_000, TestTypeMooneye)
 }
+
+// Tests how long does it take to get from STAT=mode2 interrupt to mode0
+// Includes sprites in various configurations
 func TestMooneye__ppu__intr_2_mode0_timing_sprites(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode0_timing_sprites", 400_000, TestTypeMooneye)
 }
 
+// Tests how long does it take to get from STAT=mode2 interrupt to mode0
+// No sprites, scroll, or window
 func TestMooneye__ppu__intr_2_mode0_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode0_timing", 400_000, TestTypeMooneye)
 }
 
+// Tests how long does it take to get from STAT=mode2 interrupt to mode3
+// No sprites, scroll, or window
 func TestMooneye__ppu__intr_2_mode3_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode3_timing", 220_758, TestTypeMooneye)
 }
 
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
+// at line 144 when vblank starts.
+// This test measures the cycles between vblank<->vblank and compares that to vblank<->stat_m2_144
+// Expected behaviour: vblank and stat_m2_144 are triggered at the same time
 func TestMooneye__ppu__vblank_stat_intr_GS(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/vblank_stat_intr-GS", 400_000, TestTypeMooneye)
 }
@@ -119,6 +205,11 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 			for _, line := range logBuffer.LastN(40) {
 				fmt.Fprint(os.Stdout, line)
 			}
+			if os.Getenv("CI") == "" {
+				if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
+					fmt.Printf("Failed to write test output: %v\n", err)
+				}
+			}
 			t.Fatal()
 		}
 		if passed {
@@ -134,7 +225,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
-		if os.Getenv("CI") != "" {
+		if os.Getenv("CI") == "" {
 			if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
 				fmt.Printf("Failed to write test output: %v\n", err)
 			}
