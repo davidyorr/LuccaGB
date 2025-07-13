@@ -37,7 +37,11 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 	if bus.dma.Active() {
 		if address >= 0xFF80 && address <= 0xFFFE {
 			// HRAM
-			logger.Info("DMA ACTIVE, READING FROM BUS")
+			logger.Info("DMA ACTIVE, READING FROM BUS FOR HRAM")
+			return bus.mmu.Read(address)
+		} else if address >= 0xC000 && address <= 0xFDFF {
+			// WRAM
+			logger.Info("DMA ACTIVE, READING FROM BUS FOR WRAM")
 			return bus.mmu.Read(address)
 		} else if address >= 0xFE00 && address <= 0xFE9F {
 			// OAM
@@ -81,26 +85,32 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 // MasterRead performs a read on behalf of the component that is currently the bus master
 // (e.g. the DMA controller), bypassing the standard bus lock.
 func (bus *Bus) MasterRead(address uint16) uint8 {
-	logger.Info("UNLOCKED READ, BYPASSING DMA LOCK")
+	logger.Info("MASTER READ, BYPASSING DMA LOCK")
 	switch {
+	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
 		return bus.ppu.Read(address)
+		// PPU VRAM
 	case address >= 0x8000 && address <= 0x9FFF:
 		return bus.ppu.Read(address)
+		// PPU OAM
 	case address >= 0xFE00 && address <= 0xFE9F:
 		return bus.ppu.Read(address)
+		// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		return bus.timer.Read(address)
+	// serial data transfer
 	case address == 0xFF01 || address == 0xFF02:
 		return bus.serial.Read(address)
+	// handle everything else with the MMU
 	default:
 		return bus.mmu.Read(address)
 	}
 }
 
 func (bus *Bus) Write(address uint16, value uint8) {
-	// during a transfer, only HRAM can be accessed
-	if bus.dma.Active() && (address < 0xFF80 || address > 0xFFFE) {
+	// during a transfer, only HRAM and WRAM can be accessed
+	if bus.dma.Active() && (!(address >= 0xFF80 && address <= 0xFFFE) || !(address >= 0xC000 && address <= 0xFDFF)) {
 		logger.Info("DMA ACTIVE, IGNORING WRITE")
 		return
 	}

@@ -70,6 +70,9 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 	case address >= 0xC000 && address <= 0xDFFF:
 		// working RAM
 		value = mmu.workingRam[address-0xC000]
+	case address >= 0xE000 && address <= 0xFDFF:
+		// echo RAM
+		value = mmu.workingRam[address-0xE000]
 	case address == 0xFF0F:
 		value = mmu.ifRegister
 	case address == 0xFFFF:
@@ -106,6 +109,9 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	case address >= 0xC000 && address <= 0xDFFF:
 		// working RAM
 		mmu.workingRam[address-0xC000] = value
+	case address >= 0xE000 && address <= 0xFDFF:
+		// echo RAM
+		mmu.workingRam[address-0xE000] = value
 	case address == 0xFF0F:
 		mmu.ifRegister = value
 	case address == 0xFFFF:

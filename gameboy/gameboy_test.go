@@ -42,7 +42,7 @@ func TestBlargg__halt_bug(t *testing.T) {
 }
 
 func TestMooneye__add_sp_e_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/add_sp_e_timing", 140_335, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/add_sp_e_timing", 238_472, TestTypeMooneye)
 }
 
 func TestMooneye__call_cc_timing(t *testing.T) {
