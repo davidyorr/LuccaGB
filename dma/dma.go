@@ -1,15 +1,30 @@
 package dma
 
-import "github.com/davidyorr/EchoGB/logger"
+import (
+	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/EchoGB/ppu"
+)
 
 type DMA struct {
-	active        bool
-	sourceAddress uint16
-	progress      uint8
-	startDelay    uint8
-	tCycleCounter uint8
-	bus           MemoryBus
+	state                  TransferState
+	sourceAddress          uint16
+	progress               uint8
+	tCycleCounter          uint8
+	currentTransferByte    uint8
+	requestedSourceAddress uint8
+	startingSourceAddress  uint8
+	bus                    MemoryBus
+	ppu                    *ppu.PPU
 }
+
+type TransferState uint8
+
+const (
+	Idle TransferState = iota
+	Requested
+	Starting
+	Active
+)
 
 const (
 	// 160 M-cycles: 640 dots (1.4 lines)
@@ -18,6 +33,7 @@ const (
 
 type MemoryBus interface {
 	Read(address uint16) uint8
+	MasterRead(address uint16) uint8
 	Write(address uint16, value uint8)
 }
 
@@ -30,13 +46,17 @@ func New() *DMA {
 }
 
 func (dma *DMA) Reset() {
-	dma.active = false
+	dma.state = Idle
 	dma.sourceAddress = 0
 	dma.progress = 0
 }
 
 func (dma *DMA) ConnectBus(bus MemoryBus) {
 	dma.bus = bus
+}
+
+func (dma *DMA) ConnectPpu(ppu *ppu.PPU) {
+	dma.ppu = ppu
 }
 
 // Perform 1 T-cycle of work
@@ -51,40 +71,52 @@ func (dma *DMA) Step() {
 
 // Perform 1 M-cycle of work
 func (dma *DMA) executeMachineCycle() {
-	if !dma.active {
-		return
-	}
+	switch dma.state {
+	case Active:
+		// Source:      $XX00 - $XX9F
+		// Destination: $FE00 - $FE9F
 
-	if dma.startDelay > 0 {
-		dma.startDelay--
-		return
-	}
+		// if the source is VRAM and the PPU is in Mode 3, VRAM is locked
+		sourceIsVram := dma.sourceAddress >= 0x8000 && dma.sourceAddress <= 0x9FFF
+		if sourceIsVram && dma.ppu.Mode() == ppu.DrawingPixels {
+			logger.Info("SOURCE IS VRAM, RETURNING")
+			return
+		}
 
-	// Source:      $XX00 - $XX9F
-	// Destination: $FE00 - $FE9F
+		source := dma.sourceAddress + uint16(dma.progress)
+		destination := 0xFE00 + uint16(dma.progress)
 
-	source := dma.sourceAddress + uint16(dma.progress)
-	destination := 0xFE00 + uint16(dma.progress)
+		dma.currentTransferByte = dma.bus.MasterRead(source)
+		dma.ppu.WriteOam(destination, dma.currentTransferByte)
 
-	sourceByte := dma.bus.Read(source)
-	dma.bus.Write(destination, sourceByte)
+		dma.progress++
 
-	dma.progress++
-
-	if dma.progress == transferDuration {
-		logger.Info("FINISHED DMA TRANSFER")
-		dma.active = false
+		if dma.progress == transferDuration {
+			logger.Info("FINISHED DMA TRANSFER")
+			dma.state = Idle
+		}
+	case Starting:
+		logger.Info("DMA STATE MOVING FROM STARTING -> ACTIVE")
+		dma.state = Active
+		dma.progress = 0
+		dma.sourceAddress = uint16(dma.startingSourceAddress) << 8
+	case Requested:
+		logger.Info("DMA STATE MOVING FROM REQUESTED -> STARTING")
+		dma.startingSourceAddress = dma.requestedSourceAddress
+		dma.state = Starting
 	}
 }
 
 func (dma *DMA) StartTransfer(value uint8) {
-	dma.active = true
-	dma.progress = 0
-	// there's a 4 T-cycle delay before the transfer begins
-	dma.startDelay = 4
-	dma.sourceAddress = uint16(value) << 8
+	logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
+	dma.requestedSourceAddress = value
+	dma.state = Requested
 }
 
 func (dma *DMA) Active() bool {
-	return dma.active
+	return dma.state == Active
+}
+
+func (dma *DMA) CurrentTransferByte() uint8 {
+	return dma.currentTransferByte
 }

@@ -89,9 +89,6 @@ func (cpu *CPU) Step() {
 
 // Perform 1 M-cycle of work
 func (cpu *CPU) executeMachineCycle() {
-	if cpu.bus.DmaIsActive() {
-		return
-	}
 	if cpu.halted {
 		if cpu.interruptsPending() {
 			cpu.halted = false

@@ -38,6 +38,7 @@ func New() *Gameboy {
 	bus.Connect(mmu, timer, serial, ppu, dma)
 	cpu.ConnectBus(bus)
 	dma.ConnectBus(bus)
+	dma.ConnectPpu(ppu)
 
 	return &Gameboy{
 		cpu:       cpu,
@@ -60,6 +61,8 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 func (gameboy *Gameboy) Step() (uint8, error) {
 	for range 4 {
 		gameboy.cpu.Step()
+		gameboy.dma.Step()
+		gameboy.ppu.Step()
 		requestTimerInterrupt := gameboy.timer.Step()
 		if requestTimerInterrupt {
 			gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
@@ -68,8 +71,6 @@ func (gameboy *Gameboy) Step() (uint8, error) {
 		if requestSerialInterrupt {
 			gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
 		}
-		gameboy.ppu.Step()
-		gameboy.dma.Step()
 	}
 
 	logger.Debug(

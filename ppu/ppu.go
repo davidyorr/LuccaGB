@@ -276,6 +276,16 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 	}
 }
 
+// to give direct access to the DMA
+func (ppu *PPU) WriteOam(address uint16, value uint8) {
+	logger.Info("WRITE OAM")
+	ppu.oam[address-0xFE00] = value
+}
+
+func (ppu *PPU) Mode() Mode {
+	return ppu.mode
+}
+
 type Mode uint8
 
 const (
