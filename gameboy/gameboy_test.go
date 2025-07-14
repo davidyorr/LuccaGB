@@ -30,11 +30,11 @@ func TestBlargg__cpu_instrs(t *testing.T) {
 }
 
 func TestBlargg__instr_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/instr_timing", 1_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/instr_timing", 676_091, TestTypeBlargg)
 }
 
 func TestBlargg__mem_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/mem_timing", 2_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/mem_timing", 1_597_872, TestTypeBlargg)
 }
 
 func TestBlargg__halt_bug(t *testing.T) {
@@ -46,19 +46,19 @@ func TestMooneye__add_sp_e_timing(t *testing.T) {
 }
 
 func TestMooneye__call_cc_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/call_cc_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/call_cc_timing", 256_184, TestTypeMooneye)
 }
 
 func TestMooneye__call_cc_timing2(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/call_cc_timing2", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/call_cc_timing2", 256_184, TestTypeMooneye)
 }
 
 func TestMooneye__call_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/call_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/call_timing", 234_792, TestTypeMooneye)
 }
 
 func TestMooneye__call_timing2(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/call_timing2", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/call_timing2", 256_185, TestTypeMooneye)
 }
 
 // This tests DI instruction timing by setting up a vblank interrupt
@@ -97,22 +97,22 @@ func TestMooneye__intr_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/intr_timing", 185_649, TestTypeMooneye)
 }
 func TestMooneye__jp_cc_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/jp_cc_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/jp_cc_timing", 234_788, TestTypeMooneye)
 }
 
 func TestMooneye__jp_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/jp_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/jp_timing", 234_788, TestTypeMooneye)
 }
 
 func TestMooneye__ld_hl_sp_e_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ld_hl_sp_e_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/ld_hl_sp_e_timing", 238_480, TestTypeMooneye)
 }
 func TestMooneye__pop_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/pop_timing", 185_876, TestTypeMooneye)
 }
 
 func TestMooneye__push_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/push_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/push_timing", 238_463, TestTypeMooneye)
 }
 
 func TestMooneye__ret_cc_timing(t *testing.T) {

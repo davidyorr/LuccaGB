@@ -180,7 +180,7 @@ func (cpu *CPU) executeInstructionStep() {
 		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
 		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
 		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
-		"op", fmt.Sprintf("(op:0x%02X, len:%d, imm:0x%04X)", cpu.opcode, cpu.instruction.operandLength, cpu.immediateValue),
+		"op", fmt.Sprintf("(op:0x%02X, imm:0x%04X)", cpu.opcode, cpu.immediateValue),
 		"cb", fmt.Sprintf("0x%02X", cbo),
 		"instruction", cpu.instruction.mnemonic,
 	)
