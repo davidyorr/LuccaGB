@@ -13,6 +13,9 @@ type PPU struct {
 	// 0xFE00 - 0xFE9F - Object Attribute Memory
 	//	40 sprites (objects), each 4 bytes long
 	oam [160]uint8
+	// 0xFEA0 - 0xFEFF - Not usable
+	//	Nintendo says use of this area is prohibited
+	unusable [96]uint8
 	// 10 sprites can be displayed per scanline
 	visibleSprites []uint8
 	// 0xFF40 - LCDC: LCD control
@@ -283,6 +286,10 @@ func (ppu *PPU) WriteOam(address uint16, value uint8) {
 
 func (ppu *PPU) Mode() Mode {
 	return ppu.mode
+}
+
+func (ppu *PPU) OamIsBlocked() bool {
+	return ppu.mode == OamScan
 }
 
 type Mode uint8

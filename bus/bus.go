@@ -62,6 +62,13 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 	// PPU OAM
 	case address >= 0xFE00 && address <= 0xFE9F:
 		value = bus.ppu.Read(address)
+	// Unusable
+	case address >= 0xFEA0 && address <= 0xFEFF:
+		if bus.ppu.OamIsBlocked() {
+			value = 0xFF
+		} else {
+			value = 0x00
+		}
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		value = bus.timer.Read(address)
@@ -90,13 +97,16 @@ func (bus *Bus) MasterRead(address uint16) uint8 {
 	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
 		return bus.ppu.Read(address)
-		// PPU VRAM
+	// PPU VRAM
 	case address >= 0x8000 && address <= 0x9FFF:
 		return bus.ppu.Read(address)
-		// PPU OAM
+	// PPU OAM
 	case address >= 0xFE00 && address <= 0xFE9F:
 		return bus.ppu.Read(address)
-		// timers
+	// Unusable
+	case address >= 0xFEA0 && address <= 0xFEFF:
+		return 0xFF
+	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		return bus.timer.Read(address)
 	// serial data transfer
@@ -127,6 +137,10 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	// PPU OAM
 	case address >= 0xFE00 && address <= 0xFE9F:
 		bus.ppu.Write(address, value)
+	// Unusable
+	case address >= 0xFEA0 && address <= 0xFEFF:
+		logger.Info("UNUSABLE WRITE")
+		return
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		bus.timer.Write(address, value)
