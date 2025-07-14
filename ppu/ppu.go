@@ -82,22 +82,6 @@ func (ppu *PPU) Step() {
 		return
 	}
 
-	ppu.counter++
-
-	if ppu.counter == dotsPerScanline {
-		ppu.counter = 0
-		ppu.ly++
-
-		if ppu.ly == 144 {
-			ppu.changeMode(VerticalBlank)
-			ppu.interruptRequester(interrupt.VBlankInterrupt)
-		} else if ppu.ly >= 154 {
-			ppu.ly = 0
-		}
-
-		ppu.compareLycLy()
-	}
-
 	if ppu.ly < 144 {
 		switch {
 		// Mode 2: OAM scan
@@ -129,6 +113,26 @@ func (ppu *PPU) Step() {
 				ppu.changeMode(HorizontalBlank)
 			}
 		}
+	}
+
+	ppu.counter++
+
+	if ppu.counter == dotsPerScanline {
+		ppu.counter = 0
+		ppu.ly++
+
+		if ppu.ly == 144 {
+			ppu.changeMode(VerticalBlank)
+			ppu.interruptRequester(interrupt.VBlankInterrupt)
+			// if bit 5 (mode 2 OAM interrupt) is set, an LCD interrupt is also triggered
+			if (ppu.stat & 0b0010_0000) != 0 {
+				ppu.interruptRequester(interrupt.LcdInterrupt)
+			}
+		} else if ppu.ly >= 154 {
+			ppu.ly = 0
+		}
+
+		ppu.compareLycLy()
 	}
 }
 
