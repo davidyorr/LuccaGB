@@ -120,7 +120,7 @@ func (ppu *PPU) Step() {
 				}
 			}
 		// Mode 3: Drawing Pixels
-		case ppu.counter < ppu.getMode3Duration():
+		case ppu.counter < 80+ppu.getMode3Duration():
 			if ppu.mode != DrawingPixels {
 				ppu.changeMode(DrawingPixels)
 			}
