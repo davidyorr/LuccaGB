@@ -34,15 +34,16 @@ func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial,
 }
 
 func (bus *Bus) Read(address uint16) (value uint8) {
+	// handle DMA transfer
 	if bus.dma.Active() {
 		if address >= 0xFF80 && address <= 0xFFFE {
 			// HRAM
 			logger.Info("DMA ACTIVE, READING FROM BUS FOR HRAM")
-			return bus.mmu.Read(address)
+			return bus.DirectRead(address)
 		} else if address >= 0xC000 && address <= 0xFDFF {
 			// WRAM
 			logger.Info("DMA ACTIVE, READING FROM BUS FOR WRAM")
-			return bus.mmu.Read(address)
+			return bus.DirectRead(address)
 		} else if address >= 0xFE00 && address <= 0xFE9F {
 			// OAM
 			logger.Info("DMA ACTIVE, 0xFF")
@@ -52,47 +53,20 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 			return bus.dma.CurrentTransferByte()
 		}
 	}
-	switch {
-	// PPU LCD
-	case address >= 0xFF40 && address <= 0xFF4B:
-		value = bus.ppu.Read(address)
-	// PPU VRAM
-	case address >= 0x8000 && address <= 0x9FFF:
-		value = bus.ppu.Read(address)
-	// PPU OAM
-	case address >= 0xFE00 && address <= 0xFE9F:
-		value = bus.ppu.Read(address)
-	// Unusable
-	case address >= 0xFEA0 && address <= 0xFEFF:
-		if bus.ppu.OamIsBlocked() {
-			value = 0xFF
-		} else {
-			value = 0x00
-		}
-	// timers
-	case address >= 0xFF04 && address <= 0xFF07:
-		value = bus.timer.Read(address)
-	// serial data transfer
-	case address == 0xFF01 || address == 0xFF02:
-		value = bus.serial.Read(address)
-	// handle everything else with the MMU
-	default:
-		value = bus.mmu.Read(address)
+
+	// handle unusable area when OAM is blocked
+	if bus.ppu.OamIsBlocked() && address >= 0xFEA0 && address <= 0xFEFF {
+		return 0xFF
 	}
 
-	logger.Debug(
-		"BUS READ",
-		"Address", fmt.Sprintf("0x%04X", address),
-		"Value", fmt.Sprintf("0x%02X", value),
-	)
-
-	return value
+	return bus.DirectRead(address)
 }
 
-// MasterRead performs a read on behalf of the component that is currently the bus master
-// (e.g. the DMA controller), bypassing the standard bus lock.
-func (bus *Bus) MasterRead(address uint16) uint8 {
-	logger.Info("MASTER READ, BYPASSING DMA LOCK")
+// DirectRead performs a raw read from memory. It acts as the central
+// dispatcher, routing the address to the appropriate hardware component. This
+// is the lowest-level read operation on the bus. It deliberately contains no
+// logic for bus contention.
+func (bus *Bus) DirectRead(address uint16) (value uint8) {
 	switch {
 	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
@@ -105,7 +79,7 @@ func (bus *Bus) MasterRead(address uint16) uint8 {
 		return bus.ppu.Read(address)
 	// Unusable
 	case address >= 0xFEA0 && address <= 0xFEFF:
-		return 0xFF
+		return 0x00
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		return bus.timer.Read(address)
@@ -157,4 +131,8 @@ func (bus *Bus) Write(address uint16, value uint8) {
 		"Address", fmt.Sprintf("0x%04X", address),
 		"Value", fmt.Sprintf("0x%02X", value),
 	)
+}
+
+func (bus *Bus) DmaActive() bool {
+	return bus.dma.Active()
 }

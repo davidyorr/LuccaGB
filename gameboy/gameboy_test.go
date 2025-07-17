@@ -116,11 +116,11 @@ func TestMooneye__push_timing(t *testing.T) {
 }
 
 func TestMooneye__ret_cc_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ret_cc_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/ret_cc_timing", 252_354, TestTypeMooneye)
 }
 
 func TestMooneye__ret_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ret_timing", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/ret_timing", 252_354, TestTypeMooneye)
 }
 
 // Tests the DAA instruction with all possible input combinations
@@ -137,7 +137,7 @@ func TestMooneye__instr__daa(t *testing.T) {
 //	(SCX mod 8) = 1-4 => LY increments 50 cycles after STAT interrupt
 //	(SCX mod 8) = 5-7 => LY increments 49 cycles after STAT interrupt
 func TestMooneye__ppu__hblank_ly_scx_timing_GS(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 300_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 400_000, TestTypeMooneye)
 }
 
 // Tests how long does it take to get from STAT mode=1 interrupt to STAT mode=2 interrupt
@@ -168,6 +168,10 @@ func TestMooneye__ppu__intr_2_mode0_timing(t *testing.T) {
 // No sprites, scroll, or window
 func TestMooneye__ppu__intr_2_mode3_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_mode3_timing", 220_758, TestTypeMooneye)
+}
+
+func TestMooneye__ppu__intr_2_oam_ok_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_oam_ok_timing", 220_758, TestTypeMooneye)
 }
 
 // If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
@@ -205,16 +209,13 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 			for _, line := range logBuffer.LastN(40) {
 				fmt.Fprint(os.Stdout, line)
 			}
-			if os.Getenv("CI") == "" {
-				if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
-					fmt.Printf("Failed to write test output: %v\n", err)
-				}
-			}
+			writeLogToFile(logBuffer)
 			t.Fatal()
 		}
 		if passed {
 			testComplete = true
 			t.Logf("✅ TEST PASSED after %d steps", i+1)
+			writeLogToFile(logBuffer)
 			break
 		}
 	}
@@ -225,11 +226,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
-		if os.Getenv("CI") == "" {
-			if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
-				fmt.Printf("Failed to write test output: %v\n", err)
-			}
-		}
+		writeLogToFile(logBuffer)
 		t.Logf("❌ TIMED OUT after %d steps", stepCount)
 		t.Fatal("Test timed out (no pass/fail signal detected)")
 	}
@@ -249,6 +246,14 @@ func checkResult(output string, testType TestType) (passed bool, failed bool) {
 		failed = strings.Contains(output, "\x42\x42\x42\x42\x42\x42")
 	}
 	return
+}
+
+func writeLogToFile(logBuffer *logBuffer) {
+	if os.Getenv("CI") == "" {
+		if err := os.WriteFile("../testoutput.log", []byte(strings.Join(logBuffer.messages, "")), 0644); err != nil {
+			fmt.Printf("Failed to write test output: %v\n", err)
+		}
+	}
 }
 
 type logBuffer struct {

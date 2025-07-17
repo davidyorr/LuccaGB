@@ -1,6 +1,8 @@
 package dma
 
 import (
+	"fmt"
+
 	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/ppu"
 )
@@ -32,8 +34,7 @@ const (
 )
 
 type MemoryBus interface {
-	Read(address uint16) uint8
-	MasterRead(address uint16) uint8
+	DirectRead(address uint16) uint8
 	Write(address uint16, value uint8)
 }
 
@@ -86,10 +87,15 @@ func (dma *DMA) executeMachineCycle() {
 		source := dma.sourceAddress + uint16(dma.progress)
 		destination := 0xFE00 + uint16(dma.progress)
 
-		dma.currentTransferByte = dma.bus.MasterRead(source)
+		dma.currentTransferByte = dma.bus.DirectRead(source)
 		dma.ppu.WriteOam(destination, dma.currentTransferByte)
 
 		dma.progress++
+		logger.Info(
+			"DMA WRITE",
+			"PROGRESS", fmt.Sprintf("%d/%d", dma.progress, transferDuration),
+			"ADDRESS", fmt.Sprintf("0x%04X", destination),
+		)
 
 		if dma.progress == transferDuration {
 			logger.Info("FINISHED DMA TRANSFER")

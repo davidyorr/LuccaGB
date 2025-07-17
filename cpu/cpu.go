@@ -137,23 +137,22 @@ func (cpu *CPU) executeInstructionStep() {
 
 	// fetch the opcode
 	if cpu.mCycle == 1 {
-		cpu.opcode = cpu.bus.Read(cpu.pc)
+		cpu.opcode = cpu.fetchByte()
 		cpu.instruction = &instructions[cpu.opcode]
 
-		// the first byte of the bugged instruction is read twice, so skip incrementing the PC
+		// the first byte of the bugged instruction is read twice, so decrement
+		// the PC back to where it was prior to fetching the opcode
 		if cpu.haltBugActive {
 			logger.Info("halt bug active so not incrementing PC during M-cycle 1")
 			cpu.haltBugActive = false
-		} else {
-			cpu.pc++
+			cpu.pc--
 		}
 	}
 
 	// fetch the CB opcode
 	if cpu.mCycle == 2 && cpu.opcode == 0xCB {
-		cbOpcode := cpu.bus.Read(cpu.pc)
+		cbOpcode := cpu.fetchByte()
 		cpu.cbOpcode = &cbOpcode
-		cpu.pc++
 	}
 
 	if cpu.opcode == 0xCB {
@@ -366,16 +365,26 @@ func (cpu *CPU) setFlag(flag Flag, value bool) {
 	}
 }
 
-func (cpu *CPU) fetchImmLowByte() {
-	lowByte := cpu.bus.Read(cpu.pc)
-	cpu.immediateValue |= uint16(lowByte)
+func (cpu *CPU) fetchByte() uint8 {
+	address := cpu.pc
 	cpu.pc++
+
+	// if a DMA transfer is in progress, accessing OAM is blocked
+	if cpu.bus.DmaActive() && address >= 0xFE00 && address <= 0xFE9F {
+		return 0xFF
+	}
+
+	return cpu.bus.DirectRead(address)
+}
+
+func (cpu *CPU) fetchImmLowByte() {
+	lowByte := cpu.fetchByte()
+	cpu.immediateValue |= uint16(lowByte)
 }
 
 func (cpu *CPU) fetchImmHighByte() {
-	highByte := cpu.bus.Read(cpu.pc)
+	highByte := cpu.fetchByte()
 	cpu.immediateValue |= (uint16(highByte) << 8)
-	cpu.pc++
 }
 
 func (cpu *CPU) setImmLowByte(value uint8) {

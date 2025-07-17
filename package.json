@@ -8,7 +8,9 @@
     "dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
     "build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm",
     "watch:wasm": "chokidar '**/*.go' -c 'pnpm run build:wasm' --initial",
-    "format": "prettier --write '{**/*,*}.{ts,css,html}'"
+    "format": "prettier --write '{**/*,*}.{ts,css,html}'",
+    "tail": "sh -c 'tail -n ${1:-20} testoutput.log | sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\"' --",
+    "less": "sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" testoutput.log | less"
   },
   "devDependencies": {
     "@types/golang-wasm-exec": "1.15.2",
