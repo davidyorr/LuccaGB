@@ -22,8 +22,8 @@
 | `mooneye/ld_hl_sp_e_timing.gb` | ✅ |
 | `mooneye/pop_timing.gb` | ✅ |
 | `mooneye/push_timing.gb` | ✅ |
-| `mooneye/ret_cc_timing.gb` | ❌ |
-| `mooneye/ret_timing.gb` | ❌ |
+| `mooneye/ret_cc_timing.gb` | ✅ |
+| `mooneye/ret_timing.gb` | ✅ |
 | `mooneye/instr/daa.gb` | ✅ |
 | `mooneye/ppu/hblank_ly_scx_timing-GS.gb` | ❌ |
 | `mooneye/ppu/intr_1_2_timing-GS.gb` | ✅ |
@@ -31,4 +31,5 @@
 | `mooneye/ppu/intr_2_mode0_timing_sprites.gb` | ❌ |
 | `mooneye/ppu/intr_2_mode0_timing.gb` | ✅ |
 | `mooneye/ppu/intr_2_mode3_timing.gb` | ✅ |
+| `mooneye/ppu/intr_2_oam_ok_timing.gb` | ✅ |
 | `mooneye/ppu/vblank_stat_intr-GS.gb` | ✅ |
