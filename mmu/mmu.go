@@ -64,27 +64,60 @@ func (mmu *MMU) Reset() {
 
 func (mmu *MMU) Read(address uint16) (value uint8) {
 	switch {
+	// ROM
 	case address <= 0x7FFF:
-		// ROM
 		value = mmu.cartridge.Read(address)
+	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
-		// working RAM
 		value = mmu.workingRam[address-0xC000]
+	// echo RAM
 	case address >= 0xE000 && address <= 0xFDFF:
-		// echo RAM
 		value = mmu.workingRam[address-0xE000]
+	// IF
 	case address == 0xFF0F:
 		value = mmu.ifRegister | 0b1110_0000
+	// IE
 	case address == 0xFFFF:
 		value = mmu.ieRegister
+	// IO registers
 	case address >= 0xFF00 && address <= 0xFF7F:
-		// IO registers
 		value = mmu.ioRegisters[address-0xFF00]
+
+		// unused bits in IO registers should return 1
+		switch {
+		// P1/JOYP
+		case address == 0xFF00:
+			value |= 0b1100_0000
+		// NR10
+		case address == 0xFF10:
+			value |= 0b1000_0000
+		// NR30
+		case address == 0xFF1A:
+			value |= 0b0111_1111
+		// NR31
+		case address == 0xFF1B:
+			value |= 0b1000_0001
+		// NR32
+		case address == 0xFF1C:
+			value |= 0b1001_1111
+		// NR41
+		case address == 0xFF20:
+			value |= 0b1100_0000
+		// NR44
+		case address == 0xFF23:
+			value |= 0b0011_1111
+		// NR52
+		case address == 0xFF26:
+			value |= 0b0111_0000
+		// unmapped
+		default:
+			value |= 0b1111_1111
+		}
+	// high RAM
 	case address >= 0xFF80 && address <= 0xFFFE:
-		// high RAM
 		value = mmu.highRam[address-0xFF80]
 	default:
-		logger.Debug("unhandled address while reading ->")
+		logger.Info("unhandled address while reading ->")
 		value = 0xFF
 	}
 
@@ -123,7 +156,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 		// high RAM
 		mmu.highRam[address-0xFF80] = value
 	default:
-		logger.Debug("unhandled address while writing <-")
+		logger.Info("unhandled address while writing <-")
 	}
 }
 
@@ -136,9 +169,9 @@ func (mmu *MMU) ClearInterrupt(interrupt interrupt.Interrupt) {
 }
 
 func (mmu *MMU) InterruptEnable() uint8 {
-	return mmu.ieRegister
+	return mmu.ieRegister | 0b1110_0000
 }
 
 func (mmu *MMU) InterruptFlag() uint8 {
-	return mmu.ifRegister
+	return mmu.ifRegister | 0b1110_0000
 }

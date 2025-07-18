@@ -190,7 +190,7 @@ func (ppu *PPU) Read(address uint16) uint8 {
 	case address == 0xFF40:
 		return ppu.lcdc
 	case address == 0xFF41:
-		return ppu.stat
+		return ppu.stat | 0b1000_0000
 	case address == 0xFF42:
 		return ppu.scy
 	case address == 0xFF43:

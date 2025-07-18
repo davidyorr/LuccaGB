@@ -10,7 +10,7 @@
     "watch:wasm": "chokidar '**/*.go' -c 'pnpm run build:wasm' --initial",
     "format": "prettier --write '{**/*,*}.{ts,css,html}'",
     "tail": "sh -c 'tail -n ${1:-20} testoutput.log | sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\"' --",
-    "less": "sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" testoutput.log | less"
+    "less": "sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" testoutput.log | perl -pe 's/^(.*M-CYCLE=1.*)$/\\e[38;5;208m$1\\e[0m/g' | less -R"
   },
   "devDependencies": {
     "@types/golang-wasm-exec": "1.15.2",

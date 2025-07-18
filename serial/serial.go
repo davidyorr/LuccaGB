@@ -52,11 +52,13 @@ func (serial *Serial) Step() (requestInterrupt bool) {
 }
 
 func (serial *Serial) Read(address uint16) uint8 {
+	// SB
 	if address == 0xFF01 {
 		return serial.sb
 	}
+	// SC
 	if address == 0xFF02 {
-		return serial.sc
+		return serial.sc | 0b0111_1110
 	}
 
 	logger.Error("SERIAL", fmt.Sprintf("invalid address on read: 0x%0X", address))
@@ -72,8 +74,8 @@ func (serial *Serial) Write(address uint16, value uint8) {
 		// bit 7 is the transfer bit
 		if (value & 0b1000_0000) != 0 {
 			serial.transferInProgress = true
-			// speed for DMG
-			serial.transferCyclesRemaining = 8192
+			// speed for DMG (4194304 / 8192)
+			serial.transferCyclesRemaining = 512
 			serial.serialOutputBuffer = append(serial.serialOutputBuffer, serial.sb)
 		}
 	}

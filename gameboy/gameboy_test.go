@@ -124,6 +124,7 @@ func TestMooneye__ld_hl_sp_e_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ld_hl_sp_e_timing", 238_480, TestTypeMooneye)
 }
 
+// This tests starting another OAM DMA while one is already active
 func TestMooneye__oam_dma_restart(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/oam_dma_restart", 438_480, TestTypeMooneye)
 }
@@ -137,7 +138,7 @@ func TestMooneye__oam_dma_timing(t *testing.T) {
 }
 
 func TestMooneye__pop_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/pop_timing", 185_876, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/pop_timing", 185_122, TestTypeMooneye)
 }
 
 func TestMooneye__push_timing(t *testing.T) {
@@ -176,8 +177,10 @@ func TestMooneye__bits__reg_f(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/bits/reg_f", 185_645, TestTypeMooneye)
 }
 
+// This test checks all unused bits in working $FFxx IO,
+// and all unused $FFxx IO. Unused bits and unused IO all return 1s.
 func TestMooneye__bits__unused_hwio_GS(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/bits/unused_hwio-GS", 200_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/bits/unused_hwio-GS", 182_118, TestTypeMooneye)
 }
 
 // Tests the DAA instruction with all possible input combinations
