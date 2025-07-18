@@ -85,12 +85,28 @@ func TestMooneye__ei_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ei_timing", 185_635, TestTypeMooneye)
 }
 
+func TestMooneye__halt_ime0_ei(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/halt_ime0_ei", 182_199, TestTypeMooneye)
+}
+
+func TestMooneye__halt_ime0_nointr_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/halt_ime0_nointr_timing", 255_866, TestTypeMooneye)
+}
+
+func TestMooneye__halt_ime1_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/halt_ime1_timing", 185_568, TestTypeMooneye)
+}
+
+func TestMooneye__halt_ime1_timing2_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/halt_ime1_timing2-GS", 326_246, TestTypeMooneye)
+}
+
 // This tests the behaviour of IE and IF flags by forcing a serial
 // interrupt with a write to IF. The interrupt handler increments
 // E, so we can track how many times the interrupt has been
 // triggered
 func TestMooneye__if_ie_registers(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/if_ie_registers", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/if_ie_registers", 185_802, TestTypeMooneye)
 }
 
 func TestMooneye__intr_timing(t *testing.T) {
@@ -107,12 +123,29 @@ func TestMooneye__jp_timing(t *testing.T) {
 func TestMooneye__ld_hl_sp_e_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ld_hl_sp_e_timing", 238_480, TestTypeMooneye)
 }
+
+func TestMooneye__oam_dma_restart(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma_restart", 438_480, TestTypeMooneye)
+}
+
+func TestMooneye__oam_dma_start(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma_start", 259_686, TestTypeMooneye)
+}
+
+func TestMooneye__oam_dma_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma_timing", 238_307, TestTypeMooneye)
+}
+
 func TestMooneye__pop_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/pop_timing", 185_876, TestTypeMooneye)
 }
 
 func TestMooneye__push_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/push_timing", 238_463, TestTypeMooneye)
+}
+
+func TestMooneye__rapid_di_ei(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/rapid_di_ei", 185_800, TestTypeMooneye)
 }
 
 func TestMooneye__ret_cc_timing(t *testing.T) {
@@ -123,9 +156,57 @@ func TestMooneye__ret_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ret_timing", 252_354, TestTypeMooneye)
 }
 
+func TestMooneye__reti_intr_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/reti_intr_timing", 185_724, TestTypeMooneye)
+}
+
+func TestMooneye__reti_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/reti_timing", 252_354, TestTypeMooneye)
+}
+
+func TestMooneye__rst_timing(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/rst_timing", 238_481, TestTypeMooneye)
+}
+
+func TestMooneye__bits__mem_oam(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/bits/mem_oam", 186_664, TestTypeMooneye)
+}
+
+func TestMooneye__bits__reg_f(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/bits/reg_f", 185_645, TestTypeMooneye)
+}
+
+func TestMooneye__bits__unused_hwio_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/bits/unused_hwio-GS", 200_000, TestTypeMooneye)
+}
+
 // Tests the DAA instruction with all possible input combinations
 func TestMooneye__instr__daa(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/instr/daa", 392_793, TestTypeMooneye)
+}
+
+// Tests what happens if the IE register is the target for one of the
+// PC pushes during interrupt dispatch.
+func TestMooneye__interrupts__ie_push(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/interrupts/ie_push", 200_000, TestTypeMooneye)
+}
+
+// This test checks that OAM DMA copies all bytes correctly.
+func TestMooneye__oam_dma__basic(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma/basic", 187_509, TestTypeMooneye)
+}
+
+// This test checks what happens if you read the DMA register. Reads should
+// always simply return the last written value, regardless of the state of the
+// OAM DMA transfer or other things.
+func TestMooneye__oam_dma__reg_read(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma/reg_read", 392_793, TestTypeMooneye)
+}
+
+// This test checks that OAM DMA source memory areas work as expected,
+// including the area past $DFFF.
+func TestMooneye__oam_dma__sources_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/oam_dma/sources-GS", 892_793, TestTypeMooneye)
 }
 
 // Tests how SCX affects the duration between STAT mode=0 interrupt and LY increment.
@@ -174,6 +255,71 @@ func TestMooneye__ppu__intr_2_oam_ok_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_oam_ok_timing", 220_758, TestTypeMooneye)
 }
 
+func TestMooneye__timer__div_write(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/div_write", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__timer__rapid_toggle(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/rapid_toggle", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim00_div_trigger(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim00_div_trigger", 185_636, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim00(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim00", 185_642, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim01_div_trigger(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim01_div_trigger", 185_641, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim01(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim01", 185_643, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim10_div_trigger(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim10_div_trigger", 185_642, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim10(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim10", 185_638, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim11_div_trigger(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim11_div_trigger", 185_638, TestTypeMooneye)
+}
+
+func TestMooneye__timer__tim11(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tim11", 185_635, TestTypeMooneye)
+}
+
+// The test checks what values appear in the TIMA register when the
+// timer overflows.
+
+// Apparently the TIMA register contains 00 for 4 cycles before being
+// reloaded with the value from the TMA register. The TIMA increments
+// do still happen every 64 cycles, there is no additional 4 cycle
+// delay.
+func TestMooneye__timer__tima_reload(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tima_reload", 200_000, TestTypeMooneye)
+}
+
+// This test tests which write to the TIMA register is ignored when
+// the timer is reloading.
+func TestMooneye__timer__tima_write_reloading(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tima_write_reloading", 200_000, TestTypeMooneye)
+}
+
+// This test checks when writes to the TMA register get picked while
+// the timer is reloading.
+func TestMooneye__timer__tma_write_reloading(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/timer/tma_write_reloading", 200_000, TestTypeMooneye)
+}
+
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
 // If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
 // at line 144 when vblank starts.
 // This test measures the cycles between vblank<->vblank and compares that to vblank<->stat_m2_144
