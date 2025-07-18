@@ -49,7 +49,7 @@
 |-----------|--------|
 | `mem_oam.gb` | ✅ |
 | `reg_f.gb` | ✅ |
-| `unused_hwio-GS.gb` | ❌ |
+| `unused_hwio-GS.gb` | ✅ |
 
 ## instr
 
