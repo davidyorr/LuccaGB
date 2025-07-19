@@ -8,6 +8,8 @@ import (
 )
 
 type DMA struct {
+	// 0xFF46 - DMA: OAM DMA source address & start
+	dmaRegister            uint8
 	state                  TransferState
 	sourceAddress          uint16
 	progress               uint8
@@ -95,6 +97,7 @@ func (dma *DMA) executeMachineCycle() {
 			"DMA WRITE",
 			"PROGRESS", fmt.Sprintf("%d/%d", dma.progress, transferDuration),
 			"ADDRESS", fmt.Sprintf("0x%04X", destination),
+			"VALUE", fmt.Sprintf("0x%02X", dma.currentTransferByte),
 		)
 
 		if dma.progress == transferDuration {
@@ -125,4 +128,12 @@ func (dma *DMA) Active() bool {
 
 func (dma *DMA) CurrentTransferByte() uint8 {
 	return dma.currentTransferByte
+}
+
+func (dma *DMA) SetDmaRegister(value uint8) {
+	dma.dmaRegister = value
+}
+
+func (dma *DMA) DmaRegister() uint8 {
+	return dma.dmaRegister
 }

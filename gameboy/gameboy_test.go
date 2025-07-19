@@ -196,14 +196,14 @@ func TestMooneye__interrupts__ie_push(t *testing.T) {
 
 // This test checks that OAM DMA copies all bytes correctly.
 func TestMooneye__oam_dma__basic(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/oam_dma/basic", 187_509, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/oam_dma/basic", 186_754, TestTypeMooneye)
 }
 
 // This test checks what happens if you read the DMA register. Reads should
 // always simply return the last written value, regardless of the state of the
 // OAM DMA transfer or other things.
 func TestMooneye__oam_dma__reg_read(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/oam_dma/reg_read", 392_793, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/oam_dma/reg_read", 183_038, TestTypeMooneye)
 }
 
 // This test checks that OAM DMA source memory areas work as expected,

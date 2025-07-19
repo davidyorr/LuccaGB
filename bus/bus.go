@@ -36,7 +36,10 @@ func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial,
 func (bus *Bus) Read(address uint16) (value uint8) {
 	// handle DMA transfer
 	if bus.dma.Active() {
-		if address >= 0xFF80 && address <= 0xFFFE {
+		// DMA
+		if address == 0xFF46 {
+			return bus.DirectRead(address)
+		} else if address >= 0xFF80 && address <= 0xFFFE {
 			// HRAM
 			logger.Info("DMA ACTIVE, READING FROM BUS FOR HRAM")
 			return bus.DirectRead(address)
@@ -68,6 +71,9 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 // logic for bus contention.
 func (bus *Bus) DirectRead(address uint16) (value uint8) {
 	switch {
+	// DMA
+	case address == 0xFF46:
+		return bus.dma.DmaRegister()
 	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
 		return bus.ppu.Read(address)
@@ -93,6 +99,10 @@ func (bus *Bus) DirectRead(address uint16) (value uint8) {
 }
 
 func (bus *Bus) Write(address uint16, value uint8) {
+	// writes to the DMA register should succeed regardless of DMA transfer state
+	if address == 0xFF46 {
+		bus.dma.SetDmaRegister(value)
+	}
 	// during a transfer, only HRAM and WRAM can be accessed
 	if bus.dma.Active() && (!(address >= 0xFF80 && address <= 0xFFFE) || !(address >= 0xC000 && address <= 0xFDFF)) {
 		logger.Info("DMA ACTIVE, IGNORING WRITE")
