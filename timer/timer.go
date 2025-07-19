@@ -10,6 +10,7 @@ type Timer struct {
 
 	counter               uint16
 	previousTimerBitState bool
+	timaReloadDelay       uint8
 }
 
 func New() *Timer {
@@ -31,12 +32,23 @@ func (timer *Timer) Step() (requestInterrupt bool) {
 	timer.counter++
 	currentTimerBitState := timer.getTimerBitState()
 
+	// there is a 4 cycle delay before the TIMA register is reloaded with the
+	// TMA register after an overflow
+	if timer.timaReloadDelay > 0 {
+		timer.timaReloadDelay--
+
+		if timer.timaReloadDelay == 0 {
+			timer.tima = timer.tma
+		}
+	}
+
 	if timer.isTimerEnabled() {
 		if timer.previousTimerBitState && !currentTimerBitState {
 			timer.tima++
 			// check for overflow
 			if timer.tima == 0 {
-				timer.tima = timer.tma
+				timer.tima = 0x00
+				timer.timaReloadDelay = 4
 				requestInterrupt = true
 			}
 		}

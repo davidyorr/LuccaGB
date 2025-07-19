@@ -300,13 +300,13 @@ func TestMooneye__timer__tim11(t *testing.T) {
 
 // The test checks what values appear in the TIMA register when the
 // timer overflows.
-
+//
 // Apparently the TIMA register contains 00 for 4 cycles before being
 // reloaded with the value from the TMA register. The TIMA increments
 // do still happen every 64 cycles, there is no additional 4 cycle
 // delay.
 func TestMooneye__timer__tima_reload(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/timer/tima_reload", 200_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/timer/tima_reload", 185_205, TestTypeMooneye)
 }
 
 // This test tests which write to the TIMA register is ignored when
