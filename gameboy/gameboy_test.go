@@ -258,8 +258,16 @@ func TestMooneye__ppu__intr_2_oam_ok_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_oam_ok_timing", 220_758, TestTypeMooneye)
 }
 
+// This test verifies that the timer is affected by resetting the DIV register
+// by writing to it. The timer uses the same internal counter as the DIV
+// register, so resetting DIV also resets the timer.
+// The basic idea of this test is very simple:
+//  1. start the timer
+//  2. keep resetting DIV in a loop by writing to it
+//  3. run N iterations of the loop
+//  4. if an interrupt happened, test failed
 func TestMooneye__timer__div_write(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/timer/div_write", 500_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/timer/div_write", 901_159, TestTypeMooneye)
 }
 
 func TestMooneye__timer__rapid_toggle(t *testing.T) {
