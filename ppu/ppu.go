@@ -313,7 +313,7 @@ func (ppu *PPU) changeMode(mode Mode) {
 	if mode == HorizontalBlank && ((ppu.stat & 0b0000_1000) != 0) {
 		ppu.interruptRequester(interrupt.LcdInterrupt)
 	}
-	// Mode 1 (Vertical Blan)
+	// Mode 1 (Vertical Blank)
 	if mode == VerticalBlank && ((ppu.stat & 0b0001_0000) != 0) {
 		ppu.interruptRequester(interrupt.LcdInterrupt)
 	}

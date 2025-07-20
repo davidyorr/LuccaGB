@@ -10,6 +10,7 @@ type Timer struct {
 
 	counter               uint16
 	previousTimerBitState bool
+	timaReloading         bool
 	timaReloadDelay       uint8
 }
 
@@ -27,32 +28,35 @@ func (timer *Timer) Reset() {
 	timer.previousTimerBitState = false
 }
 
-// Perform 1 T-cycle of work
+// Step performs 1 T-cycle of work
 func (timer *Timer) Step() (requestInterrupt bool) {
-	timer.counter++
-	currentTimerBitState := timer.getTimerBitState()
-
 	// there is a 4 cycle delay before the TIMA register is reloaded with the
 	// TMA register after an overflow
+	timer.timaReloading = false
 	if timer.timaReloadDelay > 0 {
 		timer.timaReloadDelay--
 
 		if timer.timaReloadDelay == 0 {
 			timer.tima = timer.tma
+			timer.timaReloading = true
+			requestInterrupt = true
 		}
 	}
 
+	timer.counter++
+	currentTimerBitState := timer.getTimerBitState()
+
 	if timer.isTimerEnabled() {
-		if timer.previousTimerBitState && !currentTimerBitState {
-			timer.tima++
-			// check for overflow
-			if timer.tima == 0 {
-				timer.tima = 0x00
-				timer.timaReloadDelay = 4
-				requestInterrupt = true
+		if timer.timaReloadDelay == 0 {
+			if timer.previousTimerBitState && !currentTimerBitState {
+				timer.tima++
+				// check for overflow
+				if timer.tima == 0 {
+					timer.tima = 0x00
+					timer.timaReloadDelay = 4
+				}
 			}
 		}
-
 	}
 
 	timer.previousTimerBitState = currentTimerBitState
@@ -81,8 +85,32 @@ func (timer *Timer) Write(address uint16, value uint8) {
 	case 0x04:
 		timer.counter = 0
 	case 0x05:
+		// If you write to TIMA during the cycle that TMA is being loaded to it
+		// [B], the write will be ignored and TMA value will be written to TIMA
+		// instead.
+		// See: https://gbdev.gg8.se/wiki/articles/Timer_Obscure_Behaviour
+		if timer.timaReloading {
+			timer.tima = timer.tma
+			return
+		}
+		// During the strange cycle [A] you can prevent the IF flag from being
+		// set and prevent the TIMA from being reloaded from TMA by writing a
+		// value to TIMA. That new value will be the one that stays in the TIMA
+		// register after the instruction. Writing to DIV, TAC or other
+		// registers won't prevent the IF flag from being set or TIMA from being
+		// reloaded.
+		// See: https://gbdev.gg8.se/wiki/articles/Timer_Obscure_Behaviour
+		if timer.timaReloadDelay != 0 {
+			timer.timaReloadDelay = 0
+		}
 		timer.tima = value
 	case 0x06:
+		// If TMA is written the same cycle it is loaded to TIMA [B], TIMA is
+		// also loaded with that value.
+		// See: https://gbdev.gg8.se/wiki/articles/Timer_Obscure_Behaviour
+		if timer.timaReloading {
+			timer.tima = value
+		}
 		timer.tma = value
 	case 0x07:
 		// upper 5 bits are unused
