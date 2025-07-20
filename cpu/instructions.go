@@ -1,5 +1,7 @@
 package cpu
 
+import "fmt"
+
 type instruction struct {
 	mnemonic string
 	step     func(cpu *CPU) bool
@@ -318,35 +320,41 @@ var instructions = [256]instruction{
 	0xF4: {"NOP", nop},
 	0xFC: {"NOP", nop},
 	0xFD: {"NOP", nop},
+
+	// the mnemonic is generated in the handler function
+	0xCB: {"", executeCbInstructionStep},
 }
 
-func (cpu *CPU) executeCbInstructionStep(opcode uint8) bool {
-	operation := opcode >> 6
-	u3 := (opcode & 0b0011_1000) >> 3
-	r8 := (opcode & 0b0000_0111)
+// Helper for CB-prefixed instruction mnemonics
+var cbRegisters = []string{"B", "C", "D", "E", "H", "L", "[HL]", "A"}
+
+// Corresponds to u3 when operation is 0b00
+var cbShiftRotates = []string{"RLC", "RRC", "RL", "RR", "SLA", "SRA", "SWAP", "SRL"}
+
+func executeCbInstructionStep(cpu *CPU) bool {
+	// the CB opcode does not get fetched until M-cycle 2
+	if cpu.mCycle < 2 {
+		return false
+	}
+
+	operation := *cpu.cbOpcode >> 6
+	u3 := (*cpu.cbOpcode & 0b0011_1000) >> 3
+	r8 := (*cpu.cbOpcode & 0b0000_0111)
 
 	switch operation {
 	case 0b00:
+		cpu.instruction.mnemonic = fmt.Sprintf("%s %s", cbShiftRotates[u3], cbRegisters[r8])
 		return cpu.shift_rotate_u3_r8(u3, r8)
 	case 0b01:
+		cpu.instruction.mnemonic = fmt.Sprintf("BIT %d, %s", u3, cbRegisters[r8])
 		return cpu.bit_u3_r8(u3, r8)
 	case 0b10:
+		cpu.instruction.mnemonic = fmt.Sprintf("RES %d, %s", u3, cbRegisters[r8])
 		return cpu.res_u3_r8(u3, r8)
 	case 0b11:
+		cpu.instruction.mnemonic = fmt.Sprintf("SET %d, %s", u3, cbRegisters[r8])
 		return cpu.set_u3_r8(u3, r8)
 	}
 
 	return false
-}
-
-func (cpu *CPU) GetNumberOfUnimplementedInstructions() int {
-	var count int = 0
-	for i := range instructions {
-		if instructions[i].step == nil {
-			count++
-		}
-	}
-
-	// subtract the prefix opcode 0xCB
-	return count - 1
 }

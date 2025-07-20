@@ -131,7 +131,6 @@ func (cpu *CPU) executeMachineCycle() {
 func (cpu *CPU) executeInstructionStep() {
 	cpu.mCycle++
 
-	var done bool
 	pcForLog := cpu.pc
 	mCycleForLog := cpu.mCycle
 
@@ -155,14 +154,7 @@ func (cpu *CPU) executeInstructionStep() {
 		cpu.cbOpcode = &cbOpcode
 	}
 
-	if cpu.opcode == 0xCB {
-		// the CB opcode does not get fetched until M-cycle 2
-		if cpu.mCycle >= 2 {
-			done = cpu.executeCbInstructionStep(*cpu.cbOpcode)
-		}
-	} else {
-		done = cpu.instruction.step(cpu)
-	}
+	done := cpu.instruction.step(cpu)
 
 	// for logging
 	var cbo uint8 = 0
@@ -186,6 +178,9 @@ func (cpu *CPU) executeInstructionStep() {
 
 	if done {
 		// reset state
+		if cpu.opcode == 0xCB {
+			cpu.instruction.mnemonic = ""
+		}
 		cpu.instruction = nil
 		cpu.cbOpcode = nil
 	}
