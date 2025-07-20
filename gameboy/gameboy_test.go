@@ -270,8 +270,13 @@ func TestMooneye__timer__div_write(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/timer/div_write", 901_159, TestTypeMooneye)
 }
 
+// This test rapidly starts and stops the timer.
+// There are two behaviours that affect the test:
+//  1. starting or stopping the timer does *not* reset its internal counter,
+//     so repeated starting and stopping does not prevent timer increments
+//  2. the timer circuit design causes some unexpected timer increases
 func TestMooneye__timer__rapid_toggle(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/timer/rapid_toggle", 500_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/timer/rapid_toggle", 184_894, TestTypeMooneye)
 }
 
 func TestMooneye__timer__tim00_div_trigger(t *testing.T) {

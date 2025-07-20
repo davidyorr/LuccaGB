@@ -47,15 +47,8 @@ func (timer *Timer) Step() (requestInterrupt bool) {
 	currentTimerBitState := timer.getTimerBitState()
 
 	if timer.isTimerEnabled() {
-		if timer.timaReloadDelay == 0 {
-			if timer.previousTimerBitState && !currentTimerBitState {
-				timer.tima++
-				// check for overflow
-				if timer.tima == 0 {
-					timer.tima = 0x00
-					timer.timaReloadDelay = 4
-				}
-			}
+		if timer.previousTimerBitState && !currentTimerBitState {
+			timer.incrementTima()
 		}
 	}
 
@@ -113,8 +106,15 @@ func (timer *Timer) Write(address uint16, value uint8) {
 		}
 		timer.tma = value
 	case 0x07:
-		// upper 5 bits are unused
+		// When the timer is enabled (TAC bit 2 transitions 0 -> 1), it will
+		// immediately increment if the newly selected frequency bit in the
+		// internal counter is already high.
+		wasDisabled := !timer.isTimerEnabled()
 		timer.tac = (value & 0b0000_0111)
+		isNowEnabled := timer.isTimerEnabled()
+		if wasDisabled && isNowEnabled && timer.getTimerBitState() {
+			timer.incrementTima()
+		}
 	}
 }
 
@@ -141,4 +141,16 @@ func (timer *Timer) getTimerBitState() bool {
 func (timer *Timer) isTimerEnabled() bool {
 	// bit 2 -> timer enabled
 	return (timer.tac & 0b0000_0100) != 0
+}
+
+func (timer *Timer) incrementTima() {
+	if timer.timaReloadDelay > 0 {
+		return
+	}
+
+	timer.tima++
+	// check for overflow
+	if timer.tima == 0 {
+		timer.timaReloadDelay = 4
+	}
 }
