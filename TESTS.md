@@ -61,14 +61,14 @@
 
 | Test Name | Status |
 |-----------|--------|
-| `ie_push.gb` | ❌ |
+| `ie_push.gb` | ✅ |
 
 ## oam_dma
 
 | Test Name | Status |
 |-----------|--------|
 | `basic.gb` | ✅ |
-| `reg_read.gb` | ❌ |
+| `reg_read.gb` | ✅ |
 | `sources-GS.gb` | ❌ |
 
 ## ppu
@@ -88,8 +88,8 @@
 
 | Test Name | Status |
 |-----------|--------|
-| `div_write.gb` | ❌ |
-| `rapid_toggle.gb` | ❌ |
+| `div_write.gb` | ✅ |
+| `rapid_toggle.gb` | ✅ |
 | `tim00_div_trigger.gb` | ✅ |
 | `tim00.gb` | ✅ |
 | `tim01_div_trigger.gb` | ✅ |
@@ -98,7 +98,7 @@
 | `tim10.gb` | ✅ |
 | `tim11_div_trigger.gb` | ✅ |
 | `tim11.gb` | ✅ |
-| `tima_reload.gb` | ❌ |
-| `tima_write_reloading.gb` | ❌ |
-| `tma_write_reloading.gb` | ❌ |
+| `tima_reload.gb` | ✅ |
+| `tima_write_reloading.gb` | ✅ |
+| `tma_write_reloading.gb` | ✅ |
 
