@@ -102,16 +102,21 @@ func (cpu *CPU) executeMachineCycle() {
 		return
 	}
 
-	if cpu.ime && cpu.interruptsPending() {
-		cpu.isServicingInterrupt = true
-		cpu.interruptServiceRoutineStep = 1
-		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
-		cpu.ime = false
+	if cpu.isServicingInterrupt {
 		cpu.executeInterruptServiceRoutineStep()
 		return
 	}
 
-	if cpu.isServicingInterrupt {
+	if cpu.ime && cpu.interruptsPending() {
+		logger.Info(
+			"INTERRUPT DETECTED",
+			"PC", fmt.Sprintf("0x%04X", cpu.pc),
+			"SP", fmt.Sprintf("0x%04X", cpu.sp),
+			"IE", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFFFF)),
+			"IF", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFF0F)),
+		)
+		cpu.isServicingInterrupt = true
+		cpu.interruptServiceRoutineStep = 1
 		cpu.executeInterruptServiceRoutineStep()
 		return
 	}
@@ -189,11 +194,9 @@ func (cpu *CPU) executeInstructionStep() {
 func (cpu *CPU) executeInterruptServiceRoutineStep() {
 	switch cpu.interruptServiceRoutineStep {
 	case 1:
+		cpu.ime = false
 		cpu.interruptServiceRoutineStep++
 	case 2:
-		ifRegister := cpu.bus.Read(0xFF0F)
-		clearedFlag := ifRegister & ^uint8(cpu.interruptTypeToClear)
-		cpu.bus.Write(0xFF0F, clearedFlag)
 		cpu.interruptServiceRoutineStep++
 	case 3:
 		cpu.sp--
@@ -201,12 +204,28 @@ func (cpu *CPU) executeInterruptServiceRoutineStep() {
 		cpu.bus.Write(cpu.sp, highByte)
 		cpu.interruptServiceRoutineStep++
 	case 4:
+		// Determine the interrupt type to clear and the vector address
+		cpu.interruptTypeToClear, cpu.interruptToService = cpu.getPendingInterrupt()
+
+		// Perform the write, which may change IE, but it's too late to cancel the interrupt dispatch
 		cpu.sp--
 		lowByte := uint8(cpu.pc & 0x00FF)
 		cpu.bus.Write(cpu.sp, lowByte)
 		cpu.interruptServiceRoutineStep++
 	case 5:
-		cpu.pc = cpu.interruptToService
+		if cpu.interruptToService == 0 {
+			// If there is no valid interrupt to service, PC is set to 0x0000 instead of the normal vector address
+			cpu.pc = 0x0000
+		} else {
+			// Otherwise, continue with the valid interrupt
+			cpu.pc = cpu.interruptToService
+
+			// Clear the flag for the interrupt that was serviced
+			ifRegister := cpu.bus.Read(0xFF0F)
+			cpu.bus.Write(0xFF0F, ifRegister & ^uint8(cpu.interruptTypeToClear))
+		}
+
+		// reset state
 		cpu.isServicingInterrupt = false
 		cpu.interruptServiceRoutineStep = 0
 	}
@@ -215,34 +234,36 @@ func (cpu *CPU) executeInterruptServiceRoutineStep() {
 func (cpu *CPU) interruptsPending() bool {
 	interruptEnable := cpu.bus.Read(0xFFFF)
 	interruptFlag := cpu.bus.Read(0xFF0F)
+	logger.Info("interruptsPending()", "IE", fmt.Sprintf("%08b", interruptEnable), "IF", fmt.Sprintf("%08b", interruptFlag))
 	return (interruptEnable & interruptFlag) != 0
 }
 
-// Return the interrupt type and the vector address
-func (cpu *CPU) getPendingInterrupt() (interrupt.Interrupt, uint16) {
+// getPendingInterrupt determines the highest priority interrupt to be serviced.
+// It reads the IE and IF registers from the bus and selects an interrupt based
+// on the fixed priority: VBlank > LCD > Timer > Serial > Joypad.
+//
+// Returns the interrupt type and its vector address. If no interrupts are
+// pending and enabled, it returns (0, 0).
+func (cpu *CPU) getPendingInterrupt() (interruptType interrupt.Interrupt, vectorAddress uint16) {
 	ifRegister := cpu.bus.Read(0xFF0F)
 	ieRegister := cpu.bus.Read(0xFFFF)
-	var interruptType interrupt.Interrupt
-	var vectorAddress uint16
-
-	if (ifRegister&ieRegister)&uint8(interrupt.VBlankInterrupt) != 0 {
-		interruptType = interrupt.VBlankInterrupt
-		vectorAddress = 0x0040
-	} else if (ifRegister&ieRegister)&uint8(interrupt.LcdInterrupt) != 0 {
-		interruptType = interrupt.LcdInterrupt
-		vectorAddress = 0x0048
-	} else if (ifRegister&ieRegister)&uint8(interrupt.TimerInterrupt) != 0 {
-		interruptType = interrupt.TimerInterrupt
-		vectorAddress = 0x0050
-	} else if (ifRegister&ieRegister)&uint8(interrupt.SerialInterrupt) != 0 {
-		interruptType = interrupt.SerialInterrupt
-		vectorAddress = 0x0058
-	} else if (ifRegister&ieRegister)&uint8(interrupt.JoypadInterrupt) != 0 {
-		interruptType = interrupt.JoypadInterrupt
-		vectorAddress = 0x0060
+	pending := ifRegister & ieRegister
+	if (pending & uint8(interrupt.VBlankInterrupt)) != 0 {
+		return interrupt.VBlankInterrupt, 0x0040
 	}
-
-	return interruptType, vectorAddress
+	if (pending & uint8(interrupt.LcdInterrupt)) != 0 {
+		return interrupt.LcdInterrupt, 0x0048
+	}
+	if (pending & uint8(interrupt.TimerInterrupt)) != 0 {
+		return interrupt.TimerInterrupt, 0x0050
+	}
+	if (pending & uint8(interrupt.SerialInterrupt)) != 0 {
+		return interrupt.SerialInterrupt, 0x0058
+	}
+	if (pending & uint8(interrupt.JoypadInterrupt)) != 0 {
+		return interrupt.JoypadInterrupt, 0x0060
+	}
+	return 0, 0
 }
 
 func (cpu *CPU) getAF() uint16 {

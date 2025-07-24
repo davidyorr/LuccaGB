@@ -162,7 +162,7 @@ func TestMooneye__reti_intr_timing(t *testing.T) {
 }
 
 func TestMooneye__reti_timing(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/reti_timing", 252_354, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/reti_timing", 251_599, TestTypeMooneye)
 }
 
 func TestMooneye__rst_timing(t *testing.T) {
@@ -191,7 +191,7 @@ func TestMooneye__instr__daa(t *testing.T) {
 // Tests what happens if the IE register is the target for one of the
 // PC pushes during interrupt dispatch.
 func TestMooneye__interrupts__ie_push(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/interrupts/ie_push", 200_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/interrupts/ie_push", 181_550, TestTypeMooneye)
 }
 
 // This test checks that OAM DMA copies all bytes correctly.
