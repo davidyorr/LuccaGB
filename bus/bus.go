@@ -99,19 +99,19 @@ func (bus *Bus) DirectRead(address uint16) (value uint8) {
 }
 
 func (bus *Bus) Write(address uint16, value uint8) {
+	// DMA
 	// writes to the DMA register should succeed regardless of DMA transfer state
 	if address == 0xFF46 {
 		bus.dma.SetDmaRegister(value)
 	}
+
 	// during a transfer, only HRAM and WRAM can be accessed
 	if bus.dma.Active() && (!(address >= 0xFF80 && address <= 0xFFFE) || !(address >= 0xC000 && address <= 0xFDFF)) {
 		logger.Info("DMA ACTIVE, IGNORING WRITE")
 		return
 	}
+
 	switch {
-	// DMA
-	case address == 0xFF46:
-		bus.dma.StartTransfer(value)
 	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
 		bus.ppu.Write(address, value)

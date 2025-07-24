@@ -17,8 +17,10 @@ type DMA struct {
 	currentTransferByte    uint8
 	requestedSourceAddress uint8
 	startingSourceAddress  uint8
-	bus                    MemoryBus
-	ppu                    *ppu.PPU
+	// true if the current transfer was started while another was in progress
+	wasRestarted bool
+	bus          MemoryBus
+	ppu          *ppu.PPU
 }
 
 type TransferState uint8
@@ -117,12 +119,25 @@ func (dma *DMA) executeMachineCycle() {
 }
 
 func (dma *DMA) StartTransfer(value uint8) {
-	logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
+	if dma.state == Idle {
+		logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
+		dma.wasRestarted = false
+	}
+	if dma.state == Active {
+		logger.Info("DMA STATE MOVING FROM ACTIVE -> REQUESTED")
+		dma.wasRestarted = true
+	}
+	dma.dmaRegister = value
 	dma.requestedSourceAddress = value
 	dma.state = Requested
 }
 
 func (dma *DMA) Active() bool {
+	// for restarted DMA transfers
+	if dma.wasRestarted {
+		return dma.state != Idle
+	}
+	// for fresh DMA transfers
 	return dma.state == Active
 }
 
@@ -130,8 +145,10 @@ func (dma *DMA) CurrentTransferByte() uint8 {
 	return dma.currentTransferByte
 }
 
+// SetDmaRegister has the side effect of starting a DMA transfer.
 func (dma *DMA) SetDmaRegister(value uint8) {
 	dma.dmaRegister = value
+	dma.StartTransfer(value)
 }
 
 func (dma *DMA) DmaRegister() uint8 {

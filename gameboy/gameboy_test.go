@@ -126,11 +126,14 @@ func TestMooneye__ld_hl_sp_e_timing(t *testing.T) {
 
 // This tests starting another OAM DMA while one is already active
 func TestMooneye__oam_dma_restart(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/oam_dma_restart", 438_480, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/oam_dma_restart", 237_556, TestTypeMooneye)
 }
 
+// This tests what happens in the first few cycles of OAM DMA.
+// Also, when OAM DMA is restarted while a previous one is running, the previous one
+// is not immediately stopped.
 func TestMooneye__oam_dma_start(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/oam_dma_start", 259_686, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/oam_dma_start", 258_931, TestTypeMooneye)
 }
 
 func TestMooneye__oam_dma_timing(t *testing.T) {
