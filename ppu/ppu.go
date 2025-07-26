@@ -45,10 +45,11 @@ type PPU struct {
 	// 0xFF48 - OBP0: Object palette 0 data
 	obp0 uint8
 	// 0xFF49 - OBP1: Object palette 1 data
-	obp1               uint8
-	mode               Mode
-	interruptRequester func(interruptType interrupt.Interrupt)
-	counter            uint16
+	obp1                           uint8
+	mode                           Mode
+	previousStatInterruptLineState bool
+	interruptRequester             func(interruptType interrupt.Interrupt)
+	counter                        uint16
 }
 
 func New(interruptRequest func(interrupt.Interrupt)) *PPU {
@@ -62,9 +63,9 @@ func New(interruptRequest func(interrupt.Interrupt)) *PPU {
 
 func (ppu *PPU) Reset() {
 	ppu.lcdc = 0x91
-	ppu.ly = 0x91
+	ppu.ly = 0x00
 	ppu.lyc = 0x00
-	ppu.stat = 0x81
+	ppu.stat = 0x85
 	ppu.scy = 0x00
 	ppu.scx = 0x00
 	ppu.wy = 0x00
@@ -81,6 +82,8 @@ func (ppu *PPU) Step() {
 	if !ppu.lcdEnabled() {
 		return
 	}
+
+	ppu.updateStatInterruptLine()
 
 	if ppu.ly < 144 {
 		switch {
@@ -124,7 +127,8 @@ func (ppu *PPU) Step() {
 		if ppu.ly == 144 {
 			ppu.changeMode(VerticalBlank)
 			ppu.interruptRequester(interrupt.VBlankInterrupt)
-			// if bit 5 (mode 2 OAM interrupt) is set, an LCD interrupt is also triggered
+			// If bit 5 (mode 2 OAM interrupt) is set, an LCD interrupt is also triggered.
+			// See: https://github.com/Gekkio/mooneye-test-suite/blob/443f6e1f2a8d83ad9da051cbb960311c5aaaea66/acceptance/ppu/vblank_stat_intr-GS.s#L21
 			if (ppu.stat & 0b0010_0000) != 0 {
 				ppu.interruptRequester(interrupt.LcdInterrupt)
 			}
@@ -132,21 +136,31 @@ func (ppu *PPU) Step() {
 			ppu.ly = 0
 		}
 
-		ppu.compareLycLy()
+		ppu.updateLycCoincidenceFlag()
 	}
 }
 
 func (ppu *PPU) getMode3Duration() uint16 {
 	var baseDuration uint16 = 172
-	var backgroundScrollingPenalty uint16 = uint16(ppu.scx) % 8
-	var windowPenalty uint16 = 0
-	var objectsPenalty uint16 = 0
 
+	// See: https://github.com/Gekkio/mooneye-test-suite/blob/443f6e1f2a8d83ad9da051cbb960311c5aaaea66/acceptance/ppu/hblank_ly_scx_timing-GS.s#L24
+	var backgroundScrollingPenalty uint16 = 0
+	switch ppu.scx % 8 {
+	case 0:
+		backgroundScrollingPenalty = 0
+	case 1, 2, 3, 4:
+		backgroundScrollingPenalty = 4 // 1 M-cycle
+	case 5, 6, 7:
+		backgroundScrollingPenalty = 8 // 2 M-cycles
+	}
+
+	var windowPenalty uint16 = 0
 	windowEnabled := ppu.lcdc&0b0010_0000>>5 == 1
 	if windowEnabled && ppu.ly >= ppu.wy && ppu.wx < 167 && ppu.wx > 7 {
 		windowPenalty = 6
 	}
 
+	var objectsPenalty uint16 = 0
 	type Position struct {
 		x, y uint16
 	}
@@ -228,8 +242,8 @@ func (ppu *PPU) Read(address uint16) uint8 {
 func (ppu *PPU) Write(address uint16, value uint8) {
 	logger.Debug(
 		"PPU Write",
-		"Address", fmt.Sprintf("0x%04X", address),
-		"Value", fmt.Sprintf("0x%02X", value),
+		"ADDRESS", fmt.Sprintf("0x%04X", address),
+		"VALUE", fmt.Sprintf("0x%02X", value),
 	)
 	switch {
 	case address == 0xFF40:
@@ -240,14 +254,14 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		// LCD ON -> LCD OFF
 		if lcdWasEnabled && !lcdIsEnabled {
 			ppu.ly = 0
-			ppu.compareLycLy()
+			ppu.updateLycCoincidenceFlag()
 			ppu.counter = 0
 			ppu.changeMode(VerticalBlank)
 		}
 		// LCD OFF -> LCD ON
 		if !lcdWasEnabled && lcdIsEnabled {
 			ppu.changeMode(OamScan)
-			ppu.compareLycLy()
+			ppu.updateLycCoincidenceFlag()
 		}
 	case address == 0xFF41:
 		ppu.stat = (ppu.stat & 0b1000_0111) | (value & 0b0111_1000)
@@ -257,7 +271,7 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		ppu.scx = value
 	case address == 0xFF45:
 		ppu.lyc = value
-		ppu.compareLycLy()
+		ppu.updateLycCoincidenceFlag()
 	case address == 0xFF47:
 		ppu.bgp = value
 	case address == 0xFF48:
@@ -308,28 +322,42 @@ const (
 func (ppu *PPU) changeMode(mode Mode) {
 	ppu.mode = mode
 	ppu.stat = (ppu.stat & 0b1111_1100) | uint8(mode)
-
-	// Mode 0 (Horizontal Blank)
-	if mode == HorizontalBlank && ((ppu.stat & 0b0000_1000) != 0) {
-		ppu.interruptRequester(interrupt.LcdInterrupt)
-	}
-	// Mode 1 (Vertical Blank)
-	if mode == VerticalBlank && ((ppu.stat & 0b0001_0000) != 0) {
-		ppu.interruptRequester(interrupt.LcdInterrupt)
-	}
-	// Mode 2 (OAM Scan)
-	if mode == OamScan && ((ppu.stat & 0b0010_0000) != 0) {
-		ppu.interruptRequester(interrupt.LcdInterrupt)
-	}
 }
 
-func (ppu *PPU) compareLycLy() {
+// INT $48 — STAT interrupt
+//
+// There are various sources which can trigger this interrupt to occur as
+// described in STAT register ($FF41). The various STAT interrupt sources (modes
+// 0-2 and LYC=LY) have their state (inactive=low and active=high) logically
+// ORed into a shared “STAT interrupt line” if their respective enable bit is
+// turned on. A STAT interrupt will be triggered by a rising edge (transition
+// from low to high) on the STAT interrupt line.
+// See: https://gbdev.io/pandocs/Interrupt_Sources.html#int-48--stat-interrupt
+func (ppu *PPU) updateStatInterruptLine() {
+	mode0 := (ppu.mode == HorizontalBlank) && ((ppu.stat & 0b0000_1000) != 0)
+	mode1 := (ppu.mode == VerticalBlank) && ((ppu.stat & 0b0001_0000) != 0)
+	mode2 := (ppu.mode == OamScan) && ((ppu.stat & 0b0010_0000) != 0)
+	lycLyMatch := ((ppu.stat & 0b0100_0000) != 0) && ((ppu.stat & 0b0000_0100) != 0)
+
+	currentStatInterruptLineState := mode0 || mode1 || mode2 || lycLyMatch
+
+	// Check for a rising edge
+	if !ppu.previousStatInterruptLineState && currentStatInterruptLineState {
+		ppu.interruptRequester(interrupt.LcdInterrupt)
+	}
+
+	// Update the state for the next check
+	ppu.previousStatInterruptLineState = currentStatInterruptLineState
+}
+
+// updateLycCoincidenceFlag sets or clears the STAT register's Coincidence Flag
+// (bit 2) based on whether the LY and LYC registers are equal. This must be
+// called whenever either LY or LYC is modified to ensure the flag's state is
+// always accurate.
+// See: https://hacktix.github.io/GBEDG/ppu/#stat2---coincidence-flag
+func (ppu *PPU) updateLycCoincidenceFlag() {
 	if ppu.lyc == ppu.ly {
 		ppu.stat |= 0b0000_0100
-		// LYC int select
-		if (ppu.stat & 0b0100_0000) != 0 {
-			ppu.interruptRequester(interrupt.LcdInterrupt)
-		}
 	} else {
 		ppu.stat &^= 0b0000_0100
 	}

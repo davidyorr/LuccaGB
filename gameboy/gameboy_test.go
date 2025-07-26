@@ -224,7 +224,7 @@ func TestMooneye__oam_dma__sources_GS(t *testing.T) {
 //	(SCX mod 8) = 1-4 => LY increments 50 cycles after STAT interrupt
 //	(SCX mod 8) = 5-7 => LY increments 49 cycles after STAT interrupt
 func TestMooneye__ppu__hblank_ly_scx_timing_GS(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 400_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/ppu/hblank_ly_scx_timing-GS", 829_917, TestTypeMooneye)
 }
 
 // Tests how long does it take to get from STAT mode=1 interrupt to STAT mode=2 interrupt
@@ -370,6 +370,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 
 		passed, failed := checkResult(output, testType)
 		if failed {
+			t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
 			t.Logf("❌ TEST FAILED after %d steps", i+1)
 			for _, line := range logBuffer.LastN(40) {
 				fmt.Fprint(os.Stdout, line)

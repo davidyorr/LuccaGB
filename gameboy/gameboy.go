@@ -60,9 +60,9 @@ func (gameboy *Gameboy) LoadRom(rom []uint8) {
 // Advance the entire system by 1 M-cycle (4 T-cycles)
 func (gameboy *Gameboy) Step() (uint8, error) {
 	for range 4 {
-		gameboy.cpu.Step()
 		gameboy.dma.Step()
 		gameboy.ppu.Step()
+		gameboy.cpu.Step()
 		requestTimerInterrupt := gameboy.timer.Step()
 		if requestTimerInterrupt {
 			gameboy.mmu.RequestInterrupt(interrupt.TimerInterrupt)
