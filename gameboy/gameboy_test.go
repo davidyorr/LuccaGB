@@ -261,6 +261,22 @@ func TestMooneye__ppu__intr_2_oam_ok_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/ppu/intr_2_oam_ok_timing", 220_758, TestTypeMooneye)
 }
 
+// This tests how the internal STAT IRQ signal can block
+// subsequent STAT interrupts if the signal is never cleared
+func TestMooneye__ppu__stat_irq_blocking(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/stat_irq_blocking", 197_935, TestTypeMooneye)
+}
+
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
+// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
+// at line 144 when vblank starts.
+// This test measures the cycles between vblank<->vblank and compares that to vblank<->stat_m2_144
+// Expected behaviour: vblank and stat_m2_144 are triggered at the same time
+func TestMooneye__ppu__vblank_stat_intr_GS(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/ppu/vblank_stat_intr-GS", 324_462, TestTypeMooneye)
+}
+
 // This test verifies that the timer is affected by resetting the DIV register
 // by writing to it. The timer uses the same internal counter as the DIV
 // register, so resetting DIV also resets the timer.
@@ -335,16 +351,6 @@ func TestMooneye__timer__tima_write_reloading(t *testing.T) {
 // the timer is reloading.
 func TestMooneye__timer__tma_write_reloading(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/timer/tma_write_reloading", 200_000, TestTypeMooneye)
-}
-
-// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
-// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
-// If bit 5 (mode 2 OAM interrupt) is set, an interrupt is also triggered
-// at line 144 when vblank starts.
-// This test measures the cycles between vblank<->vblank and compares that to vblank<->stat_m2_144
-// Expected behaviour: vblank and stat_m2_144 are triggered at the same time
-func TestMooneye__ppu__vblank_stat_intr_GS(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/ppu/vblank_stat_intr-GS", 400_000, TestTypeMooneye)
 }
 
 func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType TestType) {
