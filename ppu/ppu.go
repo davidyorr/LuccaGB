@@ -16,9 +16,15 @@ type PPU struct {
 	// 0xFEA0 - 0xFEFF - Not usable
 	//	Nintendo says use of this area is prohibited
 	unusable [96]uint8
-	// 10 sprites can be displayed per scanline
-	visibleSprites []uint8
 	// 0xFF40 - LCDC: LCD control
+	//	7 - LCD & PPU enable
+	//	6 - Window tile map area: 0 = 9800–9BFF; 1 = 9C00–9FFF
+	//	5 - Window enable
+	//	4 - BG & Window tile data set: 0 = 8800–97FF; 1 = 8000–8FFF
+	//	3 - BG tile map area: 0 = 9800–9BFF; 1 = 9C00–9FFF
+	//	2 - OBJ size: 0 = 8×8; 1 = 8×16
+	//	1 - OBJ enable
+	//	0 - BG & Window enable / priority
 	lcdc uint8
 	// 0xFF44 - LY: LCD Y coordinate [read-only]
 	ly uint8
@@ -48,8 +54,11 @@ type PPU struct {
 	obp1                           uint8
 	mode                           Mode
 	previousStatInterruptLineState bool
-	interruptRequester             func(interruptType interrupt.Interrupt)
-	counter                        uint16
+	// 10 sprites can be displayed per scanline
+	visibleSprites     []uint8
+	frameBuffer        [144][160]uint8
+	interruptRequester func(interruptType interrupt.Interrupt)
+	counter            uint16
 }
 
 func New(interruptRequest func(interrupt.Interrupt)) *PPU {
@@ -97,11 +106,12 @@ func (ppu *PPU) Step() {
 				if len(ppu.visibleSprites) < 10 {
 					oamIndex := ppu.counter / 2
 					spriteY := ppu.oam[oamIndex*4]
+					spriteX := ppu.oam[oamIndex*4+1]
 					var height uint8 = 8
 					if ((ppu.lcdc & 0b0000_0100) >> 2) == 1 {
 						height = 16
 					}
-					if ppu.ly+16 >= spriteY && ppu.ly+16 < spriteY+height {
+					if ppu.ly+16 >= spriteY && ppu.ly+16 < spriteY+height && spriteX > 0 {
 						ppu.visibleSprites = append(ppu.visibleSprites, uint8(oamIndex))
 					}
 				}
