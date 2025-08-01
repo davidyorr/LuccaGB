@@ -1,7 +1,8 @@
 (window as any).onRomLoaded = onRomLoaded;
 (window as any).updateCanvas = updateCanvas;
 
-let canvasCtx: CanvasRenderingContext2D;
+let visibleCanvasCtx: CanvasRenderingContext2D;
+let offscreenCanvasCtx: CanvasRenderingContext2D;
 let imageData: ImageData;
 
 const displayWidth = 160;
@@ -29,18 +30,39 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 
 	// ====== set up canvas ======
-	const canvas = document.getElementById("canvas");
-	if (canvas instanceof HTMLCanvasElement) {
-		const ctx = canvas.getContext("2d");
+	const visibleCanvas = document.getElementById("canvas");
+	if (visibleCanvas instanceof HTMLCanvasElement) {
+		const ctx = visibleCanvas.getContext("2d");
 		if (!ctx) {
 			throw new Error("error getting canvas context");
 		}
-		canvas.width = displayWidth;
-		canvas.height = displayHeight;
-		ctx.imageSmoothingEnabled = false;
-		imageData = ctx.createImageData(displayWidth, displayHeight);
-		canvasCtx = ctx;
+		visibleCanvasCtx = ctx;
+		visibleCanvasCtx.imageSmoothingEnabled = false;
+		imageData = visibleCanvasCtx.createImageData(displayWidth, displayHeight);
+
+		const resizeObserver = new ResizeObserver((entries) => {
+			const entry = entries[0];
+			const { width, height } = entry.contentRect;
+
+			visibleCanvas.width = width;
+			visibleCanvas.height = height;
+			visibleCanvasCtx.imageSmoothingEnabled = false;
+		});
+
+		const canvasContainer = document.getElementById("canvas-container");
+		if (!canvasContainer) {
+			throw new Error("error getting canvas container");
+		}
+		resizeObserver.observe(canvasContainer);
 	}
+	const offscreenCanvas = document.createElement("canvas");
+	offscreenCanvas.width = 160;
+	offscreenCanvas.height = 144;
+	const ctx = offscreenCanvas.getContext("2d");
+	if (!ctx) {
+		throw new Error("error getting offscreen canvas context");
+	}
+	offscreenCanvasCtx = ctx;
 });
 
 // ============ GAME LOOP ============
@@ -83,6 +105,16 @@ function onRomLoaded() {
 }
 
 function updateCanvas(uint8Array: Uint8Array) {
+	// put the 160x144 data onto the same size offscreen canvas
 	imageData.data.set(uint8Array);
-	canvasCtx.putImageData(imageData, 0, 0);
+	offscreenCanvasCtx.putImageData(imageData, 0, 0);
+
+	// scale the image from the offscreen canvas onto the visible canvas
+	visibleCanvasCtx.drawImage(
+		offscreenCanvasCtx.canvas,
+		0,
+		0,
+		visibleCanvasCtx.canvas.width,
+		visibleCanvasCtx.canvas.height,
+	);
 }
