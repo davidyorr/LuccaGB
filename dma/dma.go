@@ -26,10 +26,10 @@ type DMA struct {
 type TransferState uint8
 
 const (
-	Idle TransferState = iota
-	Requested
-	Starting
-	Active
+	StateIdle TransferState = iota
+	StateRequested
+	StateStarting
+	StateActive
 )
 
 const (
@@ -51,7 +51,7 @@ func New() *DMA {
 }
 
 func (dma *DMA) Reset() {
-	dma.state = Idle
+	dma.state = StateIdle
 	dma.sourceAddress = 0
 	dma.progress = 0
 }
@@ -77,7 +77,7 @@ func (dma *DMA) Step() {
 // Perform 1 M-cycle of work
 func (dma *DMA) executeMachineCycle() {
 	switch dma.state {
-	case Active:
+	case StateActive:
 		// Source:      $XX00 - $XX9F
 		// Destination: $FE00 - $FE9F
 
@@ -104,41 +104,41 @@ func (dma *DMA) executeMachineCycle() {
 
 		if dma.progress == transferDuration {
 			logger.Info("FINISHED DMA TRANSFER")
-			dma.state = Idle
+			dma.state = StateIdle
 		}
-	case Starting:
+	case StateStarting:
 		logger.Info("DMA STATE MOVING FROM STARTING -> ACTIVE")
-		dma.state = Active
+		dma.state = StateActive
 		dma.progress = 0
 		dma.sourceAddress = uint16(dma.startingSourceAddress) << 8
-	case Requested:
+	case StateRequested:
 		logger.Info("DMA STATE MOVING FROM REQUESTED -> STARTING")
 		dma.startingSourceAddress = dma.requestedSourceAddress
-		dma.state = Starting
+		dma.state = StateStarting
 	}
 }
 
 func (dma *DMA) StartTransfer(value uint8) {
-	if dma.state == Idle {
+	if dma.state == StateIdle {
 		logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
 		dma.wasRestarted = false
 	}
-	if dma.state == Active {
+	if dma.state == StateActive {
 		logger.Info("DMA STATE MOVING FROM ACTIVE -> REQUESTED")
 		dma.wasRestarted = true
 	}
 	dma.dmaRegister = value
 	dma.requestedSourceAddress = value
-	dma.state = Requested
+	dma.state = StateRequested
 }
 
 func (dma *DMA) Active() bool {
 	// for restarted DMA transfers
 	if dma.wasRestarted {
-		return dma.state != Idle
+		return dma.state != StateIdle
 	}
 	// for fresh DMA transfers
-	return dma.state == Active
+	return dma.state == StateActive
 }
 
 func (dma *DMA) CurrentTransferByte() uint8 {
