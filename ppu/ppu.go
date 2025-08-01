@@ -62,7 +62,7 @@ type PPU struct {
 	spriteBuffer       []uint8
 	frameBuffer        [144][160]uint8
 	interruptRequester func(interruptType interrupt.Interrupt)
-	counter            uint16
+	dot                uint16
 
 	// ====== Pixel Fetcher ======
 	pixelFetcherState                  PixelFetcherState
@@ -120,7 +120,7 @@ func (ppu *PPU) Reset() {
 	ppu.wy = 0x00
 	ppu.wx = 0x00
 	ppu.mode = OamScan
-	ppu.counter = 0
+	ppu.dot = 0
 
 	ppu.ResetPixelFetcher()
 }
@@ -148,14 +148,14 @@ func (ppu *PPU) Step() (frameReady bool) {
 	if ppu.ly < 144 {
 		switch {
 		// Mode 2: OAM scan
-		case ppu.counter < 80:
+		case ppu.dot < 80:
 			if ppu.mode != OamScan {
 				ppu.changeMode(OamScan)
 				ppu.spriteBuffer = nil
 			}
-			if ppu.counter%2 == 0 {
+			if ppu.dot%2 == 0 {
 				if len(ppu.spriteBuffer) < 10 {
-					oamIndex := ppu.counter / 2
+					oamIndex := ppu.dot / 2
 					spriteY := ppu.oam[oamIndex*4]
 					spriteX := ppu.oam[oamIndex*4+1]
 					var height uint8 = 8
@@ -169,7 +169,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 				}
 			}
 		// Mode 3: Drawing Pixels
-		case ppu.counter < 80+ppu.getMode3Duration():
+		case ppu.dot < 80+ppu.getMode3Duration():
 			if ppu.mode != DrawingPixels {
 				ppu.changeMode(DrawingPixels)
 				ppu.ResetPixelFetcher()
@@ -336,11 +336,11 @@ func (ppu *PPU) Step() (frameReady bool) {
 		}
 	}
 
-	ppu.counter++
+	ppu.dot++
 
 	// end of scanline
-	if ppu.counter == dotsPerScanline {
-		ppu.counter = 0
+	if ppu.dot == dotsPerScanline {
+		ppu.dot = 0
 		ppu.ly++
 
 		if ppu.scanlineHadWindowPixels {
@@ -488,7 +488,7 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		if lcdWasEnabled && !lcdIsEnabled {
 			ppu.ly = 0
 			ppu.updateLycCoincidenceFlag()
-			ppu.counter = 0
+			ppu.dot = 0
 			ppu.changeMode(VerticalBlank)
 		}
 		// LCD OFF -> LCD ON
