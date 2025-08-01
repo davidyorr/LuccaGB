@@ -147,7 +147,7 @@ func (cpu *CPU) executeInstructionStep() {
 		// the first byte of the bugged instruction is read twice, so decrement
 		// the PC back to where it was prior to fetching the opcode
 		if cpu.haltBugActive {
-			logger.Info("halt bug active so not incrementing PC during M-cycle 1")
+			logger.Info("halt bug active so decrementing PC during M-cycle 1 back to where it was prior to fetching the opcode")
 			cpu.haltBugActive = false
 			cpu.pc--
 		}
@@ -234,7 +234,7 @@ func (cpu *CPU) executeInterruptServiceRoutineStep() {
 func (cpu *CPU) interruptsPending() bool {
 	interruptEnable := cpu.bus.Read(0xFFFF)
 	interruptFlag := cpu.bus.Read(0xFF0F)
-	logger.Info("interruptsPending()", "IE", fmt.Sprintf("%08b", interruptEnable), "IF", fmt.Sprintf("%08b", interruptFlag))
+	// logger.Info("interruptsPending()", "IE", fmt.Sprintf("%08b", interruptEnable), "IF", fmt.Sprintf("%08b", interruptFlag))
 	return (interruptEnable & interruptFlag) != 0
 }
 

@@ -34,8 +34,8 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 		"CARTRIDGE LOAD ROM",
 		"TITLE", string(cartridge.title),
 		"MBC", fmt.Sprintf("0x%02X", cartridge.mbc),
-		"ROM size code", fmt.Sprintf("0x%02X", cartridge.romSizeCode),
-		"RAM size code", fmt.Sprintf("0x%02X", cartridge.ramSizeCode),
+		"ROM_SIZE_CODE", fmt.Sprintf("0x%02X", cartridge.romSizeCode),
+		"RAM_SIZE_CODE", fmt.Sprintf("0x%02X", cartridge.ramSizeCode),
 	)
 
 	cartridge.mbc = cartridge.rom[0x147]

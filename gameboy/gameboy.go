@@ -52,16 +52,16 @@ func New() *Gameboy {
 }
 
 func (gameboy *Gameboy) LoadRom(rom []uint8) {
-	logger.Info("GAMEBOY LOAD ROM", "size", len(rom))
+	logger.Info("GAMEBOY LOAD ROM", "SIZE", len(rom))
 
 	gameboy.cartridge.LoadRom(rom)
 }
 
 // Advance the entire system by 1 M-cycle (4 T-cycles)
-func (gameboy *Gameboy) Step() (uint8, error) {
+func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 	for range 4 {
 		gameboy.dma.Step()
-		gameboy.ppu.Step()
+		frameReady = gameboy.ppu.Step()
 		gameboy.cpu.Step()
 		requestTimerInterrupt := gameboy.timer.Step()
 		if requestTimerInterrupt {
@@ -80,5 +80,9 @@ func (gameboy *Gameboy) Step() (uint8, error) {
 		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
 	)
 
-	return 4, nil
+	return 4, frameReady, nil
+}
+
+func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
+	return gameboy.ppu.FrameBuffer()
 }
