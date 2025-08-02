@@ -8,6 +8,8 @@ import (
 )
 
 type PPU struct {
+	pixelFetcher *PixelFetcher
+
 	// 0x8000 - 0x9FFF
 	//	Block 0 - 0x8000 - 0x87FF
 	//	Block 1 - 0x8800 - 0x8FFF
@@ -63,48 +65,12 @@ type PPU struct {
 	frameBuffer        [144][160]uint8
 	interruptRequester func(interruptType interrupt.Interrupt)
 	dot                uint16
-
-	// ====== Pixel Fetcher ======
-	pixelFetcherState                  PixelFetcherState
-	pixelFetcherCounter                uint16
-	pixelFetcherFetchedTileNumber      uint8
-	pixelFetcherFetchedTileDataLow     uint8
-	pixelFetcherFetchedTileDataHigh    uint8
-	pixelFetcherXPositionCounter       uint8
-	pixelsToDiscard                    uint8
-	pixelFetcherIsFetchingWindow       bool
-	currentX                           uint8
-	pixelFetcherWindowLineCounter      uint8
-	pixelFetcherIsFirstFetchOfScanline bool
-	scanlineHadWindowPixels            bool
-	wyEqualedLyDuringFrame             bool
-	// background and window FIFO
-	backgroundFifo []FIFO
-	// sprite (object) FIFO
-	spriteFifo []FIFO
-}
-
-type PixelFetcherState int
-
-const (
-	StateGetTile PixelFetcherState = iota
-	StateGetTileDataLow
-	StateGetTileDataHigh
-	StateSleep
-	StatePush
-)
-
-type FIFO struct {
-	// 4 possible colors
-	color uint8
-	// only applies to objects (sprites)
-	palette            uint8
-	backgroundPriority uint8
 }
 
 func New(interruptRequest func(interrupt.Interrupt)) *PPU {
 	ppu := &PPU{}
 	ppu.interruptRequester = interruptRequest
+	ppu.pixelFetcher = newPixelFetcher(ppu)
 	ppu.Reset()
 
 	return ppu
@@ -121,17 +87,6 @@ func (ppu *PPU) Reset() {
 	ppu.wx = 0x00
 	ppu.mode = OamScan
 	ppu.dot = 0
-
-	ppu.ResetPixelFetcher()
-}
-
-func (ppu *PPU) ResetPixelFetcher() {
-	ppu.pixelFetcherState = StateGetTile
-	ppu.pixelFetcherCounter = 0
-	ppu.pixelFetcherXPositionCounter = 0
-	ppu.pixelFetcherWindowLineCounter = 0
-	ppu.pixelFetcherIsFirstFetchOfScanline = false
-	ppu.currentX = 0
 }
 
 // 1 dot = T-cycle
@@ -172,163 +127,11 @@ func (ppu *PPU) Step() (frameReady bool) {
 		case ppu.dot < 80+ppu.getMode3Duration():
 			if ppu.mode != DrawingPixels {
 				ppu.changeMode(DrawingPixels)
-				ppu.ResetPixelFetcher()
-				ppu.backgroundFifo = nil
-				ppu.pixelsToDiscard = ppu.scx % 8
-				ppu.pixelFetcherIsFirstFetchOfScanline = true
+				ppu.pixelFetcher.reset()
+				ppu.pixelFetcher.prepareForScanline()
 			}
 
-			// add to the framebuffer if the FIFO contains any data
-			if len(ppu.backgroundFifo) > 0 && ppu.currentX < 160 {
-				pixel := ppu.backgroundFifo[0]
-				ppu.backgroundFifo = ppu.backgroundFifo[1:]
-
-				if ppu.pixelsToDiscard > 0 {
-					ppu.pixelsToDiscard--
-				} else {
-					logger.Info(
-						"PPU: ADDING TO FRAMEBUFFER",
-						"COLOR", pixel.color,
-						"LY", ppu.ly,
-						"X", ppu.currentX,
-					)
-					ppu.frameBuffer[ppu.ly][ppu.currentX] = pixel.color
-					ppu.currentX++
-				}
-			}
-
-			windowEnabled := (ppu.lcdc>>5)&1 == 1
-			if !ppu.pixelFetcherIsFetchingWindow && (windowEnabled) && (ppu.wyEqualedLyDuringFrame) && (ppu.currentX >= ppu.wx-7) {
-				ppu.pixelFetcherState = StateGetTile
-				ppu.backgroundFifo = nil
-				ppu.pixelFetcherIsFetchingWindow = true
-				ppu.scanlineHadWindowPixels = true
-				ppu.pixelFetcherXPositionCounter = 0
-				return
-			}
-
-			ppu.pixelFetcherCounter++
-
-			switch ppu.pixelFetcherState {
-			case StateGetTile:
-				if ppu.pixelFetcherCounter == 2 {
-					var tileMapAreaStart uint16 = 0x9800
-					var yTile uint8 = 0
-					var xTile uint8 = ppu.pixelFetcherXPositionCounter
-
-					// during window fetching we ignore the SCX and SCY values completely
-					if ppu.pixelFetcherIsFetchingWindow {
-						if (ppu.lcdc>>6)&1 == 1 {
-							tileMapAreaStart = 0x9C00
-						}
-						yTile = (ppu.pixelFetcherWindowLineCounter / 8)
-					} else {
-						if (ppu.lcdc>>3)&1 == 1 {
-							tileMapAreaStart = 0x9C00
-						}
-						yTile = ((ppu.ly + ppu.scy) & 0xFF) / 8
-						xTile += (ppu.scx / 8)
-						xTile &= 0x1f // for wrap-around
-					}
-
-					address := (tileMapAreaStart - 0x8000) + ((uint16(yTile)*32)+uint16(xTile))&0x3FF
-					ppu.pixelFetcherFetchedTileNumber = ppu.videoRam[address]
-					logger.Info(
-						"PPU: STATE == GET TILE",
-						"ADDRESS", fmt.Sprintf("0x%04X", address),
-						"Y_TILE", fmt.Sprintf("0x%02X", yTile),
-						"X_TILE", fmt.Sprintf("0x%02X", xTile),
-						"TILE_NUMBER", fmt.Sprintf("0x%02X", ppu.pixelFetcherFetchedTileNumber),
-					)
-
-					ppu.pixelFetcherCounter = 0
-					ppu.pixelFetcherState = StateGetTileDataLow
-				}
-			case StateGetTileDataLow:
-				if ppu.pixelFetcherCounter == 2 {
-					var address uint16
-					// 8000 method
-					if (ppu.lcdc>>4)&1 == 1 {
-						address = 0x8000
-						address += uint16(ppu.pixelFetcherFetchedTileNumber * 16)
-					} else
-					// 8800 method
-					{
-						address = 0x9000
-						address += uint16(int8(ppu.pixelFetcherFetchedTileNumber) * 16)
-					}
-					// get the row offset
-					if ppu.pixelFetcherIsFetchingWindow {
-						address += uint16(2 * (ppu.pixelFetcherWindowLineCounter % 8))
-					} else {
-						address += uint16(2 * ((ppu.ly + ppu.scy) % 8))
-					}
-
-					ppu.pixelFetcherFetchedTileDataLow = ppu.videoRam[address-0x8000]
-
-					ppu.pixelFetcherCounter = 0
-					ppu.pixelFetcherState = StateGetTileDataHigh
-				}
-			case StateGetTileDataHigh:
-				if ppu.pixelFetcherCounter == 2 {
-					var address uint16
-					// 8000 method
-					if (ppu.lcdc>>4)&1 == 1 {
-						address = 0x8000
-						address += uint16(ppu.pixelFetcherFetchedTileNumber * 16)
-					} else
-					// 8800 method
-					{
-						address = 0x9000
-						address += uint16(int8(ppu.pixelFetcherFetchedTileNumber) * 16)
-					}
-					// get the row offset
-					if ppu.pixelFetcherIsFetchingWindow {
-						address += uint16(2 * (ppu.pixelFetcherWindowLineCounter % 8))
-					} else {
-						address += uint16(2 * ((ppu.ly + ppu.scy) % 8))
-					}
-
-					address += 1
-					ppu.pixelFetcherFetchedTileDataHigh = ppu.videoRam[address-0x8000]
-
-					// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
-					// See: https://hacktix.github.io/GBEDG/ppu/#background-pixel-fetching
-					if ppu.pixelFetcherIsFirstFetchOfScanline {
-						ppu.pixelFetcherIsFirstFetchOfScanline = false
-						ppu.pixelFetcherState = StateGetTile
-						ppu.pixelFetcherCounter = 0
-					} else {
-						ppu.pixelFetcherCounter = 0
-						ppu.pixelFetcherState = StateSleep
-					}
-				}
-			case StateSleep:
-				if ppu.pixelFetcherCounter == 2 {
-					ppu.pixelFetcherCounter = 0
-					ppu.pixelFetcherState = StatePush
-				}
-			case StatePush:
-				// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
-				// See: https://hacktix.github.io/GBEDG/ppu/#background-pixel-fetching
-				if len(ppu.backgroundFifo) == 0 {
-					for i := 7; i >= 0; i-- {
-						lowBit := (ppu.pixelFetcherFetchedTileDataLow >> i) & 1
-						highBit := (ppu.pixelFetcherFetchedTileDataHigh >> i) & 1
-						color := (highBit << 1) | lowBit
-						pixel := FIFO{
-							color:              color,
-							palette:            0,
-							backgroundPriority: 0,
-						}
-						ppu.backgroundFifo = append(ppu.backgroundFifo, pixel)
-					}
-
-					ppu.pixelFetcherState = StateGetTile
-					ppu.pixelFetcherCounter = 0
-					ppu.pixelFetcherXPositionCounter++
-				}
-			}
+			ppu.pixelFetcher.step()
 		default:
 			if ppu.mode != HorizontalBlank {
 				ppu.changeMode(HorizontalBlank)
@@ -343,13 +146,13 @@ func (ppu *PPU) Step() (frameReady bool) {
 		ppu.dot = 0
 		ppu.ly++
 
-		if ppu.scanlineHadWindowPixels {
-			ppu.pixelFetcherWindowLineCounter++
+		if ppu.pixelFetcher.scanlineHadWindowPixels {
+			ppu.pixelFetcher.windowLineCounter++
 		}
-		ppu.scanlineHadWindowPixels = false
+		ppu.pixelFetcher.scanlineHadWindowPixels = false
 
 		if ppu.wy == ppu.ly {
-			ppu.wyEqualedLyDuringFrame = true
+			ppu.pixelFetcher.wyEqualedLyDuringFrame = true
 		}
 
 		if ppu.ly == 144 {
@@ -363,8 +166,8 @@ func (ppu *PPU) Step() (frameReady bool) {
 			}
 		} else if ppu.ly >= 154 {
 			ppu.ly = 0
-			ppu.pixelFetcherWindowLineCounter = 0
-			ppu.wyEqualedLyDuringFrame = false
+			ppu.pixelFetcher.windowLineCounter = 0
+			ppu.pixelFetcher.wyEqualedLyDuringFrame = false
 		}
 
 		ppu.updateLycCoincidenceFlag()
