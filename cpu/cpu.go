@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/davidyorr/EchoGB/bus"
+	"github.com/davidyorr/EchoGB/debug"
 	"github.com/davidyorr/EchoGB/interrupt"
 	"github.com/davidyorr/EchoGB/logger"
 )
@@ -108,13 +109,15 @@ func (cpu *CPU) executeMachineCycle() {
 	}
 
 	if cpu.ime && cpu.interruptsPending() {
-		logger.Info(
-			"INTERRUPT DETECTED",
-			"PC", fmt.Sprintf("0x%04X", cpu.pc),
-			"SP", fmt.Sprintf("0x%04X", cpu.sp),
-			"IE", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFFFF)),
-			"IF", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFF0F)),
-		)
+		if debug.Enabled {
+			logger.Info(
+				"INTERRUPT DETECTED",
+				"PC", fmt.Sprintf("0x%04X", cpu.pc),
+				"SP", fmt.Sprintf("0x%04X", cpu.sp),
+				"IE", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFFFF)),
+				"IF", fmt.Sprintf("0x%02X", cpu.bus.Read(0xFF0F)),
+			)
+		}
 		cpu.isServicingInterrupt = true
 		cpu.interruptServiceRoutineStep = 1
 		cpu.executeInterruptServiceRoutineStep()
@@ -147,7 +150,9 @@ func (cpu *CPU) executeInstructionStep() {
 		// the first byte of the bugged instruction is read twice, so decrement
 		// the PC back to where it was prior to fetching the opcode
 		if cpu.haltBugActive {
-			logger.Info("halt bug active so decrementing PC during M-cycle 1 back to where it was prior to fetching the opcode")
+			if debug.Enabled {
+				logger.Info("halt bug active so decrementing PC during M-cycle 1 back to where it was prior to fetching the opcode")
+			}
 			cpu.haltBugActive = false
 			cpu.pc--
 		}
@@ -167,19 +172,21 @@ func (cpu *CPU) executeInstructionStep() {
 		cbo = *cpu.cbOpcode
 	}
 
-	logger.Info(
-		"INSTRUCTION STEP",
-		"M-CYCLE", mCycleForLog,
-		"PC", fmt.Sprintf("0x%04X", pcForLog),
-		"SP", fmt.Sprintf("0x%04X", cpu.sp),
-		"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
-		"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
-		"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
-		"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
-		"op", fmt.Sprintf("(op:0x%02X, imm:0x%04X)", cpu.opcode, cpu.immediateValue),
-		"cb", fmt.Sprintf("0x%02X", cbo),
-		"instruction", cpu.instruction.mnemonic,
-	)
+	if debug.Enabled {
+		logger.Info(
+			"INSTRUCTION STEP",
+			"M-CYCLE", mCycleForLog,
+			"PC", fmt.Sprintf("0x%04X", pcForLog),
+			"SP", fmt.Sprintf("0x%04X", cpu.sp),
+			"AF", fmt.Sprintf("0x%04X", cpu.getAF()),
+			"BC", fmt.Sprintf("0x%04X", cpu.getBC()),
+			"DE", fmt.Sprintf("0x%04X", cpu.getDE()),
+			"HL", fmt.Sprintf("0x%04X", cpu.getHL()),
+			"op", fmt.Sprintf("(op:0x%02X, imm:0x%04X)", cpu.opcode, cpu.immediateValue),
+			"cb", fmt.Sprintf("0x%02X", cbo),
+			"instruction", cpu.instruction.mnemonic,
+		)
+	}
 
 	if done {
 		// reset state
