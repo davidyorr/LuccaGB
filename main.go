@@ -14,6 +14,7 @@ func main() {
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
+	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
 	jsImageData = js.Global().Get("Uint8Array").New(len(goImageData))
 
@@ -63,7 +64,7 @@ var goImageData [displayWidth * displayHeight * 4]byte
 var jsImageData js.Value
 
 func presentFrame() {
-	js.Global().Get("console").Call("log", "Go: presentFrame()")
+	// js.Global().Get("console").Call("log", "Go: presentFrame()")
 	frameBuffer := gb.FrameBuffer()
 	i := 0
 	for screenY := 0; screenY < displayHeight; screenY++ {
@@ -72,12 +73,16 @@ func presentFrame() {
 			switch color {
 			case 0:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 255, 255, 255, 255
+				// js.Global().Get("console").Call("log", "Go: presentFrame() case 0")
 			case 1:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 170, 170, 170, 255
+				// js.Global().Get("console").Call("log", "Go: presentFrame() case 1")
 			case 2:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 85, 85, 85, 255
+				// js.Global().Get("console").Call("log", "Go: presentFrame() case 2")
 			case 3:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 0, 0, 0, 255
+				// js.Global().Get("console").Call("log", "Go: presentFrame() case 3")
 			}
 			i += 4
 		}
@@ -85,4 +90,13 @@ func presentFrame() {
 
 	js.CopyBytesToJS(jsImageData, goImageData[:])
 	js.Global().Get("updateCanvas").Invoke(jsImageData)
+}
+
+// getDebugInfo returns a snapshot of the emulator's state.
+func getDebugInfo(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return nil
+	}
+
+	return gb.Debug()
 }

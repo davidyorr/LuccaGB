@@ -4,7 +4,30 @@ declare global {
 		processEmulatorCycles: (cycles: number) => {
 			tCyclesUsed: number;
 		};
+		getDebugInfo: () => GameboyDebugInfo | null;
 	}
+}
+
+interface GameboyDebugInfo {
+	cpu: CpuDebugInfo;
+	// ppu: PpuDebugInfo;
+}
+
+interface CpuDebugInfo {
+	registers16: {
+		AF: number;
+		BC: number;
+		DE: number;
+		HL: number;
+		SP: number;
+		PC: number;
+	};
+	flags: {
+		Z: number;
+		N: number;
+		H: number;
+		C: number;
+	};
 }
 
 export {};

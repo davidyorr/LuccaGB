@@ -14,6 +14,55 @@
 			<div id="controls">
 				<label for="rom-input">Load ROM:</label>
 				<input id="rom-input" type="file" name="rom-input" accept=".gb" />
+				<button id="pause-button">Pause</button>
+				<button id="step-button" disabled>Step</button>
+			</div>
+
+			<div id="cpu-debugger">
+				<h2>CPU State</h2>
+
+				<table class="debug-table">
+					<thead>
+						<tr>
+							<th>Register</th>
+							<th>Value (Hex)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>AF</td>
+							<td id="reg-af">0x0000</td>
+						</tr>
+						<tr>
+							<td>BC</td>
+							<td id="reg-bc">0x0000</td>
+						</tr>
+						<tr>
+							<td>DE</td>
+							<td id="reg-de">0x0000</td>
+						</tr>
+						<tr>
+							<td>HL</td>
+							<td id="reg-hl">0x0000</td>
+						</tr>
+						<tr>
+							<td>SP</td>
+							<td id="reg-sp">0x0000</td>
+						</tr>
+						<tr>
+							<td>PC</td>
+							<td id="reg-pc">0x0000</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<h3>Flags (F Register)</h3>
+				<div class="flags-container">
+					<span>Z (Zero): <b id="flag-z">0</b></span>
+					<span>N (Sub): <b id="flag-n">0</b></span>
+					<span>H (Half Carry): <b id="flag-h">0</b></span>
+					<span>C (Carry): <b id="flag-c">0</b></span>
+				</div>
 			</div>
 		</div>
 		<script type="module" src="/src/echogb.ts"></script>
@@ -34,6 +83,7 @@
 		}
 		#app {
 			display: flex;
+			gap: 24px;
 		}
 		#canvas-container {
 			width: 160px;
@@ -55,6 +105,35 @@
 			padding: 8px;
 			gap: 12px;
 			height: 40px;
+		}
+
+		/* ======== DEBUGGER ======== */
+		#cpu-debugger {
+			font-family: monospace;
+			background-color: #f0f0f0;
+			padding: 1em;
+			border-radius: 5px;
+		}
+		.debug-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-bottom: 1em;
+		}
+		.debug-table th,
+		.debug-table td {
+			border: 1px solid #ccc;
+			padding: 0.5em;
+			text-align: left;
+		}
+		.debug-table th {
+			background-color: #e0e0e0;
+		}
+		.flags-container {
+			display: flex;
+			justify-content: space-around;
+			background-color: #e9e9e9;
+			padding: 0.5em;
+			border-radius: 3px;
 		}
 	</style>
 </html>

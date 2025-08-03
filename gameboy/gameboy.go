@@ -86,3 +86,14 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
 	return gameboy.ppu.FrameBuffer()
 }
+
+// Debug gathers debug information from all components, acting as a single entry
+// point for the frontend to get a snapshot of the machine state.
+func (gb *Gameboy) Debug() map[string]interface{} {
+	debugInfo := make(map[string]interface{})
+
+	debugInfo["cpu"] = gb.cpu.Debug()
+	// debugInfo["ppu"] = gb.ppu.Debug()
+
+	return debugInfo
+}

@@ -437,3 +437,30 @@ func (cpu *CPU) Unhalt() {
 func (cpu *CPU) Halted() bool {
 	return cpu.halted
 }
+
+// Debug gathers the current state of the CPU into a structured map.
+func (cpu *CPU) Debug() map[string]interface{} {
+	af := (uint16(cpu.a) << 8) | uint16(cpu.f)
+	bc := (uint16(cpu.b) << 8) | uint16(cpu.c)
+	de := (uint16(cpu.d) << 8) | uint16(cpu.e)
+	hl := (uint16(cpu.h) << 8) | uint16(cpu.l)
+
+	flags := make(map[string]interface{})
+	flags["Z"] = (cpu.f >> 7) & 1
+	flags["N"] = (cpu.f >> 6) & 1
+	flags["H"] = (cpu.f >> 5) & 1
+	flags["C"] = (cpu.f >> 4) & 1
+
+	registers16 := make(map[string]interface{})
+	registers16["AF"] = af
+	registers16["BC"] = bc
+	registers16["DE"] = de
+	registers16["HL"] = hl
+	registers16["SP"] = cpu.sp
+	registers16["PC"] = cpu.pc
+
+	return map[string]interface{}{
+		"registers16": registers16,
+		"flags":       flags,
+	}
+}

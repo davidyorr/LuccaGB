@@ -4,11 +4,26 @@
 let visibleCanvasCtx: CanvasRenderingContext2D;
 let offscreenCanvasCtx: CanvasRenderingContext2D;
 let imageData: ImageData;
+let isPaused = false;
 
 const displayWidth = 160;
 const displayHeight = 144;
 
 const go = new Go();
+
+// ====== for debugger ======
+const debugElements = {
+	regAF: null as HTMLElement | null,
+	regBC: null as HTMLElement | null,
+	regDE: null as HTMLElement | null,
+	regHL: null as HTMLElement | null,
+	regSP: null as HTMLElement | null,
+	regPC: null as HTMLElement | null,
+	flagZ: null as HTMLElement | null,
+	flagN: null as HTMLElement | null,
+	flagH: null as HTMLElement | null,
+	flagC: null as HTMLElement | null,
+};
 
 document.addEventListener("DOMContentLoaded", () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
@@ -63,6 +78,46 @@ document.addEventListener("DOMContentLoaded", () => {
 		throw new Error("error getting offscreen canvas context");
 	}
 	offscreenCanvasCtx = ctx;
+
+	// ====== set up debugger ======
+	debugElements.regAF = document.getElementById("reg-af");
+	debugElements.regBC = document.getElementById("reg-bc");
+	debugElements.regDE = document.getElementById("reg-de");
+	debugElements.regHL = document.getElementById("reg-hl");
+	debugElements.regSP = document.getElementById("reg-sp");
+	debugElements.regPC = document.getElementById("reg-pc");
+	debugElements.flagZ = document.getElementById("flag-z");
+	debugElements.flagN = document.getElementById("flag-n");
+	debugElements.flagH = document.getElementById("flag-h");
+	debugElements.flagC = document.getElementById("flag-c");
+
+	const pauseButton = document.getElementById(
+		"pause-button",
+	) as HTMLButtonElement;
+	const stepButton = document.getElementById(
+		"step-button",
+	) as HTMLButtonElement;
+
+	pauseButton?.addEventListener("click", () => {
+		isPaused = !isPaused;
+		if (isPaused) {
+			pauseButton.textContent = "Run";
+			stepButton.disabled = false;
+			updateDebugView();
+		} else {
+			pauseButton.textContent = "Pause";
+			stepButton.disabled = true;
+			lastFrameTime = 0;
+			startAnimationLoop();
+		}
+	});
+
+	stepButton?.addEventListener("click", () => {
+		if (isPaused) {
+			window.processEmulatorCycles(4);
+			updateDebugView();
+		}
+	});
 });
 
 // ============ GAME LOOP ============
@@ -76,6 +131,10 @@ const systemClockFrequency = 4.194304 * 1_000_000;
 
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
+	if (isPaused) {
+		return;
+	}
+
 	// start the loop
 	if (lastFrameTime === 0) {
 		lastFrameTime = timestamp;
@@ -91,6 +150,8 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 
 	const { tCyclesUsed } = window.processEmulatorCycles(tCycleAccumulator);
 	tCycleAccumulator -= tCyclesUsed;
+
+	updateDebugView();
 
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
@@ -117,4 +178,38 @@ function updateCanvas(uint8Array: Uint8Array) {
 		visibleCanvasCtx.canvas.width,
 		visibleCanvasCtx.canvas.height,
 	);
+}
+
+function updateDebugView() {
+	const debugInfo = window.getDebugInfo();
+	if (!debugInfo) {
+		return;
+	}
+
+	const { cpu } = debugInfo;
+
+	const toHex = (val: number) =>
+		"0x" + val.toString(16).toUpperCase().padStart(4, "0");
+
+	if (debugElements.regAF)
+		debugElements.regAF.textContent = toHex(cpu.registers16.AF);
+	if (debugElements.regBC)
+		debugElements.regBC.textContent = toHex(cpu.registers16.BC);
+	if (debugElements.regDE)
+		debugElements.regDE.textContent = toHex(cpu.registers16.DE);
+	if (debugElements.regHL)
+		debugElements.regHL.textContent = toHex(cpu.registers16.HL);
+	if (debugElements.regSP)
+		debugElements.regSP.textContent = toHex(cpu.registers16.SP);
+	if (debugElements.regPC)
+		debugElements.regPC.textContent = toHex(cpu.registers16.PC);
+
+	if (debugElements.flagZ)
+		debugElements.flagZ.textContent = cpu.flags.Z.toString();
+	if (debugElements.flagN)
+		debugElements.flagN.textContent = cpu.flags.N.toString();
+	if (debugElements.flagH)
+		debugElements.flagH.textContent = cpu.flags.H.toString();
+	if (debugElements.flagC)
+		debugElements.flagC.textContent = cpu.flags.C.toString();
 }
