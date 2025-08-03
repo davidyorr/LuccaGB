@@ -1,8 +1,6 @@
 package ppu
 
 import (
-	"fmt"
-
 	"github.com/davidyorr/EchoGB/logger"
 )
 
@@ -21,6 +19,10 @@ type PixelFetcher struct {
 	isFirstFetchOfScanline  bool
 	scanlineHadWindowPixels bool
 	wyEqualedLyDuringFrame  bool
+
+	isFetchingSprite bool
+	spriteIndex      uint8
+
 	// background and window FIFO
 	backgroundFifo []FIFO
 	// sprite (object) FIFO
@@ -68,25 +70,63 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.backgroundFifo = nil
 	fetcher.pixelsToDiscard = fetcher.ppu.scx % 8
 	fetcher.isFirstFetchOfScanline = true
+	fetcher.isFetchingSprite = false
+	fetcher.isFetchingWindow = false
 }
 
 func (fetcher *PixelFetcher) step() {
 	// add to the framebuffer if the FIFO contains any data
 	if len(fetcher.backgroundFifo) > 0 && fetcher.currentX < 160 {
-		pixel := fetcher.backgroundFifo[0]
+		backgroundPixel := fetcher.backgroundFifo[0]
 		fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
+		color := backgroundPixel.color
 
 		if fetcher.pixelsToDiscard > 0 {
 			fetcher.pixelsToDiscard--
 		} else {
+			// See: https://hacktix.github.io/GBEDG/ppu/#pixel-mixing
+			if len(fetcher.spriteFifo) > 0 {
+				spritePixel := fetcher.spriteFifo[0]
+				if spritePixel.color == 0 {
+					color = backgroundPixel.color
+				} else if spritePixel.backgroundPriority == 1 && backgroundPixel.color != 0 {
+					color = backgroundPixel.color
+				} else {
+					color = spritePixel.color
+				}
+			}
+
 			logger.Info(
 				"PPU: ADDING TO FRAMEBUFFER",
-				"COLOR", pixel.color,
+				"COLOR", color,
 				"LY", fetcher.ppu.ly,
 				"X", fetcher.currentX,
 			)
-			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = pixel.color
+			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
 			fetcher.currentX++
+		}
+	}
+
+	// If the X-Position of any sprite in the sprite buffer is less than or
+	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
+	// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
+	for _, oamIndex := range fetcher.ppu.spriteBuffer {
+		// each sprite is 4 bytes long
+		baseAddress := oamIndex * 4
+		spriteX := fetcher.ppu.oam[baseAddress+1]
+
+		if spriteX <= fetcher.currentX+8 {
+			logger.Info("SWITCHING TO SPRITE FETCHING MODE")
+			fetcher.isFetchingSprite = true
+			fetcher.state = StateGetTile
+			fetcher.spriteIndex = oamIndex
+
+			// reset background fetcher
+			fetcher.counter = 0
+			fetcher.fetchedTileNumber = 0
+			fetcher.fetchedTileDataLow = 0
+			fetcher.fetchedTileDataHigh = 0
+			return
 		}
 	}
 
@@ -105,95 +145,171 @@ func (fetcher *PixelFetcher) step() {
 	switch fetcher.state {
 	case StateGetTile:
 		if fetcher.counter == 2 {
-			var tileMapAreaStart uint16 = 0x9800
-			var yTile uint8 = 0
-			var xTile uint8 = fetcher.xPositionCounter
-
-			// during window fetching we ignore the SCX and SCY values completely
-			if fetcher.isFetchingWindow {
-				if (fetcher.ppu.lcdc>>6)&1 == 1 {
-					tileMapAreaStart = 0x9C00
-				}
-				yTile = (fetcher.windowLineCounter / 8)
+			if fetcher.isFetchingSprite {
+				oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+				// each sprite is 4 bytes, byte 2 is the tile index
+				tileIndex := (oamIndex * 4) + 2
+				fetcher.fetchedTileNumber = fetcher.ppu.oam[tileIndex]
 			} else {
-				if (fetcher.ppu.lcdc>>3)&1 == 1 {
-					tileMapAreaStart = 0x9C00
-				}
-				yTile = ((fetcher.ppu.ly + fetcher.ppu.scy) & 0xFF) / 8
-				xTile += (fetcher.ppu.scx / 8)
-				xTile &= 0x1f // for wrap-around
-			}
+				var tileMapAreaStart uint16 = 0x9800
+				var yTile uint8 = 0
+				var xTile uint8 = fetcher.xPositionCounter
 
-			address := (tileMapAreaStart - 0x8000) + ((uint16(yTile)*32)+uint16(xTile))&0x3FF
-			fetcher.fetchedTileNumber = fetcher.ppu.videoRam[address]
-			logger.Info(
-				"e == GET TILE",
-				"ADDRESS", fmt.Sprintf("0x%04X", address),
-				"Y_TILE", fmt.Sprintf("0x%02X", yTile),
-				"X_TILE", fmt.Sprintf("0x%02X", xTile),
-				"TILE_NUMBER", fmt.Sprintf("0x%02X", fetcher.fetchedTileNumber),
-			)
+				// during window fetching we ignore the SCX and SCY values completely
+				if fetcher.isFetchingWindow {
+					if (fetcher.ppu.lcdc>>6)&1 == 1 {
+						tileMapAreaStart = 0x9C00
+					}
+					yTile = (fetcher.windowLineCounter / 8)
+				} else {
+					if (fetcher.ppu.lcdc>>3)&1 == 1 {
+						tileMapAreaStart = 0x9C00
+					}
+					yTile = ((fetcher.ppu.ly + fetcher.ppu.scy) & 0xFF) / 8
+					xTile += (fetcher.ppu.scx / 8)
+					xTile &= 0x1f // for wrap-around
+				}
+
+				address := (tileMapAreaStart - 0x8000) + ((uint16(yTile)*32)+uint16(xTile))&0x3FF
+				fetcher.fetchedTileNumber = fetcher.ppu.videoRam[address]
+			}
 
 			fetcher.counter = 0
 			fetcher.state = StateGetTileDataLow
 		}
 	case StateGetTileDataLow:
 		if fetcher.counter == 2 {
-			var address uint16
-			// 8000 method
-			if (fetcher.ppu.lcdc>>4)&1 == 1 {
-				address = 0x8000
-				address += uint16(fetcher.fetchedTileNumber * 16)
-			} else
-			// 8800 method
-			{
-				address = 0x9000
-				address += uint16(int8(fetcher.fetchedTileNumber) * 16)
-			}
-			// get the row offset
-			if fetcher.isFetchingWindow {
-				address += uint16(2 * (fetcher.windowLineCounter % 8))
-			} else {
-				address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
-			}
+			if fetcher.isFetchingSprite {
+				// sprites always use 8000 method
+				var address uint16 = 0x8000
 
-			fetcher.fetchedTileDataLow = fetcher.ppu.videoRam[address-0x8000]
+				oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+				spriteY := fetcher.ppu.oam[oamIndex*4]
+				spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
+				spriteTileNumber := fetcher.fetchedTileNumber
+
+				// determine which vertical row of the sprite we are on
+				var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
+				isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
+				// See: https://hacktix.github.io/GBEDG/ppu/#lcdc2---sprite-size
+				if isTallSprite {
+					if rowInSprite < 8 {
+						// the top tile, so force LSB to 0
+						spriteTileNumber &= 0b1111_1110
+					} else {
+						// the bottom tile, so force LSB to 1
+						spriteTileNumber |= 0x0000_0001
+						rowInSprite -= 8
+					}
+				}
+
+				// handle y flipping
+				flipY := (spriteFlags>>6)&1 == 1
+				if flipY {
+					rowInSprite = 7 - rowInSprite
+				}
+
+				address += uint16(spriteTileNumber * 16)
+				address += uint16(rowInSprite * 2)
+
+				fetcher.fetchedTileDataLow = fetcher.ppu.videoRam[address-0x8000]
+			} else {
+				var address uint16
+				// 8000 method
+				if (fetcher.ppu.lcdc>>4)&1 == 1 {
+					address = 0x8000
+					address += uint16(fetcher.fetchedTileNumber * 16)
+				} else
+				// 8800 method
+				{
+					address = 0x9000
+					address += uint16(int8(fetcher.fetchedTileNumber) * 16)
+				}
+				// get the row offset
+				if fetcher.isFetchingWindow {
+					address += uint16(2 * (fetcher.windowLineCounter % 8))
+				} else {
+					address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
+				}
+
+				fetcher.fetchedTileDataLow = fetcher.ppu.videoRam[address-0x8000]
+			}
 
 			fetcher.counter = 0
 			fetcher.state = StateGetTileDataHigh
 		}
 	case StateGetTileDataHigh:
 		if fetcher.counter == 2 {
-			var address uint16
-			// 8000 method
-			if (fetcher.ppu.lcdc>>4)&1 == 1 {
-				address = 0x8000
-				address += uint16(fetcher.fetchedTileNumber * 16)
-			} else
-			// 8800 method
-			{
-				address = 0x9000
-				address += uint16(int8(fetcher.fetchedTileNumber) * 16)
-			}
-			// get the row offset
-			if fetcher.isFetchingWindow {
-				address += uint16(2 * (fetcher.windowLineCounter % 8))
-			} else {
-				address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
-			}
+			if fetcher.isFetchingSprite {
+				// sprites always use 8000 method
+				var address uint16 = 0x8000
 
-			address += 1
-			fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
+				oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+				spriteY := fetcher.ppu.oam[oamIndex*4]
+				spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
+				spriteTileNumber := fetcher.fetchedTileNumber
 
-			// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
-			// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
-			if fetcher.isFirstFetchOfScanline {
-				fetcher.isFirstFetchOfScanline = false
-				fetcher.state = StateGetTile
-				fetcher.counter = 0
-			} else {
+				// determine which vertical row of the sprite we are on
+				var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
+				isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
+				// See: https://hacktix.github.io/GBEDG/ppu/#lcdc2---sprite-size
+				if isTallSprite {
+					if rowInSprite < 8 {
+						// the top tile, so force LSB to 0
+						spriteTileNumber &= 0b1111_1110
+					} else {
+						// the bottom tile, so force LSB to 1
+						spriteTileNumber |= 0x0000_0001
+						rowInSprite -= 8
+					}
+				}
+
+				// handle y flipping
+				flipY := (spriteFlags>>6)&1 == 1
+				if flipY {
+					rowInSprite = 7 - rowInSprite
+				}
+
+				address += uint16(spriteTileNumber * 16)
+				address += uint16(rowInSprite * 2)
+				address += 1
+
+				fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
+
 				fetcher.counter = 0
 				fetcher.state = StateSleep
+			} else {
+				var address uint16
+				// 8000 method
+				if (fetcher.ppu.lcdc>>4)&1 == 1 {
+					address = 0x8000
+					address += uint16(fetcher.fetchedTileNumber * 16)
+				} else
+				// 8800 method
+				{
+					address = 0x9000
+					address += uint16(int8(fetcher.fetchedTileNumber) * 16)
+				}
+				// get the row offset
+				if fetcher.isFetchingWindow {
+					address += uint16(2 * (fetcher.windowLineCounter % 8))
+				} else {
+					address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
+				}
+
+				address += 1
+				fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
+
+				// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
+				// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
+				if fetcher.isFirstFetchOfScanline {
+					fetcher.isFirstFetchOfScanline = false
+					fetcher.state = StateGetTile
+					fetcher.counter = 0
+				} else {
+					fetcher.counter = 0
+					fetcher.state = StateSleep
+				}
 			}
 		}
 	case StateSleep:
@@ -202,24 +318,68 @@ func (fetcher *PixelFetcher) step() {
 			fetcher.state = StatePush
 		}
 	case StatePush:
-		// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
-		// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
-		if len(fetcher.backgroundFifo) == 0 {
+		if fetcher.isFetchingSprite {
+			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+			spriteX := fetcher.ppu.oam[oamIndex*4+1]
+			spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
+			spriteFlipX := (spriteFlags>>5)&1 == 1
+			var tempBuffer [8]FIFO
+
 			for i := 7; i >= 0; i-- {
-				lowBit := (fetcher.fetchedTileDataLow >> i) & 1
-				highBit := (fetcher.fetchedTileDataHigh >> i) & 1
+				bit := i
+				if !spriteFlipX {
+					bit = 7 - i
+				}
+				lowBit := (fetcher.fetchedTileDataLow >> bit) & 1
+				highBit := (fetcher.fetchedTileDataHigh >> bit) & 1
 				color := (highBit << 1) | lowBit
 				pixel := FIFO{
 					color:              color,
-					palette:            0,
-					backgroundPriority: 0,
+					palette:            (spriteFlags >> 4) & 1,
+					backgroundPriority: (spriteFlags >> 7) & 1,
 				}
-				fetcher.backgroundFifo = append(fetcher.backgroundFifo, pixel)
+				tempBuffer[i] = pixel
 			}
 
-			fetcher.state = StateGetTile
-			fetcher.counter = 0
-			fetcher.xPositionCounter++
+			// only pixels which are actually visible on the screen are loaded into the FIFO
+			// pixels can only be loaded into FIFO slots if there is no pixel in the given slot already
+			// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
+			var pixelsToDiscard uint8 = 0
+			if spriteX < 8 {
+				pixelsToDiscard = 8 - spriteX
+			}
+			for i := 0; i <= 7; i++ {
+				if i < int(pixelsToDiscard) {
+					continue
+				}
+
+				fifoIndex := i
+
+				if fetcher.spriteFifo[fifoIndex].color == 0 && tempBuffer[i].color != 0 {
+					fetcher.spriteFifo[i] = tempBuffer[i]
+				}
+			}
+		} else {
+			// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
+			// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
+			if len(fetcher.backgroundFifo) == 0 {
+				for i := 7; i >= 0; i-- {
+					lowBit := (fetcher.fetchedTileDataLow >> i) & 1
+					highBit := (fetcher.fetchedTileDataHigh >> i) & 1
+					color := (highBit << 1) | lowBit
+					pixel := FIFO{
+						color:              color,
+						palette:            0, // only applies to sprites
+						backgroundPriority: 0, // only applies to sprites
+					}
+					fetcher.backgroundFifo = append(fetcher.backgroundFifo, pixel)
+				}
+			}
 		}
+
+		fetcher.state = StateGetTile
+		fetcher.counter = 0
+		fetcher.xPositionCounter++
+		fetcher.isFetchingSprite = false
 	}
 }

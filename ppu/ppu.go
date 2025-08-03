@@ -18,6 +18,10 @@ type PPU struct {
 	videoRam [8192]uint8
 	// 0xFE00 - 0xFE9F - Object Attribute Memory
 	//	40 sprites (objects), each 4 bytes long
+	//	Byte 0 — Y Position
+	//	Byte 1 — X Position
+	//	Byte 2 — Tile Index
+	//	Byte 3 — Attributes/Flags
 	oam [160]uint8
 	// 0xFEA0 - 0xFEFF - Not usable
 	//	Nintendo says use of this area is prohibited
