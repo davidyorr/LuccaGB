@@ -41,7 +41,7 @@ const (
 
 type FIFO struct {
 	// 4 possible colors
-	color uint8
+	colorId uint8
 	// only applies to objects (sprites)
 	palette            uint8
 	backgroundPriority uint8
@@ -79,7 +79,12 @@ func (fetcher *PixelFetcher) step() {
 	if len(fetcher.backgroundFifo) > 0 && fetcher.currentX < 160 {
 		backgroundPixel := fetcher.backgroundFifo[0]
 		fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
-		color := backgroundPixel.color
+		var color uint8
+
+		// use the background pixel's color as the default
+		colorId := backgroundPixel.colorId
+		// color IDs are 2 bits, so we shift times 2, then mask 2 bits for the final color/shade
+		color = (fetcher.ppu.bgp >> (colorId * 2)) & 0b11
 
 		if fetcher.pixelsToDiscard > 0 {
 			fetcher.pixelsToDiscard--
@@ -87,12 +92,16 @@ func (fetcher *PixelFetcher) step() {
 			// See: https://hacktix.github.io/GBEDG/ppu/#pixel-mixing
 			if len(fetcher.spriteFifo) > 0 {
 				spritePixel := fetcher.spriteFifo[0]
-				if spritePixel.color == 0 {
-					color = backgroundPixel.color
-				} else if spritePixel.backgroundPriority == 1 && backgroundPixel.color != 0 {
-					color = backgroundPixel.color
-				} else {
-					color = spritePixel.color
+				spriteIsTransparent := spritePixel.colorId == 0
+				backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
+
+				if !spriteIsTransparent && !backgroundHasPriority {
+					colorId := spritePixel.colorId
+					if spritePixel.palette == 0 {
+						color = (fetcher.ppu.obp0 >> (colorId * 2)) & 0b11
+					} else if spritePixel.palette == 1 {
+						color = (fetcher.ppu.obp1 >> (colorId * 2)) & 0b11
+					}
 				}
 			}
 
@@ -334,7 +343,7 @@ func (fetcher *PixelFetcher) step() {
 				highBit := (fetcher.fetchedTileDataHigh >> bit) & 1
 				color := (highBit << 1) | lowBit
 				pixel := FIFO{
-					color:              color,
+					colorId:            color,
 					palette:            (spriteFlags >> 4) & 1,
 					backgroundPriority: (spriteFlags >> 7) & 1,
 				}
@@ -355,7 +364,7 @@ func (fetcher *PixelFetcher) step() {
 
 				fifoIndex := i
 
-				if fetcher.spriteFifo[fifoIndex].color == 0 && tempBuffer[i].color != 0 {
+				if fetcher.spriteFifo[fifoIndex].colorId == 0 && tempBuffer[i].colorId != 0 {
 					fetcher.spriteFifo[i] = tempBuffer[i]
 				}
 			}
@@ -366,9 +375,9 @@ func (fetcher *PixelFetcher) step() {
 				for i := 7; i >= 0; i-- {
 					lowBit := (fetcher.fetchedTileDataLow >> i) & 1
 					highBit := (fetcher.fetchedTileDataHigh >> i) & 1
-					color := (highBit << 1) | lowBit
+					colorId := (highBit << 1) | lowBit
 					pixel := FIFO{
-						color:              color,
+						colorId:            colorId,
 						palette:            0, // only applies to sprites
 						backgroundPriority: 0, // only applies to sprites
 					}
