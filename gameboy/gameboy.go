@@ -1,8 +1,6 @@
 package gameboy
 
 import (
-	"fmt"
-
 	"github.com/davidyorr/EchoGB/bus"
 	"github.com/davidyorr/EchoGB/cartridge"
 	"github.com/davidyorr/EchoGB/cpu"
@@ -72,13 +70,6 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 			gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
 		}
 	}
-
-	logger.Debug(
-		"END OF GAMEBOY STEP",
-		"IME", fmt.Sprintf("%t", gameboy.cpu.InterruptMasterEnable()),
-		"IE", fmt.Sprintf("%0X", gameboy.mmu.InterruptEnable()),
-		"IF", fmt.Sprintf("%0X", gameboy.mmu.InterruptFlag()),
-	)
 
 	return 4, frameReady, nil
 }

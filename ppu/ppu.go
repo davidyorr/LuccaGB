@@ -3,6 +3,7 @@ package ppu
 import (
 	"fmt"
 
+	"github.com/davidyorr/EchoGB/debug"
 	"github.com/davidyorr/EchoGB/interrupt"
 	"github.com/davidyorr/EchoGB/logger"
 )
@@ -280,11 +281,13 @@ func (ppu *PPU) Read(address uint16) uint8 {
 }
 
 func (ppu *PPU) Write(address uint16, value uint8) {
-	logger.Debug(
-		"PPU Write",
-		"ADDRESS", fmt.Sprintf("0x%04X", address),
-		"VALUE", fmt.Sprintf("0x%02X", value),
-	)
+	if debug.Enabled {
+		logger.Debug(
+			"PPU Write",
+			"ADDRESS", fmt.Sprintf("0x%04X", address),
+			"VALUE", fmt.Sprintf("0x%02X", value),
+		)
+	}
 	switch {
 	case address == 0xFF40:
 		lcdWasEnabled := ppu.lcdEnabled()

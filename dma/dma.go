@@ -3,6 +3,7 @@ package dma
 import (
 	"fmt"
 
+	"github.com/davidyorr/EchoGB/debug"
 	"github.com/davidyorr/EchoGB/logger"
 	"github.com/davidyorr/EchoGB/ppu"
 )
@@ -95,24 +96,30 @@ func (dma *DMA) executeMachineCycle() {
 		dma.ppu.WriteOam(destination, dma.currentTransferByte)
 
 		dma.progress++
-		logger.Info(
-			"DMA WRITE",
-			"PROGRESS", fmt.Sprintf("%d/%d", dma.progress, transferDuration),
-			"ADDRESS", fmt.Sprintf("0x%04X", destination),
-			"VALUE", fmt.Sprintf("0x%02X", dma.currentTransferByte),
-		)
+		if debug.Enabled {
+			logger.Info(
+				"DMA WRITE",
+				"PROGRESS", fmt.Sprintf("%d/%d", dma.progress, transferDuration),
+				"ADDRESS", fmt.Sprintf("0x%04X", destination),
+				"VALUE", fmt.Sprintf("0x%02X", dma.currentTransferByte),
+			)
+		}
 
 		if dma.progress == transferDuration {
 			logger.Info("FINISHED DMA TRANSFER")
 			dma.state = StateIdle
 		}
 	case StateStarting:
-		logger.Info("DMA STATE MOVING FROM STARTING -> ACTIVE")
+		if debug.Enabled {
+			logger.Info("DMA STATE MOVING FROM STARTING -> ACTIVE")
+		}
 		dma.state = StateActive
 		dma.progress = 0
 		dma.sourceAddress = uint16(dma.startingSourceAddress) << 8
 	case StateRequested:
-		logger.Info("DMA STATE MOVING FROM REQUESTED -> STARTING")
+		if debug.Enabled {
+			logger.Info("DMA STATE MOVING FROM REQUESTED -> STARTING")
+		}
 		dma.startingSourceAddress = dma.requestedSourceAddress
 		dma.state = StateStarting
 	}
@@ -120,11 +127,15 @@ func (dma *DMA) executeMachineCycle() {
 
 func (dma *DMA) StartTransfer(value uint8) {
 	if dma.state == StateIdle {
-		logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
+		if debug.Enabled {
+			logger.Info("DMA STATE MOVING FROM IDLE -> REQUESTED")
+		}
 		dma.wasRestarted = false
 	}
 	if dma.state == StateActive {
-		logger.Info("DMA STATE MOVING FROM ACTIVE -> REQUESTED")
+		if debug.Enabled {
+			logger.Info("DMA STATE MOVING FROM ACTIVE -> REQUESTED")
+		}
 		dma.wasRestarted = true
 	}
 	dma.dmaRegister = value

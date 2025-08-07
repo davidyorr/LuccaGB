@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/davidyorr/EchoGB/cartridge"
+	"github.com/davidyorr/EchoGB/debug"
 	"github.com/davidyorr/EchoGB/interrupt"
 	"github.com/davidyorr/EchoGB/logger"
 )
@@ -121,21 +122,25 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 		value = 0xFF
 	}
 
-	logger.Debug(
-		"MMU READ",
-		"Address", fmt.Sprintf("0x%04X", address),
-		"Value", fmt.Sprintf("0x%02X", value),
-	)
+	if debug.Enabled {
+		logger.Debug(
+			"MMU READ",
+			"Address", fmt.Sprintf("0x%04X", address),
+			"Value", fmt.Sprintf("0x%02X", value),
+		)
+	}
 
 	return value
 }
 
 func (mmu *MMU) Write(address uint16, value uint8) {
-	logger.Debug(
-		"MMU Write",
-		"Address", fmt.Sprintf("0x%04X", address),
-		"Value", fmt.Sprintf("0x%02X", value),
-	)
+	if debug.Enabled {
+		logger.Debug(
+			"MMU Write",
+			"Address", fmt.Sprintf("0x%04X", address),
+			"Value", fmt.Sprintf("0x%02X", value),
+		)
+	}
 	switch {
 	case address <= 0x7FFF:
 		// ROM

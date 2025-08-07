@@ -135,12 +135,6 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	default:
 		bus.mmu.Write(address, value)
 	}
-
-	logger.Debug(
-		"BUS WRITE",
-		"Address", fmt.Sprintf("0x%04X", address),
-		"Value", fmt.Sprintf("0x%02X", value),
-	)
 }
 
 func (bus *Bus) DmaActive() bool {
