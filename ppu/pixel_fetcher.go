@@ -310,7 +310,7 @@ func (fetcher *PixelFetcher) step() {
 				fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
 
 				// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
-				// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
+				// See: https://hacktix.github.io/GBEDG/ppu/#background-pixel-fetching
 				if fetcher.isFirstFetchOfScanline {
 					fetcher.isFirstFetchOfScanline = false
 					fetcher.state = StateGetTile
