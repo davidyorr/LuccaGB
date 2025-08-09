@@ -106,13 +106,22 @@ func (ppu *PPU) Step() (frameReady bool) {
 	ppu.updateStatInterruptLine()
 
 	if ppu.ly < 144 {
-		switch {
-		// Mode 2: OAM scan
-		case ppu.dot < 80:
-			if ppu.mode != OamScan {
-				ppu.changeMode(OamScan)
-				ppu.spriteBuffer = nil
-			}
+		if ppu.dot == 0 {
+			ppu.changeMode(OamScan)
+			ppu.spriteBuffer = nil
+		} else if ppu.dot == 80 {
+			ppu.changeMode(DrawingPixels)
+			ppu.pixelFetcher.reset()
+			ppu.pixelFetcher.prepareForScanline()
+		} else if ppu.dot == 80+ppu.getMode3Duration() {
+			ppu.changeMode(HorizontalBlank)
+		}
+	}
+
+	if ppu.ly < 144 {
+		switch ppu.mode {
+		// Mode 2
+		case OamScan:
 			if ppu.dot%2 == 0 {
 				if len(ppu.spriteBuffer) < 10 {
 					oamIndex := ppu.dot / 2
@@ -128,19 +137,12 @@ func (ppu *PPU) Step() (frameReady bool) {
 					}
 				}
 			}
-		// Mode 3: Drawing Pixels
-		case ppu.dot < 80+ppu.getMode3Duration():
-			if ppu.mode != DrawingPixels {
-				ppu.changeMode(DrawingPixels)
-				ppu.pixelFetcher.reset()
-				ppu.pixelFetcher.prepareForScanline()
-			}
-
+		// Mode 3
+		case DrawingPixels:
 			ppu.pixelFetcher.step()
-		default:
-			if ppu.mode != HorizontalBlank {
-				ppu.changeMode(HorizontalBlank)
-			}
+		// Mode 0
+		case HorizontalBlank:
+			// "pads" the duration of the scanline to a total of 456
 		}
 	}
 
