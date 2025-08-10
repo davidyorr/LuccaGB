@@ -52,30 +52,22 @@ func newPixelFetcher(ppu *PPU) *PixelFetcher {
 		ppu: ppu,
 	}
 
-	pixelFetcher.reset()
-
 	return pixelFetcher
 }
 
-func (fetcher *PixelFetcher) reset() {
-	fetcher.state = StateGetTile
-	fetcher.counter = 0
-	fetcher.xPositionCounter = 0
-	fetcher.windowLineCounter = 0
-	fetcher.isFirstFetchOfScanline = false
-	fetcher.currentX = 0
-}
-
 func (fetcher *PixelFetcher) prepareForScanline() {
+	fetcher.state = StateGetTile
 	fetcher.backgroundFifo = nil
 	fetcher.pixelsToDiscard = fetcher.ppu.scx % 8
 	fetcher.isFirstFetchOfScanline = true
 	fetcher.isFetchingSprite = false
 	fetcher.isFetchingWindow = false
+	fetcher.currentX = 0
+	fetcher.xPositionCounter = 0
+	fetcher.windowLineCounter = 0
 }
 
 func (fetcher *PixelFetcher) step() {
-
 	// If the X-Position of any sprite in the sprite buffer is less than or
 	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
 	// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
@@ -355,7 +347,7 @@ func (fetcher *PixelFetcher) step() {
 	}
 
 	// add to the framebuffer if the FIFO contains any data
-	if len(fetcher.backgroundFifo) > 0 && fetcher.currentX < 160 {
+	if len(fetcher.backgroundFifo) > 0 {
 		backgroundPixel := fetcher.backgroundFifo[0]
 		fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
 		var color uint8
@@ -392,6 +384,10 @@ func (fetcher *PixelFetcher) step() {
 			)
 			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
 			fetcher.currentX++
+
+			if fetcher.currentX == 160 {
+				fetcher.ppu.changeMode(HorizontalBlank)
+			}
 		}
 	}
 }

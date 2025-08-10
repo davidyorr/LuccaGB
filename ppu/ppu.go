@@ -111,7 +111,6 @@ func (ppu *PPU) Step() (frameReady bool) {
 			ppu.spriteBuffer = nil
 		} else if ppu.dot == 80 {
 			ppu.changeMode(DrawingPixels)
-			ppu.pixelFetcher.reset()
 			ppu.pixelFetcher.prepareForScanline()
 		} else if ppu.dot == 80+ppu.getMode3Duration() {
 			ppu.changeMode(HorizontalBlank)
