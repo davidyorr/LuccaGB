@@ -368,6 +368,9 @@ func (fetcher *PixelFetcher) step() {
 					fetcher.spriteFifo[i] = tempBuffer[i]
 				}
 			}
+			fetcher.state = StateGetTile
+			fetcher.counter = 0
+			fetcher.isFetchingSprite = false
 		} else {
 			// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
 			// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
@@ -383,12 +386,11 @@ func (fetcher *PixelFetcher) step() {
 					}
 					fetcher.backgroundFifo = append(fetcher.backgroundFifo, pixel)
 				}
+				fetcher.state = StateGetTile
+				fetcher.counter = 0
+				fetcher.xPositionCounter++
+				fetcher.isFetchingSprite = false
 			}
 		}
-
-		fetcher.state = StateGetTile
-		fetcher.counter = 0
-		fetcher.xPositionCounter++
-		fetcher.isFetchingSprite = false
 	}
 }
