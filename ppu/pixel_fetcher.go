@@ -75,46 +75,6 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 }
 
 func (fetcher *PixelFetcher) step() {
-	// add to the framebuffer if the FIFO contains any data
-	if len(fetcher.backgroundFifo) > 0 && fetcher.currentX < 160 {
-		backgroundPixel := fetcher.backgroundFifo[0]
-		fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
-		var color uint8
-
-		// use the background pixel's color as the default
-		colorId := backgroundPixel.colorId
-		// color IDs are 2 bits, so we shift times 2, then mask 2 bits for the final color/shade
-		color = (fetcher.ppu.bgp >> (colorId * 2)) & 0b11
-
-		if fetcher.pixelsToDiscard > 0 {
-			fetcher.pixelsToDiscard--
-		} else {
-			// See: https://hacktix.github.io/GBEDG/ppu/#pixel-mixing
-			if len(fetcher.spriteFifo) > 0 {
-				spritePixel := fetcher.spriteFifo[0]
-				spriteIsTransparent := spritePixel.colorId == 0
-				backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
-
-				if !spriteIsTransparent && !backgroundHasPriority {
-					colorId := spritePixel.colorId
-					if spritePixel.palette == 0 {
-						color = (fetcher.ppu.obp0 >> (colorId * 2)) & 0b11
-					} else if spritePixel.palette == 1 {
-						color = (fetcher.ppu.obp1 >> (colorId * 2)) & 0b11
-					}
-				}
-			}
-
-			logger.Info(
-				"PPU: ADDING TO FRAMEBUFFER",
-				"COLOR", color,
-				"LY", fetcher.ppu.ly,
-				"X", fetcher.currentX,
-			)
-			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
-			fetcher.currentX++
-		}
-	}
 
 	// If the X-Position of any sprite in the sprite buffer is less than or
 	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
@@ -391,6 +351,47 @@ func (fetcher *PixelFetcher) step() {
 				fetcher.xPositionCounter++
 				fetcher.isFetchingSprite = false
 			}
+		}
+	}
+
+	// add to the framebuffer if the FIFO contains any data
+	if len(fetcher.backgroundFifo) > 0 && fetcher.currentX < 160 {
+		backgroundPixel := fetcher.backgroundFifo[0]
+		fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
+		var color uint8
+
+		// use the background pixel's color as the default
+		colorId := backgroundPixel.colorId
+		// color IDs are 2 bits, so we shift times 2, then mask 2 bits for the final color/shade
+		color = (fetcher.ppu.bgp >> (colorId * 2)) & 0b11
+
+		if fetcher.pixelsToDiscard > 0 {
+			fetcher.pixelsToDiscard--
+		} else {
+			// See: https://hacktix.github.io/GBEDG/ppu/#pixel-mixing
+			if len(fetcher.spriteFifo) > 0 {
+				spritePixel := fetcher.spriteFifo[0]
+				spriteIsTransparent := spritePixel.colorId == 0
+				backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
+
+				if !spriteIsTransparent && !backgroundHasPriority {
+					colorId := spritePixel.colorId
+					if spritePixel.palette == 0 {
+						color = (fetcher.ppu.obp0 >> (colorId * 2)) & 0b11
+					} else if spritePixel.palette == 1 {
+						color = (fetcher.ppu.obp1 >> (colorId * 2)) & 0b11
+					}
+				}
+			}
+
+			logger.Info(
+				"PPU: ADDING TO FRAMEBUFFER",
+				"COLOR", color,
+				"LY", fetcher.ppu.ly,
+				"X", fetcher.currentX,
+			)
+			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
+			fetcher.currentX++
 		}
 	}
 }
