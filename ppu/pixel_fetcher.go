@@ -68,6 +68,11 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 }
 
 func (fetcher *PixelFetcher) step() {
+	fetcher.tick()
+	fetcher.attemptToPushPixel()
+}
+
+func (fetcher *PixelFetcher) tick() {
 	// If the X-Position of any sprite in the sprite buffer is less than or
 	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
 	// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
@@ -345,7 +350,9 @@ func (fetcher *PixelFetcher) step() {
 			}
 		}
 	}
+}
 
+func (fetcher *PixelFetcher) attemptToPushPixel() {
 	// add to the framebuffer if the FIFO contains any data
 	if len(fetcher.backgroundFifo) > 0 {
 		backgroundPixel := fetcher.backgroundFifo[0]
