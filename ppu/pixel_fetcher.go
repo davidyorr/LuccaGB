@@ -1,7 +1,7 @@
 package ppu
 
 import (
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type PixelFetcher struct {

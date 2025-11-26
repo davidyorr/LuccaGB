@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type TestType string

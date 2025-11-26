@@ -3,9 +3,9 @@ package dma
 import (
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/debug"
-	"github.com/davidyorr/EchoGB/logger"
-	"github.com/davidyorr/EchoGB/ppu"
+	"github.com/davidyorr/LuccaGB/debug"
+	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/ppu"
 )
 
 type DMA struct {

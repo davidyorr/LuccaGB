@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type Cartridge struct {

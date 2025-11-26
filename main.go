@@ -5,12 +5,12 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/davidyorr/EchoGB/gameboy"
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/gameboy"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 func main() {
-	logger.Info("Hello EchoGB!")
+	logger.Info("Hello LuccaGB!")
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))

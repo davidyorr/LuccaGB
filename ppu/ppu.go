@@ -3,9 +3,9 @@ package ppu
 import (
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/debug"
-	"github.com/davidyorr/EchoGB/interrupt"
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/debug"
+	"github.com/davidyorr/LuccaGB/interrupt"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type PPU struct {

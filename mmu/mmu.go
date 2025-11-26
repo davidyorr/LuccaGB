@@ -3,10 +3,10 @@ package mmu
 import (
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/cartridge"
-	"github.com/davidyorr/EchoGB/debug"
-	"github.com/davidyorr/EchoGB/interrupt"
-	"github.com/davidyorr/EchoGB/logger"
+	"github.com/davidyorr/LuccaGB/cartridge"
+	"github.com/davidyorr/LuccaGB/debug"
+	"github.com/davidyorr/LuccaGB/interrupt"
+	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type MMU struct {

@@ -3,12 +3,12 @@ package bus
 import (
 	"fmt"
 
-	"github.com/davidyorr/EchoGB/dma"
-	"github.com/davidyorr/EchoGB/logger"
-	"github.com/davidyorr/EchoGB/mmu"
-	"github.com/davidyorr/EchoGB/ppu"
-	"github.com/davidyorr/EchoGB/serial"
-	"github.com/davidyorr/EchoGB/timer"
+	"github.com/davidyorr/LuccaGB/dma"
+	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/mmu"
+	"github.com/davidyorr/LuccaGB/ppu"
+	"github.com/davidyorr/LuccaGB/serial"
+	"github.com/davidyorr/LuccaGB/timer"
 )
 
 type Bus struct {

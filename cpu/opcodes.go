@@ -1,6 +1,6 @@
 package cpu
 
-import "github.com/davidyorr/EchoGB/logger"
+import "github.com/davidyorr/LuccaGB/logger"
 
 // 0x06 Copy the value n8 into register r8
 func ld_b_n8(cpu *CPU) bool {

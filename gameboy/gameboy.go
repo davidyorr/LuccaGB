@@ -1,16 +1,16 @@
 package gameboy
 
 import (
-	"github.com/davidyorr/EchoGB/bus"
-	"github.com/davidyorr/EchoGB/cartridge"
-	"github.com/davidyorr/EchoGB/cpu"
-	"github.com/davidyorr/EchoGB/dma"
-	"github.com/davidyorr/EchoGB/interrupt"
-	"github.com/davidyorr/EchoGB/logger"
-	"github.com/davidyorr/EchoGB/mmu"
-	"github.com/davidyorr/EchoGB/ppu"
-	"github.com/davidyorr/EchoGB/serial"
-	"github.com/davidyorr/EchoGB/timer"
+	"github.com/davidyorr/LuccaGB/bus"
+	"github.com/davidyorr/LuccaGB/cartridge"
+	"github.com/davidyorr/LuccaGB/cpu"
+	"github.com/davidyorr/LuccaGB/dma"
+	"github.com/davidyorr/LuccaGB/interrupt"
+	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/mmu"
+	"github.com/davidyorr/LuccaGB/ppu"
+	"github.com/davidyorr/LuccaGB/serial"
+	"github.com/davidyorr/LuccaGB/timer"
 )
 
 type Gameboy struct {
