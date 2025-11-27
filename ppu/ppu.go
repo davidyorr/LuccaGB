@@ -130,7 +130,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 					if ((ppu.lcdc & 0b0000_0100) >> 2) == 1 {
 						height = 16
 					}
-					// See: https://hacktix.github.io/GBEDG/ppu/#oam-scan-mode-2
+					// See: https://ashiepaws.github.io/GBEDG/ppu/#oam-scan-mode-2
 					if ppu.ly+16 >= spriteY && ppu.ly+16 < spriteY+height && spriteX > 0 {
 						ppu.spriteBuffer = append(ppu.spriteBuffer, uint8(oamIndex))
 					}
@@ -398,7 +398,7 @@ func (ppu *PPU) updateStatInterruptLine() {
 // (bit 2) based on whether the LY and LYC registers are equal. This must be
 // called whenever either LY or LYC is modified to ensure the flag's state is
 // always accurate.
-// See: https://hacktix.github.io/GBEDG/ppu/#stat2---coincidence-flag
+// See: https://ashiepaws.github.io/GBEDG/ppu/#stat2---coincidence-flag
 func (ppu *PPU) updateLycCoincidenceFlag() {
 	if ppu.lyc == ppu.ly {
 		ppu.stat |= 0b0000_0100

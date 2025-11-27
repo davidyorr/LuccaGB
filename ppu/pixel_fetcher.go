@@ -75,7 +75,7 @@ func (fetcher *PixelFetcher) step() {
 func (fetcher *PixelFetcher) tick() {
 	// If the X-Position of any sprite in the sprite buffer is less than or
 	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
-	// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
+	// See: https://ashiepaws.github.io/GBEDG/ppu/#sprite-fetching
 	for _, oamIndex := range fetcher.ppu.spriteBuffer {
 		// each sprite is 4 bytes long
 		baseAddress := oamIndex * 4
@@ -157,7 +157,7 @@ func (fetcher *PixelFetcher) tick() {
 				// determine which vertical row of the sprite we are on
 				var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
 				isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
-				// See: https://hacktix.github.io/GBEDG/ppu/#lcdc2---sprite-size
+				// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
 				if isTallSprite {
 					if rowInSprite < 8 {
 						// the top tile, so force LSB to 0
@@ -218,7 +218,7 @@ func (fetcher *PixelFetcher) tick() {
 				// determine which vertical row of the sprite we are on
 				var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
 				isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
-				// See: https://hacktix.github.io/GBEDG/ppu/#lcdc2---sprite-size
+				// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
 				if isTallSprite {
 					if rowInSprite < 8 {
 						// the top tile, so force LSB to 0
@@ -267,7 +267,7 @@ func (fetcher *PixelFetcher) tick() {
 				fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
 
 				// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
-				// See: https://hacktix.github.io/GBEDG/ppu/#background-pixel-fetching
+				// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
 				if fetcher.isFirstFetchOfScanline {
 					fetcher.isFirstFetchOfScanline = false
 					fetcher.state = StateGetTile
@@ -309,7 +309,7 @@ func (fetcher *PixelFetcher) tick() {
 
 			// only pixels which are actually visible on the screen are loaded into the FIFO
 			// pixels can only be loaded into FIFO slots if there is no pixel in the given slot already
-			// See: https://hacktix.github.io/GBEDG/ppu/#sprite-fetching
+			// See: https://ashiepaws.github.io/GBEDG/ppu/#sprite-fetching
 			var pixelsToDiscard uint8 = 0
 			if spriteX < 8 {
 				pixelsToDiscard = 8 - spriteX
@@ -330,7 +330,7 @@ func (fetcher *PixelFetcher) tick() {
 			fetcher.isFetchingSprite = false
 		} else {
 			// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
-			// See: https://hacktix.github.io/GBEDG/Ground-pixel-fetching
+			// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
 			if len(fetcher.backgroundFifo) == 0 {
 				for i := 7; i >= 0; i-- {
 					lowBit := (fetcher.fetchedTileDataLow >> i) & 1
@@ -367,7 +367,7 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 		if fetcher.pixelsToDiscard > 0 {
 			fetcher.pixelsToDiscard--
 		} else {
-			// See: https://hacktix.github.io/GBEDG/ppu/#pixel-mixing
+			// See: https://ashiepaws.github.io/GBEDG/ppu/#pixel-mixing
 			if len(fetcher.spriteFifo) > 0 {
 				spritePixel := fetcher.spriteFifo[0]
 				spriteIsTransparent := spritePixel.colorId == 0
