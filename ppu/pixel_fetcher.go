@@ -189,7 +189,7 @@ func (fetcher *PixelFetcher) tick() {
 				// 8800 method
 				{
 					address = 0x9000
-					address += uint16(int8(fetcher.fetchedTileNumber) * 16)
+					address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
 				}
 				// get the row offset
 				if fetcher.isFetchingWindow {
@@ -254,7 +254,7 @@ func (fetcher *PixelFetcher) tick() {
 				// 8800 method
 				{
 					address = 0x9000
-					address += uint16(int8(fetcher.fetchedTileNumber) * 16)
+					address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
 				}
 				// get the row offset
 				if fetcher.isFetchingWindow {
