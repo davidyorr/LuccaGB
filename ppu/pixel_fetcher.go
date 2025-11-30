@@ -157,8 +157,15 @@ func (fetcher *PixelFetcher) tick() {
 				// determine which vertical row of the sprite we are on
 				var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
 				isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
+				flipY := (spriteFlags>>6)&1 == 1
+
 				// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
 				if isTallSprite {
+					// handle y flipping
+					if flipY {
+						rowInSprite = 15 - rowInSprite
+					}
+
 					if rowInSprite < 8 {
 						// the top tile, so force LSB to 0
 						spriteTileNumber &= 0b1111_1110
@@ -167,12 +174,11 @@ func (fetcher *PixelFetcher) tick() {
 						spriteTileNumber |= 0x0000_0001
 						rowInSprite -= 8
 					}
-				}
-
-				// handle y flipping
-				flipY := (spriteFlags>>6)&1 == 1
-				if flipY {
-					rowInSprite = 7 - rowInSprite
+				} else {
+					// handle y flipping
+					if flipY {
+						rowInSprite = 7 - rowInSprite
+					}
 				}
 
 				address += uint16(spriteTileNumber * 16)
