@@ -109,13 +109,13 @@ func (fetcher *PixelFetcher) tick() {
 
 	fetcher.counter++
 
-	if fetcher.counter < 2 {
-		return
-	}
-	fetcher.counter = 0
-
 	switch fetcher.state {
 	case StateGetTile:
+		if fetcher.counter < 2 {
+			return
+		}
+		fetcher.counter = 0
+
 		if fetcher.isFetchingSprite {
 			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
 			// each sprite is 4 bytes, byte 2 is the tile index
@@ -147,9 +147,19 @@ func (fetcher *PixelFetcher) tick() {
 
 		fetcher.state = StateGetTileDataLow
 	case StateGetTileDataLow:
+		if fetcher.counter < 2 {
+			return
+		}
+		fetcher.counter = 0
+
 		fetcher.fetchedTileDataLow = fetcher.fetchTileData(0)
 		fetcher.state = StateGetTileDataHigh
 	case StateGetTileDataHigh:
+		if fetcher.counter < 2 {
+			return
+		}
+		fetcher.counter = 0
+
 		fetcher.fetchedTileDataHigh = fetcher.fetchTileData(1)
 
 		// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
@@ -163,8 +173,18 @@ func (fetcher *PixelFetcher) tick() {
 			fetcher.state = StateSleep
 		}
 	case StateSleep:
+		if fetcher.counter < 2 {
+			return
+		}
+		fetcher.counter = 0
+
 		fetcher.state = StatePush
 	case StatePush:
+		if fetcher.counter < 2 {
+			return
+		}
+		fetcher.counter = 0
+
 		if fetcher.isFetchingSprite {
 			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
 			spriteX := fetcher.ppu.oam[oamIndex*4+1]
