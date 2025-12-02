@@ -295,6 +295,11 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 }
 
 func (fetcher *PixelFetcher) attemptToPushPixel() {
+	if fetcher.currentX == 160 {
+		fetcher.ppu.changeMode(HorizontalBlank)
+		return
+	}
+
 	// add to the framebuffer if the FIFO contains any data
 	if len(fetcher.backgroundFifo) > 0 {
 		backgroundPixel := fetcher.backgroundFifo[0]
@@ -333,10 +338,6 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 			)
 			fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
 			fetcher.currentX++
-
-			if fetcher.currentX == 160 {
-				fetcher.ppu.changeMode(HorizontalBlank)
-			}
 		}
 	}
 }
