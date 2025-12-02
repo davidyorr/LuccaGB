@@ -147,139 +147,20 @@ func (fetcher *PixelFetcher) tick() {
 
 		fetcher.state = StateGetTileDataLow
 	case StateGetTileDataLow:
-		if fetcher.isFetchingSprite {
-			// sprites always use 8000 method
-			var address uint16 = 0x8000
-
-			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
-			spriteY := fetcher.ppu.oam[oamIndex*4]
-			spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
-			spriteTileNumber := fetcher.fetchedTileNumber
-
-			// determine which vertical row of the sprite we are on
-			var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
-			isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
-			flipY := (spriteFlags>>6)&1 == 1
-
-			// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
-			if isTallSprite {
-				// handle y flipping
-				if flipY {
-					rowInSprite = 15 - rowInSprite
-				}
-
-				if rowInSprite < 8 {
-					// the top tile, so force LSB to 0
-					spriteTileNumber &= 0b1111_1110
-				} else {
-					// the bottom tile, so force LSB to 1
-					spriteTileNumber |= 0x0000_0001
-					rowInSprite -= 8
-				}
-			} else {
-				// handle y flipping
-				if flipY {
-					rowInSprite = 7 - rowInSprite
-				}
-			}
-
-			address += uint16(spriteTileNumber * 16)
-			address += uint16(rowInSprite * 2)
-
-			fetcher.fetchedTileDataLow = fetcher.ppu.videoRam[address-0x8000]
-		} else {
-			var address uint16
-			// 8000 method
-			if (fetcher.ppu.lcdc>>4)&1 == 1 {
-				address = 0x8000
-				address += uint16(fetcher.fetchedTileNumber * 16)
-			} else
-			// 8800 method
-			{
-				address = 0x9000
-				address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
-			}
-			// get the row offset
-			if fetcher.isFetchingWindow {
-				address += uint16(2 * (fetcher.windowLineCounter % 8))
-			} else {
-				address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
-			}
-
-			fetcher.fetchedTileDataLow = fetcher.ppu.videoRam[address-0x8000]
-		}
-
+		fetcher.fetchedTileDataLow = fetcher.fetchTileData(0)
 		fetcher.state = StateGetTileDataHigh
 	case StateGetTileDataHigh:
-		if fetcher.isFetchingSprite {
-			// sprites always use 8000 method
-			var address uint16 = 0x8000
+		fetcher.fetchedTileDataHigh = fetcher.fetchTileData(1)
 
-			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
-			spriteY := fetcher.ppu.oam[oamIndex*4]
-			spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
-			spriteTileNumber := fetcher.fetchedTileNumber
-
-			// determine which vertical row of the sprite we are on
-			var rowInSprite uint8 = (fetcher.ppu.ly + 16) - spriteY
-			isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
-			// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
-			if isTallSprite {
-				if rowInSprite < 8 {
-					// the top tile, so force LSB to 0
-					spriteTileNumber &= 0b1111_1110
-				} else {
-					// the bottom tile, so force LSB to 1
-					spriteTileNumber |= 0x0000_0001
-					rowInSprite -= 8
-				}
-			}
-
-			// handle y flipping
-			flipY := (spriteFlags>>6)&1 == 1
-			if flipY {
-				rowInSprite = 7 - rowInSprite
-			}
-
-			address += uint16(spriteTileNumber * 16)
-			address += uint16(rowInSprite * 2)
-			address += 1
-
-			fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
-
-			fetcher.state = StateSleep
+		// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
+		// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
+		if fetcher.isFirstFetchOfScanline {
+			fetcher.isFirstFetchOfScanline = false
+			fetcher.state = StateGetTile
+			fetcher.counter = 0
 		} else {
-			var address uint16
-			// 8000 method
-			if (fetcher.ppu.lcdc>>4)&1 == 1 {
-				address = 0x8000
-				address += uint16(fetcher.fetchedTileNumber * 16)
-			} else
-			// 8800 method
-			{
-				address = 0x9000
-				address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
-			}
-			// get the row offset
-			if fetcher.isFetchingWindow {
-				address += uint16(2 * (fetcher.windowLineCounter % 8))
-			} else {
-				address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
-			}
-
-			address += 1
-			fetcher.fetchedTileDataHigh = fetcher.ppu.videoRam[address-0x8000]
-
-			// Note: The first time the background fetcher completes this step on a scanline the status is fully reset and operation restarts at Step 1.
-			// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
-			if fetcher.isFirstFetchOfScanline {
-				fetcher.isFirstFetchOfScanline = false
-				fetcher.state = StateGetTile
-				fetcher.counter = 0
-			} else {
-				fetcher.counter = 0
-				fetcher.state = StateSleep
-			}
+			fetcher.counter = 0
+			fetcher.state = StateSleep
 		}
 	case StateSleep:
 		fetcher.state = StatePush
@@ -348,6 +229,69 @@ func (fetcher *PixelFetcher) tick() {
 			}
 		}
 	}
+}
+
+func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
+	var address uint16
+	if fetcher.isFetchingSprite {
+		// sprites always use 8000 method
+		address = 0x8000
+
+		oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+		spriteY := fetcher.ppu.oam[oamIndex*4]
+		spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
+		spriteTileNumber := fetcher.fetchedTileNumber
+
+		// determine which vertical row of the sprite we are on
+		rowInSprite := (fetcher.ppu.ly + 16) - spriteY
+		isTallSprite := (fetcher.ppu.lcdc>>2)&1 == 1
+		flipY := (spriteFlags>>6)&1 == 1
+
+		// See: https://ashiepaws.github.io/GBEDG/ppu/#lcdc2---sprite-size
+		if isTallSprite {
+			// handle y flipping
+			if flipY {
+				rowInSprite = 15 - rowInSprite
+			}
+			if rowInSprite < 8 {
+				// the top tile, so force LSB to 0
+				spriteTileNumber &= 0b1111_1110
+			} else {
+				// the bottom tile, so force LSB to 1
+				spriteTileNumber |= 0x0000_0001
+				rowInSprite -= 8
+			}
+		} else {
+			// handle y flipping
+			if flipY {
+				rowInSprite = 7 - rowInSprite
+			}
+		}
+
+		address += uint16(spriteTileNumber * 16)
+		address += uint16(rowInSprite * 2)
+	} else {
+		// 8000 method
+		if (fetcher.ppu.lcdc>>4)&1 == 1 {
+			address = 0x8000
+			address += uint16(fetcher.fetchedTileNumber * 16)
+		} else
+		// 8800 method
+		{
+			address = 0x9000
+			address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
+		}
+		// get the row offset
+		if fetcher.isFetchingWindow {
+			address += uint16(2 * (fetcher.windowLineCounter % 8))
+		} else {
+			address += uint16(2 * ((fetcher.ppu.ly + fetcher.ppu.scy) % 8))
+		}
+	}
+
+	address += offset
+
+	return fetcher.ppu.videoRam[address-0x8000]
 }
 
 func (fetcher *PixelFetcher) attemptToPushPixel() {
