@@ -220,10 +220,18 @@ func (fetcher *PixelFetcher) tick() {
 					continue
 				}
 
-				fifoIndex := i
+				fifoIndex := i - int(pixelsToDiscard)
 
-				if fetcher.spriteFifo[fifoIndex].colorId == 0 && tempBuffer[i].colorId != 0 {
-					fetcher.spriteFifo[i] = tempBuffer[i]
+				// if the FIFO is not big enough to hold this pixel we need to expand it
+				if fifoIndex >= len(fetcher.spriteFifo) {
+					fetcher.spriteFifo = append(fetcher.spriteFifo, tempBuffer[i])
+				} else {
+					// if the FIFO already has a pixel in this slot we only overwrite it if
+					// 1. the existing pixel is transparent (color ID 0)
+					// 2. the new pixel is not transparent (color ID not 0)
+					if fetcher.spriteFifo[fifoIndex].colorId == 0 && tempBuffer[i].colorId != 0 {
+						fetcher.spriteFifo[i] = tempBuffer[i]
+					}
 				}
 			}
 			fetcher.state = StateGetTile
@@ -345,6 +353,7 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 	// See: https://ashiepaws.github.io/GBEDG/ppu/#pixel-mixing
 	if len(fetcher.spriteFifo) > 0 {
 		spritePixel := fetcher.spriteFifo[0]
+		fetcher.spriteFifo = fetcher.spriteFifo[1:]
 		spriteIsTransparent := spritePixel.colorId == 0
 		backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
 
