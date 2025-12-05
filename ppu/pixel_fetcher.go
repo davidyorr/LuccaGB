@@ -167,23 +167,15 @@ func (fetcher *PixelFetcher) tick() {
 		if fetcher.isFirstFetchOfScanline {
 			fetcher.isFirstFetchOfScanline = false
 			fetcher.state = StateGetTile
-			fetcher.counter = 0
 		} else {
-			fetcher.counter = 0
-			fetcher.state = StateSleep
+			fetcher.state = StatePush
 		}
-	case StateSleep:
-		if fetcher.counter < 2 {
-			return
-		}
-		fetcher.counter = 0
-
-		fetcher.state = StatePush
 	case StatePush:
 		if fetcher.counter < 2 {
 			return
 		}
-		fetcher.counter = 0
+
+		pushedToFifo := false
 
 		if fetcher.isFetchingSprite {
 			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
@@ -236,8 +228,10 @@ func (fetcher *PixelFetcher) tick() {
 			}
 			fetcher.state = StateGetTile
 			fetcher.isFetchingSprite = false
+			pushedToFifo = true
 		} else {
 			// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
+			// If it is not, this step repeats every cycle until it succeeds.
 			// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
 			if len(fetcher.backgroundFifo) == 0 {
 				for i := 7; i >= 0; i-- {
@@ -254,7 +248,15 @@ func (fetcher *PixelFetcher) tick() {
 				fetcher.state = StateGetTile
 				fetcher.xPositionCounter++
 				fetcher.isFetchingSprite = false
+				pushedToFifo = true
 			}
+		}
+
+		// We only reset the counter if we actually pushed to the FIFO.
+		// By not resetting it, it allows us to retry pushing to the FIFO in the next tick.
+		if pushedToFifo {
+			fetcher.state = StateGetTile
+			fetcher.counter = 0
 		}
 	}
 }
@@ -324,7 +326,9 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 
 func (fetcher *PixelFetcher) attemptToPushPixel() {
 	if fetcher.currentX == 160 {
-		fetcher.ppu.changeMode(HorizontalBlank)
+		if fetcher.ppu.dot%4 == 0 {
+			fetcher.ppu.changeMode(HorizontalBlank)
+		}
 		return
 	}
 
