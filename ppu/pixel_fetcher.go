@@ -298,18 +298,18 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 			}
 		}
 
-		address += uint16(spriteTileNumber * 16)
-		address += uint16(rowInSprite * 2)
+		address += uint16(spriteTileNumber) * 16
+		address += uint16(rowInSprite) * 2
 	} else {
 		// 8000 method
 		if (fetcher.ppu.lcdc>>4)&1 == 1 {
 			address = 0x8000
-			address += uint16(fetcher.fetchedTileNumber * 16)
+			address += uint16(fetcher.fetchedTileNumber) * 16
 		} else
 		// 8800 method
 		{
 			address = 0x9000
-			address += uint16(int16(int8(fetcher.fetchedTileNumber)) * 16)
+			address += uint16(int16(int8(fetcher.fetchedTileNumber))) * 16
 		}
 		// get the row offset
 		if fetcher.isFetchingWindow {
