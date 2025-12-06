@@ -5,20 +5,21 @@ import (
 )
 
 type PixelFetcher struct {
-	ppu                     *PPU
-	state                   FetcherState
-	counter                 uint16
-	fetchedTileNumber       uint8
-	fetchedTileDataLow      uint8
-	fetchedTileDataHigh     uint8
-	xPositionCounter        uint8
-	pixelsToDiscard         uint8
-	isFetchingWindow        bool
-	currentX                uint8
-	windowLineCounter       uint8
-	isFirstFetchOfScanline  bool
-	scanlineHadWindowPixels bool
-	wyEqualedLyDuringFrame  bool
+	ppu                        *PPU
+	state                      FetcherState
+	counter                    uint16
+	fetchedTileNumber          uint8
+	fetchedTileDataLow         uint8
+	fetchedTileDataHigh        uint8
+	xPositionCounter           uint8
+	pixelsToDiscard            uint8
+	backgroundScrollingPenalty uint8
+	isFetchingWindow           bool
+	currentX                   uint8
+	windowLineCounter          uint8
+	isFirstFetchOfScanline     bool
+	scanlineHadWindowPixels    bool
+	wyEqualedLyDuringFrame     bool
 
 	isFetchingSprite bool
 	spriteIndex      uint8
@@ -58,7 +59,6 @@ func newPixelFetcher(ppu *PPU) *PixelFetcher {
 func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.state = StateGetTile
 	fetcher.backgroundFifo = nil
-	fetcher.pixelsToDiscard = fetcher.ppu.scx % 8
 	fetcher.isFirstFetchOfScanline = true
 	fetcher.isFetchingSprite = false
 	fetcher.isFetchingWindow = false
@@ -66,6 +66,16 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.counter = 0
 	fetcher.xPositionCounter = 0
 	fetcher.windowLineCounter = 0
+
+	// SCX
+	fetcher.pixelsToDiscard = fetcher.ppu.scx % 8
+	if fetcher.pixelsToDiscard == 0 {
+		fetcher.backgroundScrollingPenalty = 0
+	} else if fetcher.pixelsToDiscard < 5 {
+		fetcher.backgroundScrollingPenalty = 4
+	} else {
+		fetcher.backgroundScrollingPenalty = 8
+	}
 }
 
 func (fetcher *PixelFetcher) step() {
@@ -341,17 +351,21 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 		return
 	}
 
+	// handle background scrolling penalty: this occurs in chunks of 4 T-cycles (1 M-cycle)
+	if fetcher.backgroundScrollingPenalty > 0 {
+		fetcher.backgroundScrollingPenalty--
+
+		if fetcher.pixelsToDiscard > 0 {
+			fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
+			fetcher.pixelsToDiscard--
+		}
+		return
+	}
+
 	// otherwise add to the framebuffer
 	backgroundPixel := fetcher.backgroundFifo[0]
 	fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
 	var color uint8
-
-	// do nothing if we have pixels to discard
-	// this must be done after popping from the FIFO
-	if fetcher.pixelsToDiscard > 0 {
-		fetcher.pixelsToDiscard--
-		return
-	}
 
 	// use the background pixel's color as the default
 	colorId := backgroundPixel.colorId
