@@ -112,8 +112,6 @@ func (ppu *PPU) Step() (frameReady bool) {
 		} else if ppu.dot == 80 {
 			ppu.changeMode(DrawingPixels)
 			ppu.pixelFetcher.prepareForScanline()
-		} else if ppu.dot == 80+ppu.getMode3Duration() {
-			ppu.changeMode(HorizontalBlank)
 		}
 	}
 
@@ -170,7 +168,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 			if (ppu.stat & 0b0010_0000) != 0 {
 				ppu.interruptRequester(interrupt.LcdInterrupt)
 			}
-		} else if ppu.ly >= 154 {
+		} else if ppu.ly == 154 {
 			ppu.ly = 0
 			ppu.pixelFetcher.windowLineCounter = 0
 			ppu.pixelFetcher.wyEqualedLyDuringFrame = false
@@ -180,65 +178,6 @@ func (ppu *PPU) Step() (frameReady bool) {
 	}
 
 	return frameReady
-}
-
-func (ppu *PPU) getMode3Duration() uint16 {
-	var baseDuration uint16 = 172
-
-	// See: https://github.com/Gekkio/mooneye-test-suite/blob/443f6e1f2a8d83ad9da051cbb960311c5aaaea66/acceptance/ppu/hblank_ly_scx_timing-GS.s#L24
-	var backgroundScrollingPenalty uint16 = 0
-	switch ppu.scx % 8 {
-	case 0:
-		backgroundScrollingPenalty = 0
-	case 1, 2, 3, 4:
-		backgroundScrollingPenalty = 4 // 1 M-cycle
-	case 5, 6, 7:
-		backgroundScrollingPenalty = 8 // 2 M-cycles
-	}
-
-	var windowPenalty uint16 = 0
-	windowEnabled := ppu.lcdc&0b0010_0000>>5 == 1
-	if windowEnabled && ppu.ly >= ppu.wy && ppu.wx < 167 && ppu.wx > 7 {
-		windowPenalty = 6
-	}
-
-	var objectsPenalty uint16 = 0
-	type Position struct {
-		x, y uint16
-	}
-
-	var processedBackgroundTiles map[Position]bool = make(map[Position]bool)
-	for _, oamIndex := range ppu.spriteBuffer {
-		// each sprite is 4 bytes long
-		baseAddress := oamIndex * 4
-		spriteX := ppu.oam[baseAddress+1]
-
-		if spriteX == 0 {
-			objectsPenalty += 11
-			continue
-		}
-
-		objectsPenalty += 6
-
-		screenX := int(spriteX) - 8
-		// ensure a positive result
-		backgroundX := uint16(((int(screenX)+int(ppu.scx))%256 + 256) % 256)
-		backgroundTileX := backgroundX / 8
-		backgroundY := (uint16(ppu.ly) + uint16(ppu.scy)) % 256
-		backgroundTileY := backgroundY / 8
-		pos := Position{x: backgroundTileX, y: backgroundTileY}
-
-		if processedBackgroundTiles[pos] {
-			continue
-		}
-
-		processedBackgroundTiles[pos] = true
-		fineX := backgroundX % 8
-		penalty := max(0, 5-fineX)
-		objectsPenalty += penalty
-	}
-
-	return min(baseDuration+backgroundScrollingPenalty+windowPenalty+objectsPenalty, 289)
 }
 
 func (ppu *PPU) Read(address uint16) uint8 {
