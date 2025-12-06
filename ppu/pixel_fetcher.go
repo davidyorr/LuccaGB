@@ -340,9 +340,7 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 
 func (fetcher *PixelFetcher) attemptToPushPixel() {
 	if fetcher.currentX == 160 {
-		if fetcher.ppu.dot%4 == 0 {
-			fetcher.ppu.changeMode(HorizontalBlank)
-		}
+		fetcher.ppu.changeMode(HorizontalBlank)
 		return
 	}
 
