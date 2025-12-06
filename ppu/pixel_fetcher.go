@@ -117,7 +117,7 @@ func (fetcher *PixelFetcher) tick() {
 		fetcher.counter = 0
 
 		if fetcher.isFetchingSprite {
-			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+			oamIndex := fetcher.spriteIndex
 			// each sprite is 4 bytes, byte 2 is the tile index
 			tileIndex := (oamIndex * 4) + 2
 			fetcher.fetchedTileNumber = fetcher.ppu.oam[tileIndex]
@@ -178,7 +178,7 @@ func (fetcher *PixelFetcher) tick() {
 		pushedToFifo := false
 
 		if fetcher.isFetchingSprite {
-			oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+			oamIndex := fetcher.spriteIndex
 			spriteX := fetcher.ppu.oam[oamIndex*4+1]
 			spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
 			spriteFlipX := (spriteFlags>>5)&1 == 1
@@ -267,7 +267,7 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 		// sprites always use 8000 method
 		address = 0x8000
 
-		oamIndex := fetcher.ppu.spriteBuffer[fetcher.spriteIndex]
+		oamIndex := fetcher.spriteIndex
 		spriteY := fetcher.ppu.oam[oamIndex*4]
 		spriteFlags := fetcher.ppu.oam[oamIndex*4+3]
 		spriteTileNumber := fetcher.fetchedTileNumber
