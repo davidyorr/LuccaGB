@@ -12,6 +12,9 @@
 				<canvas id="canvas" width="160" height="144"></canvas>
 			</div>
 			<div id="controls">
+				<select id="rom-select">
+					<option value="">-- Select a ROM --</option>
+				</select>
 				<label for="rom-input">Load ROM:</label>
 				<input id="rom-input" type="file" name="rom-input" accept=".gb" />
 				<button id="pause-button">Pause</button>
@@ -99,12 +102,20 @@
 			box-shadow: 0px 0px 0px 8px #707185;
 		}
 		#controls {
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
 			position: fixed;
 			bottom: 0;
+			left: 0;
 			width: 100%;
 			padding: 8px;
 			gap: 12px;
 			height: 40px;
+
+			#rom-select {
+				max-width: 250px;
+			}
 		}
 
 		/* ======== DEBUGGER ======== */

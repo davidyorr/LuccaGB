@@ -25,6 +25,11 @@ const debugElements = {
 	flagC: null as HTMLElement | null,
 };
 
+const romFiles = import.meta.glob("../roms/**/*.gb", {
+	query: "?url",
+	import: "default",
+});
+
 document.addEventListener("DOMContentLoaded", () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
 		(wasmModule) => {
@@ -42,7 +47,74 @@ document.addEventListener("DOMContentLoaded", () => {
 				const romData = new Uint8Array(arrayBuffer);
 				window.loadRom(romData);
 			}
+
+			// reset the dropdown to the default so it doesn't look like two things are selected
+			const romSelect = document.getElementById(
+				"rom-select",
+			) as HTMLSelectElement | null;
+			if (romSelect) {
+				romSelect.value = "";
+			}
 		});
+
+	// ====== set up ROM dropdown ======
+	const romSelect = document.getElementById(
+		"rom-select",
+	) as HTMLSelectElement | null;
+
+	if (!romSelect) {
+		console.warn("Could not find #rom-select element");
+		return;
+	}
+
+	// populate options
+	const sortedPaths = Object.keys(romFiles).sort();
+
+	for (const path of sortedPaths) {
+		const option = document.createElement("option");
+		option.text = path.replace("../roms/", "");
+		option.value = path;
+		romSelect.appendChild(option);
+	}
+
+	// handle selection
+	romSelect.addEventListener("change", async (event) => {
+		const target = event.target as HTMLSelectElement;
+		const path = target.value;
+
+		if (!path || !romFiles[path]) return;
+
+		// remove focus so keyboard controls don't toggle the dropdown
+		target.blur();
+
+		try {
+			// fetch the URL from Vite
+			const getUrl = romFiles[path] as () => Promise<string>;
+			const url = await getUrl();
+
+			const response = await fetch(url);
+			if (!response.ok) {
+				throw new Error(`Failed to fetch ${path}`);
+			}
+
+			const arrayBuffer = await response.arrayBuffer();
+			const romData = new Uint8Array(arrayBuffer);
+
+			window.loadRom(romData);
+			console.log(`Loaded ROM: ${path}`);
+
+			// reset file input so it doesn't look like two things are selected
+			const fileInput = document.getElementById(
+				"rom-input",
+			) as HTMLInputElement;
+			if (fileInput) {
+				fileInput.value = "";
+			}
+		} catch (err) {
+			console.error("Error loading ROM from dropdown:", err);
+			alert("Failed to load selected ROM.");
+		}
+	});
 
 	// ====== set up canvas ======
 	const visibleCanvas = document.getElementById("canvas");
