@@ -72,16 +72,16 @@ func presentFrame() {
 			color := frameBuffer[screenY][screenX]
 			switch color {
 			case 0:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 255, 255, 255, 255
+				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 208, 224, 64, 255
 				// js.Global().Get("console").Call("log", "Go: presentFrame() case 0")
 			case 1:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 170, 170, 170, 255
+				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 160, 168, 48, 255
 				// js.Global().Get("console").Call("log", "Go: presentFrame() case 1")
 			case 2:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 85, 85, 85, 255
+				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 96, 112, 40, 255
 				// js.Global().Get("console").Call("log", "Go: presentFrame() case 2")
 			case 3:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 0, 0, 0, 255
+				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 56, 72, 40, 255
 				// js.Global().Get("console").Call("log", "Go: presentFrame() case 3")
 			}
 			i += 4
