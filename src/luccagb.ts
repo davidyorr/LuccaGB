@@ -116,6 +116,28 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	// ====== set up screenshot button ======
+	document
+		.getElementById("screenshot-button")
+		?.addEventListener("click", () => {
+			if (!visibleCanvasCtx) {
+				return;
+			}
+
+			// grab the current pixels as a PNG image string
+			const imageURL = visibleCanvasCtx.canvas.toDataURL("image/png");
+
+			// create a temporary link element to trigger the download
+			const link = document.createElement("a");
+			link.href = imageURL;
+			link.download = `luccagb-screenshot-${Date.now()}.png`;
+
+			// trigger the click and cleanup
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		});
+
 	// ====== set up canvas ======
 	const visibleCanvas = document.getElementById("canvas");
 	if (visibleCanvas instanceof HTMLCanvasElement) {
