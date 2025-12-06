@@ -63,13 +63,16 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.isFetchingSprite = false
 	fetcher.isFetchingWindow = false
 	fetcher.currentX = 0
+	fetcher.counter = 0
 	fetcher.xPositionCounter = 0
 	fetcher.windowLineCounter = 0
 }
 
 func (fetcher *PixelFetcher) step() {
+	if !fetcher.isFetchingSprite {
+		fetcher.attemptToPushPixel()
+	}
 	fetcher.tick()
-	fetcher.attemptToPushPixel()
 }
 
 func (fetcher *PixelFetcher) tick() {
