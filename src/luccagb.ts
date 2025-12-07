@@ -37,6 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		},
 	);
 
+	// ====== force clear the file input ======
+	const fileInput = document.getElementById(
+		"rom-input",
+	) as HTMLInputElement | null;
+	if (fileInput) {
+		fileInput.value = "";
+	}
+
 	// ====== set up event listener ======
 	document
 		.getElementById("rom-input")
