@@ -1,9 +1,4 @@
 {
-	"buildCommand": "pnpm run build",
-	"outputDirectory": "dist",
-	"build": {
-		"env": {
-			"GO_VERSION": "1.24.3"
-		}
-	}
+	"buildCommand": "./vercel-build.sh",
+	"outputDirectory": "dist"
 }
