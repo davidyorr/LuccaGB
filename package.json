@@ -6,6 +6,7 @@
 	"packageManager": "pnpm@10.11.1",
 	"scripts": {
 		"dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
+		"build": "go version && pnpm run build:wasm && vite build",
 		"build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm",
 		"watch:wasm": "chokidar '**/*.go' -c 'pnpm run build:wasm' --initial",
 		"format": "prettier --write '{**/*,*}.{ts,css,html}'",
