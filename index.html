@@ -20,9 +20,13 @@
 				<button id="pause-button">Pause</button>
 				<button id="step-button" disabled>Step</button>
 				<button id="screenshot-button">Screenshot</button>
+				<label>
+					<input type="checkbox" id="debug-checkbox" />
+					Show Debugger
+				</label>
 			</div>
 
-			<div id="cpu-debugger">
+			<div id="debug-panel" style="display: none">
 				<h2>CPU State</h2>
 
 				<table class="debug-table">
@@ -120,7 +124,7 @@
 		}
 
 		/* ======== DEBUGGER ======== */
-		#cpu-debugger {
+		#debug-panel {
 			font-family: monospace;
 			background-color: #f0f0f0;
 			padding: 1em;

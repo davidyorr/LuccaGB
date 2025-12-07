@@ -173,6 +173,32 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 	offscreenCanvasCtx = ctx;
 
+	// ====== set up debug checkbox ======
+	const debugCheckbox = document.getElementById(
+		"debug-checkbox",
+	) as HTMLInputElement | null;
+	const debugPanel = document.getElementById("debug-panel");
+
+	function syncDebugVisibility() {
+		if (!debugPanel || !debugCheckbox) {
+			return;
+		}
+		debugPanel.style.display = debugCheckbox.checked ? "block" : "none";
+	}
+
+	debugCheckbox?.addEventListener("change", () => {
+		if (!debugPanel) {
+			return;
+		}
+		syncDebugVisibility();
+
+		if (debugCheckbox.checked && isPaused) {
+			updateDebugView();
+		}
+	});
+
+	syncDebugVisibility();
+
 	// ====== set up debugger ======
 	debugElements.regAF = document.getElementById("reg-af");
 	debugElements.regBC = document.getElementById("reg-bc");
@@ -245,7 +271,12 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 	const { tCyclesUsed } = window.processEmulatorCycles(tCycleAccumulator);
 	tCycleAccumulator -= tCyclesUsed;
 
-	updateDebugView();
+	const debuggerEnabled =
+		(document.getElementById("debug-checkbox") as HTMLInputElement | null)
+			?.checked ?? false;
+	if (debuggerEnabled) {
+		updateDebugView();
+	}
 
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
