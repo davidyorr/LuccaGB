@@ -5,6 +5,7 @@ let visibleCanvasCtx: CanvasRenderingContext2D;
 let offscreenCanvasCtx: CanvasRenderingContext2D;
 let imageData: ImageData;
 let isPaused = false;
+let isHidden = false;
 
 const displayWidth = 160;
 const displayHeight = 144;
@@ -45,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		fileInput.value = "";
 	}
 
-	// ====== set up event listener ======
+	// ====== set up ROM input event listener ======
 	document
 		.getElementById("rom-input")
 		?.addEventListener("change", async (event) => {
@@ -64,6 +65,24 @@ document.addEventListener("DOMContentLoaded", () => {
 				romSelect.value = "";
 			}
 		});
+
+	// ====== set up tab visibility event listener ======
+	document.addEventListener("visibilitychange", () => {
+		if (document.hidden) {
+			isHidden = true;
+
+			// suspend audio context
+		} else {
+			isHidden = false;
+			lastFrameTime = 0;
+
+			if (!isPaused) {
+				startAnimationLoop();
+			}
+
+			// resume audio context
+		}
+	});
 
 	// ====== set up ROM dropdown ======
 	const romSelect = document.getElementById(
@@ -259,7 +278,7 @@ const systemClockFrequency = 4.194304 * 1_000_000;
 
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
-	if (isPaused) {
+	if (isPaused || isHidden) {
 		return;
 	}
 
