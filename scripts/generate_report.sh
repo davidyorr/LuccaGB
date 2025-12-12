@@ -3,6 +3,8 @@
 {
   echo "# Test Results"
   echo ""
+  echo "| Suite | ROM       | Status |"
+  echo "|-------|-----------|--------|"
 
   jq -r -s '
 
@@ -61,41 +63,43 @@
     # 8. Group tests by suite (top-level group)
     | group_by(.suite)
 
-    # 9. For each suite, generate a markdown section
     | .[]
-    | "# \((.[0].suite | (.[:1] | ascii_upcase) + .[1:]))\n\n" +  # Capitalize suite name
-
+    | (
+        # Emit suite group row
+        "| **\(. [0].suite)** |  |  |"
+      )
+      + "\n"
+      +
       (
-        # 10. For each subgroup, generate a markdown table
-        . 
-        | group_by(.subgroup)
+        group_by(.subgroup)
         | map(
-            (if .[0].subgroup != null then
-              "## \(.[0].subgroup)\n\n"  # Add a subgroup header if applicable
-             else
-              ""
-             end
-            ) +
-
-            # Table header
-            "| Test Name | Status |\n|-----------|--------|\n" +
-
-            # Table rows: test name and emoji status
-            (map("| `\(.name)` | " +
-              (if .status == "pass" then "✅"
-               elif .status == "fail" then "❌"
-               elif .status == "skip" then "⏩"
-               else "❓" end) + " |") | join("\n")) + "\n"
+            # Subgroup header row (only if subgroup exists)
+            (
+              if .[0].subgroup != null then
+                "| **\(. [0].suite) / \(. [0].subgroup)** |  |  |\n"
+              else
+                ""
+              end
+            )
+            +
+            # Tests inside subgroup
+            (
+              map(
+                "|  | `\(.name)` | " +
+                (if .status == "pass" then "✅"
+                 elif .status == "fail" then "❌"
+                 elif .status == "skip" then "⏩"
+                 else "❓" end) + " |"
+              )
+              | join("\n")
+            )
           )
-
-        # 11. Join all subgroups into one suite block
         | join("\n")
       )
   ' test_results.json
 
 } > TESTS.md
 
-# Print the generated markdown for debugging/logging
 echo "--- Generated TESTS.md ---"
 cat TESTS.md
 echo "--------------------------"
