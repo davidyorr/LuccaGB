@@ -1,3 +1,5 @@
+//go:build !screenshots
+
 package gameboy
 
 import (

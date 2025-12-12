@@ -1,11 +1,12 @@
-package gameboy_test
+//go:build screenshots
+
+package gameboy
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/davidyorr/LuccaGB/gameboy"
 	"github.com/davidyorr/LuccaGB/hasher"
 )
 
@@ -22,7 +23,7 @@ func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash stri
 		t.Fatalf("❌ SETUP FAIL: %v", err)
 	}
 
-	gb := gameboy.New()
+	gb := New()
 	gb.LoadRom(romBytes)
 
 	// 2. Run
