@@ -2,8 +2,6 @@
 
 | Suite | ROM       | Status |
 |-------|-----------|--------|
-| **Ungrouped** |  |  |
-|  | `Test__lucca` | ✅ |
 | **blargg** |  |  |
 |  | `cpu_instrs.gb` | ⏩ |
 |  | `instr_timing.gb` | ✅ |
@@ -75,3 +73,9 @@
 |  | `tima_reload.gb` | ✅ |
 |  | `tima_write_reloading.gb` | ✅ |
 |  | `tma_write_reloading.gb` | ✅ |
+
+# Screenshot Test Results
+
+| Suite | ROM       | Status |
+|-------|-----------|--------|
+
