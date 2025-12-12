@@ -23,6 +23,11 @@ jobs:
         id: run-tests
         run: |
           go test -json -v ./... > test_results.json
+        continue-on-error: true
+
+      - name: Run Screenshot Tests
+        id: run-screenshot-tests
+        run: |
           go test -json -v -tags screenshots ./... > screenshots_test_results.json
         continue-on-error: true
 
