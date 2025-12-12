@@ -23,6 +23,7 @@ jobs:
         id: run-tests
         run: |
           go test -json -v ./... > test_results.json
+          go test -json -v -tags screenshots ./... > screenshots_test_results.json
         continue-on-error: true
 
       - name: Generate Markdown report from JSON

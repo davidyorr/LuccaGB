@@ -16,6 +16,7 @@ func Test__lucca(t *testing.T) {
 
 func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash string) {
 	t.Helper()
+	t.Logf("TESTCASE: %s.gb", romName)
 
 	// 1. Setup
 	romBytes, err := os.ReadFile(fmt.Sprintf("../roms/test/%s.gb", romName))
