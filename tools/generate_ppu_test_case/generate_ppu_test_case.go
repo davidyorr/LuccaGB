@@ -67,6 +67,27 @@ func main() {
 
 	fmt.Printf("Target Hash calculated: %s\n", targetHash)
 
+	// Helper to print the final code block
+	printOutput := func(frame int, found bool) {
+		funcName, argPath := generateTestDetails(*romPath)
+
+		if found {
+			fmt.Printf("\n✅ MATCH FOUND AT FRAME: %d\n", frame)
+		} else {
+			fmt.Printf("\n⚠️ NO MATCH FOUND within %d frames.\n", frame)
+			fmt.Println("Generating test with max frames as placeholder.")
+		}
+		fmt.Println("---------------------------------------------------")
+		fmt.Println("Copy this function into your test file:")
+
+		fmt.Printf("\nfunc %s(t *testing.T) {\n", funcName)
+		if !found {
+			fmt.Println("\t// adjust the frameToRun after this tests passes")
+		}
+		fmt.Printf("\trunPpuTest(t, \"%s\", %d, \"%s\")\n", argPath, frame, targetHash)
+		fmt.Printf("}\n\n")
+	}
+
 	// 3. SEARCH FOR MATCHING FRAME
 	fmt.Printf("Scanning %s for match (max %d frames)...\n", *romPath, *maxFrames)
 
@@ -93,47 +114,14 @@ func main() {
 
 		// Compare
 		if currentHash == targetHash {
-			// 1. Calculate path relative to "roms/test" (the helper's base dir)
-			cwd, _ := os.Getwd()
-			// We assume the tool is run from project root, so we look for "roms/test"
-			expectedBaseDir := filepath.Join(cwd, "roms", "test")
-			absoluteRomPath, _ := filepath.Abs(*romPath)
-
-			// Get relative path
-			relPath, err := filepath.Rel(expectedBaseDir, absoluteRomPath)
-			if err != nil {
-				// Fallback: just use filename if path math fails
-				relPath = filepath.Base(*romPath)
-			}
-
-			// 2. Format the argument string (remove extension, force forward slashes)
-			argPath := strings.TrimSuffix(relPath, filepath.Ext(relPath))
-			argPath = filepath.ToSlash(argPath)
-
-			// 3. Generate Function Name
-			funcNameSuffix := strings.ReplaceAll(argPath, "/", "__")
-			// Clean up ".." (parent dir) to make it valid Go syntax
-			funcNameSuffix = strings.ReplaceAll(funcNameSuffix, "..", "")
-			// Clean up "." (current dir) just in case
-			funcNameSuffix = strings.ReplaceAll(funcNameSuffix, ".", "_")
-
-			funcName := "Test" + funcNameSuffix
-
-			fmt.Printf("\n✅ MATCH FOUND AT FRAME: %d\n", f)
-			fmt.Println("---------------------------------------------------")
-			fmt.Println("Copy this function into your test file:")
-
-			// 4. Print the Code Block
-			fmt.Printf("\nfunc %s(t *testing.T) {\n", funcName)
-			fmt.Printf("\trunPpuTest(t, \"%s\", %d, \"%s\")\n", argPath, f, targetHash)
-			fmt.Printf("}\n\n")
-
+			printOutput(f, true)
 			os.Exit(0)
 		}
 	}
 
-	fmt.Printf("\n❌ No match found after %d frames.\n", *maxFrames)
-	os.Exit(1)
+	// 4. FALLBACK: Max frames reached without match
+	printOutput(*maxFrames, false)
+	os.Exit(0)
 }
 
 func die(err error) {
@@ -147,6 +135,32 @@ func addColor(m map[color.RGBA]byte, hexStr string, val byte) {
 	if err != nil {
 		die(fmt.Errorf("invalid hex color: %s", hexStr))
 	}
-	// We force Alpha to 0xFF (255) for consistency
 	m[color.RGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 0xFF}] = val
+}
+
+// generateTestDetails extracts the function name and argument path from the ROM path
+func generateTestDetails(romPath string) (funcName string, argPath string) {
+	// 1. Calculate path relative to "roms/test"
+	cwd, _ := os.Getwd()
+	expectedBaseDir := filepath.Join(cwd, "roms", "test")
+	absoluteRomPath, _ := filepath.Abs(romPath)
+
+	relPath, err := filepath.Rel(expectedBaseDir, absoluteRomPath)
+	if err != nil {
+		relPath = filepath.Base(romPath)
+	}
+
+	// 2. Format the argument string
+	argPath = strings.TrimSuffix(relPath, filepath.Ext(relPath))
+	argPath = filepath.ToSlash(argPath)
+
+	// 3. Generate Function Name
+	funcNameSuffix := strings.ReplaceAll(argPath, "/", "__")
+	funcNameSuffix = strings.ReplaceAll(funcNameSuffix, "..", "")
+	funcNameSuffix = strings.ReplaceAll(funcNameSuffix, ".", "_")
+	funcNameSuffix = strings.ReplaceAll(funcNameSuffix, "-", "_")
+	funcNameSuffix = strings.Title(funcNameSuffix)
+
+	funcName = "Test" + funcNameSuffix
+	return funcName, argPath
 }
