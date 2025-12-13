@@ -78,6 +78,17 @@
 
 | Suite | ROM       | Status |
 |-------|-----------|--------|
+| **boop** |  |  |
+|  | `solid-color-0-background.gb` | ✅ |
+|  | `solid-color-0-window.gb` | ❌ |
+|  | `solid-color-1-background.gb` | ✅ |
+|  | `solid-color-1-window.gb` | ❌ |
+|  | `solid-color-2-background.gb` | ✅ |
+|  | `solid-color-2-window.gb` | ❌ |
+|  | `solid-color-3-background.gb` | ✅ |
+|  | `solid-color-3-window.gb` | ❌ |
+|  | `sprite-8x8.gb` | ❌ |
+|  | `sprite-8x16.gb` | ❌ |
 | **other** |  |  |
 |  | `lucca.gb` | ✅ |
 
