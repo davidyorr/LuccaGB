@@ -172,6 +172,11 @@ func (ppu *PPU) Step() (frameReady bool) {
 			ppu.ly = 0
 			ppu.pixelFetcher.windowLineCounter = 0
 			ppu.pixelFetcher.wyEqualedLyDuringFrame = false
+
+			// we need to check here as well, because LY was changed
+			if ppu.wy == ppu.ly {
+				ppu.pixelFetcher.wyEqualedLyDuringFrame = true
+			}
 		}
 
 		ppu.updateLycCoincidenceFlag()

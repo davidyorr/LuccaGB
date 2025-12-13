@@ -25,7 +25,7 @@ func TestBoop__solid_color_1_background(t *testing.T) {
 
 func TestBoop__solid_color_1_window(t *testing.T) {
 	// adjust the frameToRun after this tests passes
-	runPpuTest(t, "boop/solid-color-1-window", 1000, "fcbaf6ec8a002c189a1fa22a6c92b537d59ecb0eb54b833d614627b232f66f75")
+	runPpuTest(t, "boop/solid-color-1-window", 2, "fcbaf6ec8a002c189a1fa22a6c92b537d59ecb0eb54b833d614627b232f66f75")
 }
 
 func TestBoop__solid_color_2_background(t *testing.T) {
@@ -34,7 +34,7 @@ func TestBoop__solid_color_2_background(t *testing.T) {
 
 func TestBoop__solid_color_2_window(t *testing.T) {
 	// adjust the frameToRun after this tests passes
-	runPpuTest(t, "boop/solid-color-2-window", 1000, "8f0d54a23211730da42c276b2a528461963b8d474c617179fe79659d3c990b38")
+	runPpuTest(t, "boop/solid-color-2-window", 2, "8f0d54a23211730da42c276b2a528461963b8d474c617179fe79659d3c990b38")
 }
 
 func TestBoop__solid_color_3_background(t *testing.T) {
@@ -43,7 +43,7 @@ func TestBoop__solid_color_3_background(t *testing.T) {
 
 func TestBoop__solid_color_3_window(t *testing.T) {
 	// adjust the frameToRun after this tests passes
-	runPpuTest(t, "boop/solid-color-3-window", 1000, "46e2096b907947368d310929303a04005b39c4a278e3a7de2225c355b4522694")
+	runPpuTest(t, "boop/solid-color-3-window", 2, "46e2096b907947368d310929303a04005b39c4a278e3a7de2225c355b4522694")
 }
 
 func TestBoop__sprite_8x8(t *testing.T) {
