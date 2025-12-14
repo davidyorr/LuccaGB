@@ -64,7 +64,6 @@ var goImageData [displayWidth * displayHeight * 4]byte
 var jsImageData js.Value
 
 func presentFrame() {
-	// js.Global().Get("console").Call("log", "Go: presentFrame()")
 	frameBuffer := gb.FrameBuffer()
 	i := 0
 	for screenY := 0; screenY < displayHeight; screenY++ {
@@ -73,16 +72,12 @@ func presentFrame() {
 			switch color {
 			case 0:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 208, 224, 64, 255
-				// js.Global().Get("console").Call("log", "Go: presentFrame() case 0")
 			case 1:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 160, 168, 48, 255
-				// js.Global().Get("console").Call("log", "Go: presentFrame() case 1")
 			case 2:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 96, 112, 40, 255
-				// js.Global().Get("console").Call("log", "Go: presentFrame() case 2")
 			case 3:
 				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 56, 72, 40, 255
-				// js.Global().Get("console").Call("log", "Go: presentFrame() case 3")
 			}
 			i += 4
 		}

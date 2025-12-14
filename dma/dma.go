@@ -82,7 +82,7 @@ func (dma *DMA) executeMachineCycle() {
 		// Source:      $XX00 - $XX9F
 		// Destination: $FE00 - $FE9F
 
-		// if the source is VRAM and the PPU is in Mode 3, VRAM is locked
+		// if the source is VRAM and the PPU is in Mode 3 (Drawing Pixels), VRAM is locked
 		sourceIsVram := dma.sourceAddress >= 0x8000 && dma.sourceAddress <= 0x9FFF
 		if sourceIsVram && dma.ppu.Mode() == ppu.DrawingPixels {
 			logger.Info("SOURCE IS VRAM, RETURNING")

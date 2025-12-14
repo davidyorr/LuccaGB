@@ -426,18 +426,6 @@ func (cpu *CPU) ScheduleIme() {
 	cpu.imeScheduled = true
 }
 
-func (cpu *CPU) Halt() {
-	cpu.halted = true
-}
-
-func (cpu *CPU) Unhalt() {
-	cpu.halted = false
-}
-
-func (cpu *CPU) Halted() bool {
-	return cpu.halted
-}
-
 // Debug gathers the current state of the CPU into a structured map.
 func (cpu *CPU) Debug() map[string]interface{} {
 	af := (uint16(cpu.a) << 8) | uint16(cpu.f)
