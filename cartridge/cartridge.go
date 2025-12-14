@@ -52,3 +52,13 @@ func (cartridge *Cartridge) Read(address uint16) uint8 {
 func (cartridge *Cartridge) Write(address uint16, value uint8) {
 
 }
+
+// Debug gathers the current state of the Cartridge into a structured map.
+func (cartridge *Cartridge) Debug() map[string]interface{} {
+	return map[string]interface{}{
+		"title":       string(cartridge.title),
+		"mbcType":     cartridge.mbc,
+		"romSizeCode": cartridge.romSizeCode,
+		"ramSizeCode": cartridge.ramSizeCode,
+	}
+}

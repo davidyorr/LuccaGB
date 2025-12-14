@@ -9,8 +9,16 @@ declare global {
 }
 
 interface GameboyDebugInfo {
+	cartridge: CartridgeDebugInfo;
 	cpu: CpuDebugInfo;
 	// ppu: PpuDebugInfo;
+}
+
+interface CartridgeDebugInfo {
+	title: string;
+	mbcType: number;
+	romSizeCode: number;
+	ramSizeCode: number;
 }
 
 interface CpuDebugInfo {

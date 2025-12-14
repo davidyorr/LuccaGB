@@ -14,6 +14,10 @@ const go = new Go();
 
 // ====== for debugger ======
 const debugElements = {
+	cartridgeTitle: null as HTMLElement | null,
+	mbcType: null as HTMLElement | null,
+	romSize: null as HTMLElement | null,
+	ramSize: null as HTMLElement | null,
 	regAF: null as HTMLElement | null,
 	regBC: null as HTMLElement | null,
 	regDE: null as HTMLElement | null,
@@ -227,6 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	syncDebugVisibility();
 
 	// ====== set up debugger ======
+	debugElements.cartridgeTitle = document.getElementById("cartridge-title");
+	debugElements.mbcType = document.getElementById("cartridge-mbc-type");
+	debugElements.romSize = document.getElementById("cartridge-rom-size-code");
+	debugElements.ramSize = document.getElementById("cartridge-ram-size-code");
 	debugElements.regAF = document.getElementById("reg-af");
 	debugElements.regBC = document.getElementById("reg-bc");
 	debugElements.regDE = document.getElementById("reg-de");
@@ -338,10 +346,19 @@ function updateDebugView() {
 		return;
 	}
 
-	const { cpu } = debugInfo;
+	const { cartridge, cpu } = debugInfo;
 
 	const toHex = (val: number) =>
 		"0x" + val.toString(16).toUpperCase().padStart(4, "0");
+
+	if (debugElements.cartridgeTitle)
+		debugElements.cartridgeTitle.textContent = cartridge.title;
+	if (debugElements.mbcType)
+		debugElements.mbcType.textContent = cartridge.mbcType.toString();
+	if (debugElements.romSize)
+		debugElements.romSize.textContent = cartridge.romSizeCode.toString();
+	if (debugElements.ramSize)
+		debugElements.ramSize.textContent = cartridge.ramSizeCode.toString();
 
 	if (debugElements.regAF)
 		debugElements.regAF.textContent = toHex(cpu.registers16.AF);

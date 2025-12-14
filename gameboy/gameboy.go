@@ -83,6 +83,7 @@ func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
 func (gb *Gameboy) Debug() map[string]interface{} {
 	debugInfo := make(map[string]interface{})
 
+	debugInfo["cartridge"] = gb.cartridge.Debug()
 	debugInfo["cpu"] = gb.cpu.Debug()
 	// debugInfo["ppu"] = gb.ppu.Debug()
 
