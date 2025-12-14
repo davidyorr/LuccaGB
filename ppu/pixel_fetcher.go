@@ -370,14 +370,11 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 	// color IDs are 2 bits, so we shift times 2, then mask 2 bits for the final color/shade
 	color = (fetcher.ppu.bgp >> (colorId * 2)) & 0b11
 
+	// See: https://ashiepaws.github.io/GBEDG/ppu/#pixel-mixing
 	var spritePixel FIFO
 	if len(fetcher.spriteFifo) > 0 {
 		spritePixel = fetcher.spriteFifo[0]
 		fetcher.spriteFifo = fetcher.spriteFifo[1:]
-	}
-
-	// See: https://ashiepaws.github.io/GBEDG/ppu/#pixel-mixing
-	if len(fetcher.spriteFifo) > 0 {
 		spriteIsTransparent := spritePixel.colorId == 0
 		backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
 
