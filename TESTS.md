@@ -87,8 +87,8 @@
 |  | `solid-color-2-window.gb` | ✅ |
 |  | `solid-color-3-background.gb` | ✅ |
 |  | `solid-color-3-window.gb` | ✅ |
-|  | `sprite-8x8.gb` | ❌ |
-|  | `sprite-8x16.gb` | ❌ |
+|  | `sprite-8x8.gb` | ✅ |
+|  | `sprite-8x16.gb` | ✅ |
 | **other** |  |  |
 |  | `lucca.gb` | ✅ |
 
