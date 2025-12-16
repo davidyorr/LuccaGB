@@ -4,11 +4,25 @@ package gameboy
 
 import (
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/davidyorr/LuccaGB/hasher"
 )
+
+const screenshotOutDir = "../screenshots_out"
+
+var ppuPalette = [4]color.RGBA{
+	{0xFF, 0xFF, 0xFF, 0xFF}, // 0
+	{0xAA, 0xAA, 0xAA, 0xFF}, // 1
+	{0x55, 0x55, 0x55, 0xFF}, // 2
+	{0x00, 0x00, 0x00, 0xFF}, // 3
+}
 
 func TestBoop__solid_color_0_background(t *testing.T) {
 	runPpuTest(t, "boop/solid-color-0-background", 1, "beaca6d8b5aec6a02fe4db04662136db628ec2543d396d03601853067dd47eac")
@@ -84,5 +98,52 @@ func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash stri
 		t.Logf("✅ PASS: %s", fmt.Sprintf("%s.gb", romName))
 	} else {
 		t.Errorf("❌ FAIL: %s", fmt.Sprintf("%s.gb", romName))
+
+		outputName := strings.TrimPrefix(romName, "../")
+		expectedPath := filepath.Join("../testdata", "screenshots", outputName+".png")
+		actualPath := filepath.Join(screenshotOutDir, outputName, "actual.png")
+		baselinePath := filepath.Join(screenshotOutDir, outputName, "expected.png")
+
+		// Write actual
+		if err := WriteFrameBufferPng(actualPath, gb.FrameBuffer()); err != nil {
+			t.Fatalf("failed to write actual screenshot: %v", err)
+		}
+
+		// Copy expected baseline
+		if data, err := os.ReadFile(expectedPath); err == nil {
+			_ = os.MkdirAll(filepath.Dir(baselinePath), 0o755)
+			_ = os.WriteFile(baselinePath, data, 0o644)
+		} else {
+			t.Logf("Warning: Could not read expected baseline: %v", err)
+		}
+
+		t.Logf("Expected: %s", expectedPath)
+		t.Logf("Actual:   %s", actualPath)
 	}
+}
+
+func WriteFrameBufferPng(path string, buffer [144][160]uint8) error {
+	img := image.NewRGBA(image.Rect(0, 0, 160, 144))
+
+	for y := 0; y < 144; y++ {
+		for x := 0; x < 160; x++ {
+			val := buffer[y][x]
+			if val > 3 {
+				val = 3
+			}
+			img.SetRGBA(x, y, ppuPalette[val])
+		}
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return png.Encode(f, img)
 }

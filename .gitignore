@@ -12,3 +12,10 @@ node_modules
 
 # test logs
 *.log
+
+# test output
+test_results.json
+screenshots_test_results.json
+
+# PPU screenshots test output
+/screenshots_out
