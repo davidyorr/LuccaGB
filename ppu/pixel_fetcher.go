@@ -367,6 +367,11 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 
 	// use the background pixel's color as the default
 	colorId := backgroundPixel.colorId
+	// if the background is disabled, we always use color ID 0
+	bgEnabled := (fetcher.ppu.lcdc>>0)&1 == 1
+	if !bgEnabled {
+		colorId = 0
+	}
 	// color IDs are 2 bits, so we shift times 2, then mask 2 bits for the final color/shade
 	color = (fetcher.ppu.bgp >> (colorId * 2)) & 0b11
 
