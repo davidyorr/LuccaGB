@@ -89,6 +89,8 @@
 |  | `solid-color-3-window.gb` | ✅ |
 |  | `sprite-8x8.gb` | ✅ |
 |  | `sprite-8x16.gb` | ✅ |
+| **dmg_acid2** |  |  |
+|  | `dmg-acid2.gb` | ❌ |
 | **other** |  |  |
 |  | `lucca.gb` | ✅ |
 
