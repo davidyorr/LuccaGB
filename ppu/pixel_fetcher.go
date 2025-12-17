@@ -382,8 +382,9 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 		fetcher.spriteFifo = fetcher.spriteFifo[1:]
 		spriteIsTransparent := spritePixel.colorId == 0
 		backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
+		objEnabled := (fetcher.ppu.lcdc>>1)&1 == 1
 
-		if !spriteIsTransparent && !backgroundHasPriority {
+		if !spriteIsTransparent && !backgroundHasPriority && objEnabled {
 			colorId := spritePixel.colorId
 			if spritePixel.palette == 0 {
 				color = (fetcher.ppu.obp0 >> (colorId * 2)) & 0b11
