@@ -90,9 +90,9 @@
 |  | `sprite-8x8.gb` | ✅ |
 |  | `sprite-8x16.gb` | ✅ |
 | **dmg_acid2** |  |  |
-|  | `dmg-acid2.gb` | ❌ |
+|  | `dmg-acid2.gb` | ✅ |
 | **mealybug_tearoom** |  |  |
-|  | `m2_win_en_toggle.gb` | ❌ |
+|  | `m2_win_en_toggle.gb` | ✅ |
 |  | `m3_bgp_change.gb` | ❌ |
 |  | `m3_bgp_change_sprites.gb` | ❌ |
 |  | `m3_lcdc_bg_en_change.gb` | ❌ |
