@@ -79,6 +79,126 @@ func TestDmg_acid2__dmg_acid2(t *testing.T) {
 	runPpuTest(t, "dmg_acid2/dmg-acid2", 100, "cb26ef6174cd5b61662c2e74f2bdb2b0f8da0750234c75144c3a4d258fda8347")
 }
 
+func TestMealybug_tearoom__m2_win_en_toggle(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m2_win_en_toggle", 100, "0f10f209a9435e1168b519dd433b09394bedf4c9fddb3b98656d608cab045949")
+}
+
+func TestMealybug_tearoom__m3_bgp_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_bgp_change", 100, "ebba92b2babcdc02536c05806efbb492addc4f948d0aacf87fd199752cceeb2c")
+}
+
+func TestMealybug_tearoom__m3_bgp_change_sprites(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_bgp_change_sprites", 100, "3da61d2ebb0a19610fd7637838db42e843b4214ae0ed3f40fce080205dbf08b4")
+}
+
+func TestMealybug_tearoom__m3_lcdc_bg_en_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_bg_en_change", 100, "89deadb700b8a4c4296822c9f9ff352fa074dddabb865699f858d3e9caa07ad1")
+}
+
+func TestMealybug_tearoom__m3_lcdc_bg_map_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_bg_map_change", 100, "a5ffbe52e64ca1e5d92bcbe5ba7cc7d945eb87ec53e7c11ec72ba15fa64b8fc5")
+}
+
+func TestMealybug_tearoom__m3_lcdc_obj_en_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_obj_en_change", 100, "45cefce7e3f7f311105eabf24f6dcb8c12e5b5d06d0da7c60185fe350ca472cb")
+}
+
+func TestMealybug_tearoom__m3_lcdc_obj_en_change_variant(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_obj_en_change_variant", 100, "32ad4bf8f14579a63dc4fa23bb96a97f929708e8627d30ff28677034a4a29858")
+}
+
+func TestMealybug_tearoom__m3_lcdc_obj_size_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_obj_size_change", 100, "b390224ed7efda72f9dbacf84bbecd18fbae42314c8988f4c0dfa097fad0b28d")
+}
+
+func TestMealybug_tearoom__m3_lcdc_obj_size_change_scx(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_obj_size_change_scx", 100, "198d1c79aff25c46262fc0f2b6a800ffe9112014498d27417302a6e06ce916d8")
+}
+
+func TestMealybug_tearoom__m3_lcdc_tile_sel_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_tile_sel_change", 100, "d1536b0be6acb0c8b08586050a79693e23e450f2b17072f47139f0776585d286")
+}
+
+func TestMealybug_tearoom__m3_lcdc_tile_sel_win_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_tile_sel_win_change", 100, "a950c37cdcc203bb0b8403a053581d8c52fa3a8bcca5ab0973eebd6cb502e7de")
+}
+
+func TestMealybug_tearoom__m3_lcdc_win_en_change_multiple(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_win_en_change_multiple", 100, "115c91d1dd6cf5b2a2c137940d2fb1d4fd36ae6033e1a281de3150559fda486c")
+}
+
+func TestMealybug_tearoom__m3_lcdc_win_en_change_multiple_wx(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_win_en_change_multiple_wx", 100, "60ce199f7ae3915f8ccf274703960ee8616868d68916e4eea97e239e2e4add74")
+}
+
+func TestMealybug_tearoom__m3_lcdc_win_map_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_lcdc_win_map_change", 100, "5eb6270ceab73e59e17275c629dd46273dbc2d32d5b90d6dfecb3d51a445728b")
+}
+
+func TestMealybug_tearoom__m3_obp0_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_obp0_change", 100, "93f44509f7cb7abab96d895c59e828c9302be79cb83c06312e98fcca4ff6e6b5")
+}
+
+func TestMealybug_tearoom__m3_scx_high_5_bits(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_scx_high_5_bits", 100, "6b0c2f51914064fa6f682a352fe205d42a10eabd971df7ef4c116d25b30c6528")
+}
+
+func TestMealybug_tearoom__m3_scx_low_3_bits(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_scx_low_3_bits", 100, "c30f8a5cd8926d426f4da3f196aada599c8fd0aecf731de1437be357abc25a0f")
+}
+
+func TestMealybug_tearoom__m3_scy_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_scy_change", 100, "b2daaac1a178651c295d1bee0fe3b42bc0ab62fbb2f3b5aecd2c53e927095da0")
+}
+
+func TestMealybug_tearoom__m3_window_timing(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_window_timing", 100, "d0d47a58f4977f7b107820c994241a49dfe384e261aa4a84231a01c93397f81b")
+}
+
+func TestMealybug_tearoom__m3_window_timing_wx_0(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_window_timing_wx_0", 100, "2896371077fda2b52ced293b26330d891afcd91235696347c303542d21d46ea7")
+}
+
+func TestMealybug_tearoom__m3_wx_4_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_wx_4_change", 100, "f9d77c00a28f85eddce4e253c30d08afc8b90758f17889249c138b01af01ec9d")
+}
+
+func TestMealybug_tearoom__m3_wx_4_change_sprites(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_wx_4_change_sprites", 100, "468410845f9e85400e7f9fda831157f8ebcf9b0ad76a477e0281db07c45d17b1")
+}
+
+func TestMealybug_tearoom__m3_wx_5_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_wx_5_change", 100, "fb6364ee948631dc2d731ddec053cd526704307aae9bae25e5e1aa17a7239004")
+}
+
+func TestMealybug_tearoom__m3_wx_6_change(t *testing.T) {
+	// adjust the frameToRun after this tests passes
+	runPpuTest(t, "mealybug_tearoom/m3_wx_6_change", 100, "e35b12a8ca4c5e216bd39c652e7c44a2dcf9c92b5b67764553262aeed698b15b")
+}
+
 func Test__lucca(t *testing.T) {
 	runPpuTest(t, "../lucca", 2, "b77a59fe8c635f5db714d0b5eea19b23cfab3fbe7001a541c8056bbc6834a3e5")
 }
