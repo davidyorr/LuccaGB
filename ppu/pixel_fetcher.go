@@ -85,27 +85,30 @@ func (fetcher *PixelFetcher) step() {
 }
 
 func (fetcher *PixelFetcher) tick() {
-	// If the X-Position of any sprite in the sprite buffer is less than or
-	// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
-	// See: https://ashiepaws.github.io/GBEDG/ppu/#sprite-fetching
-	for i, oamIndex := range fetcher.ppu.spriteBuffer {
-		// each sprite is 4 bytes long
-		baseAddress := oamIndex * 4
-		spriteX := fetcher.ppu.oam[baseAddress+1]
+	// Only check for new sprites if we aren't already fetching a sprite
+	if !fetcher.isFetchingSprite {
+		// If the X-Position of any sprite in the sprite buffer is less than or
+		// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
+		// See: https://ashiepaws.github.io/GBEDG/ppu/#sprite-fetching
+		for i, oamIndex := range fetcher.ppu.spriteBuffer {
+			// each sprite is 4 bytes long
+			baseAddress := oamIndex * 4
+			spriteX := fetcher.ppu.oam[baseAddress+1]
 
-		if spriteX <= fetcher.currentX+8 {
-			logger.Info("SWITCHING TO SPRITE FETCHING MODE")
-			fetcher.isFetchingSprite = true
-			fetcher.state = StateGetTile
-			fetcher.spriteIndex = oamIndex
-			fetcher.ppu.spriteBuffer = append(fetcher.ppu.spriteBuffer[:i], fetcher.ppu.spriteBuffer[i+1:]...)
+			if spriteX <= fetcher.currentX+8 {
+				logger.Info("SWITCHING TO SPRITE FETCHING MODE")
+				fetcher.isFetchingSprite = true
+				fetcher.state = StateGetTile
+				fetcher.spriteIndex = oamIndex
+				fetcher.ppu.spriteBuffer = append(fetcher.ppu.spriteBuffer[:i], fetcher.ppu.spriteBuffer[i+1:]...)
 
-			// reset background fetcher
-			fetcher.counter = 0
-			fetcher.fetchedTileNumber = 0
-			fetcher.fetchedTileDataLow = 0
-			fetcher.fetchedTileDataHigh = 0
-			return
+				// reset background fetcher
+				fetcher.counter = 0
+				fetcher.fetchedTileNumber = 0
+				fetcher.fetchedTileDataLow = 0
+				fetcher.fetchedTileDataHigh = 0
+				return
+			}
 		}
 	}
 
