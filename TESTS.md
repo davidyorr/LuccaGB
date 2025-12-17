@@ -91,6 +91,31 @@
 |  | `sprite-8x16.gb` | ✅ |
 | **dmg_acid2** |  |  |
 |  | `dmg-acid2.gb` | ❌ |
+| **mealybug_tearoom** |  |  |
+|  | `m2_win_en_toggle.gb` | ❌ |
+|  | `m3_bgp_change.gb` | ❌ |
+|  | `m3_bgp_change_sprites.gb` | ❌ |
+|  | `m3_lcdc_bg_en_change.gb` | ❌ |
+|  | `m3_lcdc_bg_map_change.gb` | ❌ |
+|  | `m3_lcdc_obj_en_change.gb` | ❌ |
+|  | `m3_lcdc_obj_en_change_variant.gb` | ❌ |
+|  | `m3_lcdc_obj_size_change.gb` | ❌ |
+|  | `m3_lcdc_obj_size_change_scx.gb` | ❌ |
+|  | `m3_lcdc_tile_sel_change.gb` | ❌ |
+|  | `m3_lcdc_tile_sel_win_change.gb` | ❌ |
+|  | `m3_lcdc_win_en_change_multiple.gb` | ❌ |
+|  | `m3_lcdc_win_en_change_multiple_wx.gb` | ❌ |
+|  | `m3_lcdc_win_map_change.gb` | ❌ |
+|  | `m3_obp0_change.gb` | ❌ |
+|  | `m3_scx_high_5_bits.gb` | ❌ |
+|  | `m3_scx_low_3_bits.gb` | ❌ |
+|  | `m3_scy_change.gb` | ❌ |
+|  | `m3_window_timing.gb` | ❌ |
+|  | `m3_window_timing_wx_0.gb` | ❌ |
+|  | `m3_wx_4_change.gb` | ❌ |
+|  | `m3_wx_4_change_sprites.gb` | ❌ |
+|  | `m3_wx_5_change.gb` | ❌ |
+|  | `m3_wx_6_change.gb` | ❌ |
 | **other** |  |  |
 |  | `lucca.gb` | ✅ |
 
