@@ -65,7 +65,6 @@ func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.currentX = 0
 	fetcher.counter = 0
 	fetcher.xPositionCounter = 0
-	fetcher.windowLineCounter = 0
 
 	// SCX
 	fetcher.pixelsToDiscard = fetcher.ppu.scx % 8
