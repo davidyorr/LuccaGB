@@ -236,7 +236,7 @@ func (fetcher *PixelFetcher) tick() {
 					// 1. the existing pixel is transparent (color ID 0)
 					// 2. the new pixel is not transparent (color ID not 0)
 					if fetcher.spriteFifo[fifoIndex].colorId == 0 && tempBuffer[i].colorId != 0 {
-						fetcher.spriteFifo[i] = tempBuffer[i]
+						fetcher.spriteFifo[fifoIndex] = tempBuffer[i]
 					}
 				}
 			}
