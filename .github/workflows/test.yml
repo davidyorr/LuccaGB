@@ -36,6 +36,13 @@ jobs:
         run: |
           ./scripts/generate_report.sh
 
+      - name: Upload Screenshot Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-out
+          path: screenshots_out/
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         with:

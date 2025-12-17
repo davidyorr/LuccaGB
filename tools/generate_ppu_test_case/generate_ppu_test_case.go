@@ -19,7 +19,7 @@ func main() {
 	// 1. CONFIGURATION
 	romPath := flag.String("rom", "", "Path to the ROM file")
 	imgPath := flag.String("image", "", "Path to the reference PNG screenshot")
-	maxFrames := flag.Int("max", 1000, "Stop after this many frames if not found")
+	maxFrames := flag.Int("max", 100, "Stop after this many frames if not found")
 
 	// Custom Color Flags (Defaults are empty strings)
 	c0 := flag.String("c0", "", "Color 0 (Darkest/Black) - e.g. #384828")
