@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/davidyorr/LuccaGB/gameboy"
-	"github.com/davidyorr/LuccaGB/hasher"
+	"github.com/davidyorr/LuccaGB/tools"
 )
 
 func main() {
@@ -60,7 +60,7 @@ func main() {
 		die(fmt.Errorf("failed to decode image: %w", err))
 	}
 
-	targetHash, err := hasher.HashImage(img, palette)
+	targetHash, err := tools.HashImage(img, palette)
 	if err != nil {
 		die(fmt.Errorf("failed to hash image: %w", err))
 	}
@@ -110,7 +110,7 @@ func main() {
 
 		// Hash current emulator state
 		buffer := gb.FrameBuffer()
-		currentHash := hasher.HashFrameBuffer(buffer)
+		currentHash := tools.HashFrameBuffer(buffer)
 
 		// Compare
 		if currentHash == targetHash {
