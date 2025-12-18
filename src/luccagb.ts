@@ -4,6 +4,7 @@
 let visibleCanvasCtx: CanvasRenderingContext2D;
 let offscreenCanvasCtx: CanvasRenderingContext2D;
 let imageData: ImageData;
+let currentScale: number | "fit" = 1;
 let isPaused = false;
 let isHidden = false;
 
@@ -169,6 +170,53 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.body.removeChild(link);
 		});
 
+	// ====== set up display scaling ======
+	const scaleSelect = document.getElementById(
+		"scale-select",
+	) as HTMLSelectElement | null;
+	scaleSelect!.value = "1"; // default scale
+
+	scaleSelect?.addEventListener("change", () => {
+		const value = scaleSelect.value;
+
+		if (value === "fit") {
+			currentScale = "fit";
+		} else {
+			currentScale = parseInt(value, 10);
+		}
+
+		applyCanvasScale();
+	});
+
+	function applyCanvasScale() {
+		const container = document.getElementById("canvas-container");
+		const canvas = visibleCanvasCtx?.canvas;
+
+		if (!container || !canvas) return;
+
+		if (currentScale === "fit") {
+			// Fit to viewport (minus controls height)
+			const maxWidth = window.innerWidth;
+			const maxHeight = window.innerHeight - 56;
+
+			const scale = Math.floor(
+				Math.min(maxWidth / displayWidth, maxHeight / displayHeight),
+			);
+
+			const finalScale = Math.max(1, scale);
+
+			container.style.width = `${displayWidth * finalScale}px`;
+			container.style.height = `${displayHeight * finalScale}px`;
+		} else {
+			container.style.width = `${displayWidth * currentScale}px`;
+			container.style.height = `${displayHeight * currentScale}px`;
+		}
+	}
+
+	// apply default scale on load
+	applyCanvasScale();
+	window.addEventListener("resize", applyCanvasScale);
+
 	// ====== set up canvas ======
 	const visibleCanvas = document.getElementById("canvas");
 	if (visibleCanvas instanceof HTMLCanvasElement) {
@@ -180,20 +228,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		visibleCanvasCtx.imageSmoothingEnabled = false;
 		imageData = visibleCanvasCtx.createImageData(displayWidth, displayHeight);
 
-		const resizeObserver = new ResizeObserver((entries) => {
-			const entry = entries[0];
-			const { width, height } = entry.contentRect;
-
-			visibleCanvas.width = width;
-			visibleCanvas.height = height;
-			visibleCanvasCtx.imageSmoothingEnabled = false;
-		});
-
-		const canvasContainer = document.getElementById("canvas-container");
-		if (!canvasContainer) {
-			throw new Error("error getting canvas container");
-		}
-		resizeObserver.observe(canvasContainer);
+		visibleCanvas.width = displayWidth;
+		visibleCanvas.height = displayHeight;
 	}
 	const offscreenCanvas = document.createElement("canvas");
 	offscreenCanvas.width = 160;
