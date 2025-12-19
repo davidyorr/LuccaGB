@@ -8,9 +8,15 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/davidyorr/LuccaGB/logger"
+)
+
+var (
+	testsRun    int32
+	testsPassed int32
 )
 
 type TestType string
@@ -24,6 +30,23 @@ func skipCi(t *testing.T, romName string) {
 	if os.Getenv("CI") != "" {
 		t.Skipf("SKIPPING TESTCASE: %s.gb", romName)
 	}
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+
+	total := atomic.LoadInt32(&testsRun)
+	passed := atomic.LoadInt32(&testsPassed)
+
+	fmt.Printf(
+		"\n==================== TEST SUMMARY ===================\n"+
+			"  %d / %d tests passing\n"+
+			"=====================================================\n",
+		passed,
+		total,
+	)
+
+	os.Exit(code)
 }
 
 func TestBlargg__cpu_instrs(t *testing.T) {
@@ -356,6 +379,7 @@ func TestMooneye__timer__tma_write_reloading(t *testing.T) {
 }
 
 func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType TestType) {
+	atomic.AddInt32(&testsRun, 1)
 	t.Logf("TESTCASE: %s.gb", romName)
 	logBuffer, testLogger := initTestLogger()
 	logger.Init(testLogger.Handler())
@@ -388,6 +412,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 		}
 		if passed {
 			testComplete = true
+			atomic.AddInt32(&testsPassed, 1)
 			t.Logf("✅ TEST PASSED after %d steps", i+1)
 			writeLogToFile(logBuffer)
 			break

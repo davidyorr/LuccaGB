@@ -10,9 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
-	"github.com/davidyorr/LuccaGB/hasher"
+	"github.com/davidyorr/LuccaGB/tools"
+)
+
+var (
+	testsRun    int32
+	testsPassed int32
 )
 
 const screenshotOutDir = "../screenshots_out"
@@ -31,7 +37,20 @@ func TestMain(m *testing.M) {
 	}
 
 	// Run tests
-	os.Exit(m.Run())
+	code := m.Run()
+
+	total := atomic.LoadInt32(&testsRun)
+	passed := atomic.LoadInt32(&testsPassed)
+
+	fmt.Printf(
+		"\n==================== TEST SUMMARY ===================\n"+
+			"  %d / %d tests passing\n"+
+			"=====================================================\n",
+		passed,
+		total,
+	)
+
+	os.Exit(code)
 }
 
 func TestBoop__solid_color_0_background(t *testing.T) {
@@ -204,6 +223,7 @@ func Test__lucca(t *testing.T) {
 }
 
 func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash string) {
+	atomic.AddInt32(&testsRun, 1)
 	t.Helper()
 	t.Logf("TESTCASE: %s.gb", romName)
 
@@ -227,9 +247,10 @@ func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash stri
 	}
 
 	// 3. Check
-	actualHash := hasher.HashFrameBuffer(gb.FrameBuffer())
+	actualHash := tools.HashFrameBuffer(gb.FrameBuffer())
 
 	if actualHash == expectedHash {
+		atomic.AddInt32(&testsPassed, 1)
 		t.Logf("✅ PASS: %s", fmt.Sprintf("%s.gb", romName))
 		return
 	}
