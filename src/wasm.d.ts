@@ -4,6 +4,7 @@ declare global {
 		processEmulatorCycles: (cycles: number) => {
 			tCyclesUsed: number;
 		};
+		getTraceLogs: () => Uint8Array;
 		getDebugInfo: () => GameboyDebugInfo | null;
 	}
 }

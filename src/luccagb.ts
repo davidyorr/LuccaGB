@@ -13,7 +13,9 @@ const displayHeight = 144;
 
 const go = new Go();
 
+// ==========================
 // ====== for debugger ======
+// ==========================
 const debugElements = {
 	cartridgeTitle: null as HTMLElement | null,
 	mbcType: null as HTMLElement | null,
@@ -43,7 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		},
 	);
 
+	// ========================================
 	// ====== force clear the file input ======
+	// ========================================
 	const fileInput = document.getElementById(
 		"rom-input",
 	) as HTMLInputElement | null;
@@ -51,7 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		fileInput.value = "";
 	}
 
+	// =============================================
 	// ====== set up ROM input event listener ======
+	// =============================================
 	document
 		.getElementById("rom-input")
 		?.addEventListener("change", async (event) => {
@@ -71,7 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 
+	// ==================================================
 	// ====== set up tab visibility event listener ======
+	// ==================================================
 	document.addEventListener("visibilitychange", () => {
 		if (document.hidden) {
 			isHidden = true;
@@ -89,7 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	// =================================
 	// ====== set up ROM dropdown ======
+	// =================================
 	const romSelect = document.getElementById(
 		"rom-select",
 	) as HTMLSelectElement | null;
@@ -148,7 +158,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	// ======================================
 	// ====== set up screenshot button ======
+	// ======================================
 	document
 		.getElementById("screenshot-button")
 		?.addEventListener("click", () => {
@@ -162,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			// create a temporary link element to trigger the download
 			const link = document.createElement("a");
 			link.href = imageURL;
-			link.download = `luccagb-screenshot-${Date.now()}.png`;
+			link.download = `luccagb-screenshot-${new Date().toISOString()}.png`;
 
 			// trigger the click and cleanup
 			document.body.appendChild(link);
@@ -170,7 +182,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.body.removeChild(link);
 		});
 
+	// ====================================
 	// ====== set up display scaling ======
+	// ====================================
 	const scaleSelect = document.getElementById(
 		"scale-select",
 	) as HTMLSelectElement | null;
@@ -217,7 +231,69 @@ document.addEventListener("DOMContentLoaded", () => {
 	applyCanvasScale();
 	window.addEventListener("resize", applyCanvasScale);
 
+	// ==================================
+	// ====== set up download logs ======
+	// ==================================
+	document
+		.getElementById("download-trace-log-button")
+		?.addEventListener("click", () => {
+			const buffer = window.getTraceLogs();
+
+			if (!buffer || buffer.length === 0) {
+				alert("No logs available.");
+				return;
+			}
+
+			let lines = [];
+			for (let i = 0; i < buffer.length; ) {
+				const type = buffer[i];
+
+				if (type === 0) {
+					// Instruction
+					const pc = (buffer[i + 1] << 8) | buffer[i + 2];
+					const opcode = buffer[i + 3];
+					lines.push(
+						`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")}`,
+					);
+					// if we log a 3rd thing, use this instead
+					// const view = new DataView(buffer.buffer);
+					// const data = view.getUint32(i + 4, false);
+					// lines.push(
+					// 	`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")} OTHER:${data}`,
+					// );
+					i += 8;
+				} else if (type === 1) {
+					// Memory read
+					const addr = (buffer[i + 1] << 8) | buffer[i + 2];
+					const value = buffer[i + 3];
+					lines.push(
+						`READ [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
+					);
+					i += 4;
+				} else if (type === 2) {
+					// Memory write
+					const addr = (buffer[i + 1] << 8) | buffer[i + 2];
+					const value = buffer[i + 3];
+					lines.push(
+						`WRITE [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
+					);
+					i += 4;
+				} else {
+					i++; // Skip unknown types
+				}
+			}
+
+			const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `luccagb-logs-${new Date().toISOString()}.txt`;
+			a.click();
+		});
+
+	// ===========================
 	// ====== set up canvas ======
+	// ===========================
 	const visibleCanvas = document.getElementById("canvas");
 	if (visibleCanvas instanceof HTMLCanvasElement) {
 		const ctx = visibleCanvas.getContext("2d");
@@ -240,7 +316,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 	offscreenCanvasCtx = ctx;
 
+	// ===================================
 	// ====== set up debug checkbox ======
+	// ===================================
 	const debugCheckbox = document.getElementById(
 		"debug-checkbox",
 	) as HTMLInputElement | null;
@@ -266,7 +344,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	syncDebugVisibility();
 
+	// =============================
 	// ====== set up debugger ======
+	// =============================
 	debugElements.cartridgeTitle = document.getElementById("cartridge-title");
 	debugElements.mbcType = document.getElementById("cartridge-mbc-type");
 	debugElements.romSize = document.getElementById("cartridge-rom-size-code");
@@ -311,7 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 });
 
+// ===================================
 // ============ GAME LOOP ============
+// ===================================
 
 let animationFrameId: number | undefined;
 
@@ -375,6 +457,10 @@ function updateCanvas(uint8Array: Uint8Array) {
 		visibleCanvasCtx.canvas.height,
 	);
 }
+
+// ===============================
+// ============ OTHER ============
+// ===============================
 
 function updateDebugView() {
 	const debugInfo = window.getDebugInfo();

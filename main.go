@@ -14,6 +14,7 @@ func main() {
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
+	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
 	jsImageData = js.Global().Get("Uint8Array").New(len(goImageData))
@@ -85,6 +86,20 @@ func presentFrame() {
 
 	js.CopyBytesToJS(jsImageData, goImageData[:])
 	js.Global().Get("updateCanvas").Invoke(jsImageData)
+}
+
+func getTraceLogs(this js.Value, args []js.Value) interface{} {
+	buffer := logger.GlobalTraceLogger.GetBuffer()
+
+	jsBuffer := js.Global().Get("Uint8Array").New(len(buffer))
+	js.CopyBytesToJS(jsBuffer, buffer)
+
+	return jsBuffer
+}
+
+func resetTraceLogs(this js.Value, args []js.Value) interface{} {
+	logger.GlobalTraceLogger.Reset()
+	return nil
 }
 
 // getDebugInfo returns a snapshot of the emulator's state.

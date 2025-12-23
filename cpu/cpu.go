@@ -187,6 +187,7 @@ func (cpu *CPU) executeInstructionStep() {
 			"instruction", cpu.instruction.mnemonic,
 		)
 	}
+	logger.GlobalTraceLogger.LogInstruction(cpu.pc, cpu.opcode)
 
 	if done {
 		// reset state
