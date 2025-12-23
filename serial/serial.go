@@ -36,6 +36,13 @@ func (serial *Serial) Step() (requestInterrupt bool) {
 		return false
 	}
 
+	// Bit 0 on SC is the Clock select bit
+	// 0 = External clock, 1 = Internal clock
+	// If it is 0, the Game Boy is waiting for a signal from another device.
+	if (serial.sc & 0b0000_0001) == 0 {
+		return false
+	}
+
 	serial.transferCyclesRemaining--
 	requestInterrupt = false
 
