@@ -316,6 +316,34 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 	offscreenCanvasCtx = ctx;
 
+	// =================================
+	// ====== set up joypad input ======
+	// =================================
+	const keyToJoypadButton: { [key: string]: string } = {
+		Enter: "START",
+		Backspace: "SELECT",
+		z: "B",
+		x: "A",
+		ArrowDown: "DOWN",
+		ArrowUp: "UP",
+		ArrowLeft: "LEFT",
+		ArrowRight: "RIGHT",
+	};
+	window.addEventListener("keydown", (event) => {
+		if (!keyToJoypadButton[event.key] || event.repeat) {
+			return;
+		}
+
+		window.handleJoypadButtonPressed(keyToJoypadButton[event.key]);
+	});
+	window.addEventListener("keyup", (event) => {
+		if (!keyToJoypadButton[event.key]) {
+			return;
+		}
+
+		window.handleJoypadButtonReleased(keyToJoypadButton[event.key]);
+	});
+
 	// ===================================
 	// ====== set up debug checkbox ======
 	// ===================================

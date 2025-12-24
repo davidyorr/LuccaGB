@@ -6,11 +6,13 @@ import (
 	"github.com/davidyorr/LuccaGB/cartridge"
 	"github.com/davidyorr/LuccaGB/debug"
 	"github.com/davidyorr/LuccaGB/interrupt"
+	"github.com/davidyorr/LuccaGB/joypad"
 	"github.com/davidyorr/LuccaGB/logger"
 )
 
 type MMU struct {
 	cartridge *cartridge.Cartridge
+	joypad    *joypad.Joypad
 	// 0xC000 - 0xDFFF
 	workingRam [8192]uint8
 	// 0xFF00 - 0xFF7F
@@ -33,7 +35,6 @@ func New(cartridge *cartridge.Cartridge) *MMU {
 }
 
 func (mmu *MMU) Reset() {
-	mmu.ioRegisters[0xFF00-0xFF00] = 0xCF // P1
 	// ioRegisters[0xFF03-0xFF00] = 0xFF // unused
 	mmu.ioRegisters[0xFF10-0xFF00] = 0x80 // NR10
 	mmu.ioRegisters[0xFF11-0xFF00] = 0xBF // NR11
@@ -63,6 +64,10 @@ func (mmu *MMU) Reset() {
 	// ioRegisters[0xFF49-0xFF00] = 0x00 // OBP1
 }
 
+func (mmu *MMU) ConnectJoypad(joypad *joypad.Joypad) {
+	mmu.joypad = joypad
+}
+
 func (mmu *MMU) Read(address uint16) (value uint8) {
 	switch {
 	// ROM
@@ -80,15 +85,15 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 	// IE
 	case address == 0xFFFF:
 		value = mmu.ieRegister
+	// JOYPAD
+	case address == 0xFF00:
+		value = mmu.joypad.Read()
 	// IO registers
-	case address >= 0xFF00 && address <= 0xFF7F:
+	case address >= 0xFF01 && address <= 0xFF7F:
 		value = mmu.ioRegisters[address-0xFF00]
 
 		// unused bits in IO registers should return 1
 		switch {
-		// P1/JOYP
-		case address == 0xFF00:
-			value |= 0b1100_0000
 		// NR10
 		case address == 0xFF10:
 			value |= 0b1000_0000
@@ -142,23 +147,28 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 		)
 	}
 	switch {
+	// ROM
 	case address <= 0x7FFF:
-		// ROM
+	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
-		// working RAM
 		mmu.workingRam[address-0xC000] = value
+	// echo RAM
 	case address >= 0xE000 && address <= 0xFDFF:
-		// echo RAM
 		mmu.workingRam[address-0xE000] = value
+	// IF
 	case address == 0xFF0F:
 		mmu.ifRegister = value & 0b0001_1111
+	// IE
 	case address == 0xFFFF:
 		mmu.ieRegister = value
-	case address >= 0xFF00 && address <= 0xFF7F:
-		// IO registers
+	// JOYPAD
+	case address == 0xFF00:
+		mmu.joypad.Write(value)
+	// IO registers
+	case address >= 0xFF01 && address <= 0xFF7F:
 		mmu.ioRegisters[address-0xFF00] = value
+	// high RAM
 	case address >= 0xFF80 && address <= 0xFFFE:
-		// high RAM
 		mmu.highRam[address-0xFF80] = value
 	default:
 		logger.Info("unhandled address while writing <-")

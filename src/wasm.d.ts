@@ -4,6 +4,8 @@ declare global {
 		processEmulatorCycles: (cycles: number) => {
 			tCyclesUsed: number;
 		};
+		handleJoypadButtonPressed: (button: string) => void;
+		handleJoypadButtonReleased: (button: string) => void;
 		getTraceLogs: () => Uint8Array;
 		getDebugInfo: () => GameboyDebugInfo | null;
 	}

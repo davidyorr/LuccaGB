@@ -6,6 +6,7 @@ import (
 	"github.com/davidyorr/LuccaGB/cpu"
 	"github.com/davidyorr/LuccaGB/dma"
 	"github.com/davidyorr/LuccaGB/interrupt"
+	"github.com/davidyorr/LuccaGB/joypad"
 	"github.com/davidyorr/LuccaGB/logger"
 	"github.com/davidyorr/LuccaGB/mmu"
 	"github.com/davidyorr/LuccaGB/ppu"
@@ -21,6 +22,7 @@ type Gameboy struct {
 	timer     *timer.Timer
 	serial    *serial.Serial
 	cartridge *cartridge.Cartridge
+	joypad    *joypad.Joypad
 }
 
 func New() *Gameboy {
@@ -32,7 +34,9 @@ func New() *Gameboy {
 	mmu := mmu.New(cartridge)
 	dma := dma.New()
 	ppu := ppu.New(mmu.RequestInterrupt)
+	joypad := joypad.New(mmu.RequestInterrupt)
 
+	mmu.ConnectJoypad(joypad)
 	bus.Connect(mmu, timer, serial, ppu, dma)
 	cpu.ConnectBus(bus)
 	dma.ConnectBus(bus)
@@ -46,6 +50,7 @@ func New() *Gameboy {
 		timer:     timer,
 		serial:    serial,
 		cartridge: cartridge,
+		joypad:    joypad,
 	}
 }
 
@@ -72,6 +77,14 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 	}
 
 	return 4, frameReady, nil
+}
+
+func (gameboy *Gameboy) PressJoypadInput(input joypad.JoypadInput) {
+	gameboy.joypad.Press(input)
+}
+
+func (gameboy *Gameboy) ReleaseJoypadInput(input joypad.JoypadInput) {
+	gameboy.joypad.Release(input)
 }
 
 func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {

@@ -6,6 +6,7 @@ import (
 	"syscall/js"
 
 	"github.com/davidyorr/LuccaGB/gameboy"
+	"github.com/davidyorr/LuccaGB/joypad"
 	"github.com/davidyorr/LuccaGB/logger"
 )
 
@@ -14,6 +15,8 @@ func main() {
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
+	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
+	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
 	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
@@ -59,6 +62,47 @@ func processEmulatorCycles(this js.Value, args []js.Value) interface{} {
 	return js.ValueOf(map[string]interface{}{
 		"tCyclesUsed": tCyclesUsed,
 	})
+}
+
+var joypadInputFromString = map[string]joypad.JoypadInput{
+	"RIGHT":  joypad.JoypadInputRight,
+	"LEFT":   joypad.JoypadInputLeft,
+	"UP":     joypad.JoypadInputUp,
+	"DOWN":   joypad.JoypadInputDown,
+	"A":      joypad.JoypadInputA,
+	"B":      joypad.JoypadInputB,
+	"SELECT": joypad.JoypadInputSelect,
+	"START":  joypad.JoypadInputStart,
+}
+
+func handleJoypadButtonPressed(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return nil
+	}
+
+	s := args[0].String()
+	input, ok := joypadInputFromString[s]
+	if !ok {
+		return nil
+	}
+
+	gb.PressJoypadInput(input)
+	return nil
+}
+
+func handleJoypadButtonReleased(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return nil
+	}
+
+	s := args[0].String()
+	input, ok := joypadInputFromString[s]
+	if !ok {
+		return nil
+	}
+
+	gb.ReleaseJoypadInput(input)
+	return nil
 }
 
 var goImageData [displayWidth * displayHeight * 4]byte
