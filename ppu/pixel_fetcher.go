@@ -1,9 +1,5 @@
 package ppu
 
-import (
-	"github.com/davidyorr/LuccaGB/logger"
-)
-
 type PixelFetcher struct {
 	ppu                        *PPU
 	state                      FetcherState
@@ -96,7 +92,6 @@ func (fetcher *PixelFetcher) tick() {
 			spriteX := fetcher.ppu.oam[baseAddress+1]
 
 			if spriteX <= fetcher.currentX+8 {
-				logger.Info("SWITCHING TO SPRITE FETCHING MODE")
 				fetcher.isFetchingSprite = true
 				fetcher.state = StateGetTile
 				fetcher.spriteIndex = oamIndex
@@ -396,12 +391,6 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 		}
 	}
 
-	logger.Info(
-		"PPU: ADDING TO FRAMEBUFFER",
-		"COLOR", color,
-		"LY", fetcher.ppu.ly,
-		"X", fetcher.currentX,
-	)
 	fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
 	fetcher.currentX++
 }
