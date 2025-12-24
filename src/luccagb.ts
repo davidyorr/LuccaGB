@@ -76,6 +76,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			romSelect.value = "";
 		}
 
+		// Focus the canvas so keyboard controls work immediately
+		const canvas = document.getElementById("canvas");
+		if (canvas) {
+			canvas.tabIndex = 0;
+			canvas.focus();
+		}
+
 		if (!isPaused) {
 			lastFrameTime = 0;
 			startAnimationLoop();
@@ -141,7 +148,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		const target = event.target as HTMLSelectElement;
 		const path = target.value;
 
-		if (!path || !romFiles[path]) return;
+		if (!path || !romFiles[path]) {
+			return;
+		}
 
 		// remove focus so keyboard controls don't toggle the dropdown
 		target.blur();
