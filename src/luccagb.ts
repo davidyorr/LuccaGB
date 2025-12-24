@@ -7,6 +7,7 @@ let imageData: ImageData;
 let currentScale: number | "fit" = 1;
 let isPaused = false;
 let isHidden = false;
+let isFileInputOpen = false;
 
 const displayWidth = 160;
 const displayHeight = 144;
@@ -58,24 +59,40 @@ document.addEventListener("DOMContentLoaded", () => {
 	// =============================================
 	// ====== set up ROM input event listener ======
 	// =============================================
-	document
-		.getElementById("rom-input")
-		?.addEventListener("change", async (event) => {
-			const files = (event.target as HTMLInputElement | null)?.files;
-			if (files?.[0]) {
-				const arrayBuffer = await files?.[0].arrayBuffer();
-				const romData = new Uint8Array(arrayBuffer);
-				window.loadRom(romData);
-			}
+	fileInput?.addEventListener("change", async (event) => {
+		isFileInputOpen = false;
+		const files = (event.target as HTMLInputElement | null)?.files;
+		if (files?.[0]) {
+			const arrayBuffer = await files?.[0].arrayBuffer();
+			const romData = new Uint8Array(arrayBuffer);
+			window.loadRom(romData);
+		}
 
-			// reset the dropdown to the default so it doesn't look like two things are selected
-			const romSelect = document.getElementById(
-				"rom-select",
-			) as HTMLSelectElement | null;
-			if (romSelect) {
-				romSelect.value = "";
-			}
-		});
+		// reset the dropdown to the default so it doesn't look like two things are selected
+		const romSelect = document.getElementById(
+			"rom-select",
+		) as HTMLSelectElement | null;
+		if (romSelect) {
+			romSelect.value = "";
+		}
+
+		if (!isPaused) {
+			lastFrameTime = 0;
+			startAnimationLoop();
+		}
+	});
+
+	fileInput?.addEventListener("click", () => {
+		isFileInputOpen = true;
+	});
+
+	fileInput?.addEventListener("cancel", () => {
+		isFileInputOpen = false;
+		if (!isPaused) {
+			lastFrameTime = 0;
+			startAnimationLoop();
+		}
+	});
 
 	// ==================================================
 	// ====== set up tab visibility event listener ======
@@ -432,7 +449,7 @@ const systemClockFrequency = 4.194304 * 1_000_000;
 
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
-	if (isPaused || isHidden) {
+	if (isPaused || isHidden || isFileInputOpen) {
 		return;
 	}
 
