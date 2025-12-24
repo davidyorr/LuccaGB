@@ -222,6 +222,58 @@ func TestMooneye__interrupts__ie_push(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/interrupts/ie_push", 181_550, TestTypeMooneye)
 }
 
+func TestMooneye__mbc1__bits_bank1(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/bits_bank1", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__bits_bank2(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/bits_bank2", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__bits_mode(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/bits_mode", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__bits_ramg(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/bits_ramg", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__multicart_rom_8Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/multicart_rom_8Mb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__ram_256kb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/ram_256kb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__ram_64kb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/ram_64kb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_16Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_16Mb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_1Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_1Mb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_2Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_2Mb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_4Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_4Mb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_512kb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_512kb", 500_000, TestTypeMooneye)
+}
+
+func TestMooneye__mbc1__rom_8Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_8Mb", 500_000, TestTypeMooneye)
+}
+
 // This test checks that OAM DMA copies all bytes correctly.
 func TestMooneye__oam_dma__basic(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/oam_dma/basic", 186_754, TestTypeMooneye)
