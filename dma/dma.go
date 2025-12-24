@@ -152,6 +152,14 @@ func (dma *DMA) Active() bool {
 	return dma.state == StateActive
 }
 
+func (dma *DMA) Progress() uint8 {
+	return dma.progress
+}
+
+func (dma *DMA) CurrentSourceAddress() uint16 {
+	return dma.sourceAddress + uint16(dma.progress)
+}
+
 func (dma *DMA) CurrentTransferByte() uint8 {
 	return dma.currentTransferByte
 }

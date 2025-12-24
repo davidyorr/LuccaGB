@@ -105,10 +105,16 @@ func (bus *Bus) Write(address uint16, value uint8) {
 		bus.dma.SetDmaRegister(value)
 	}
 
-	// during a transfer, only HRAM and WRAM can be accessed
-	if bus.dma.Active() && (!(address >= 0xFF80 && address <= 0xFFFE) || !(address >= 0xC000 && address <= 0xFDFF)) {
-		logger.Info("DMA ACTIVE, IGNORING WRITE")
-		return
+	if bus.dma.Active() {
+		// OAM is inaccessible
+		if address >= 0xFE00 && address <= 0xFE9F {
+			logger.Info("DMA ACTIVE, IGNORING WRITE")
+			return
+		}
+		if bus.addressIsInDmaUse(address) {
+			logger.Info("DMA ACTIVE, IGNORING WRITE")
+			return
+		}
 	}
 
 	switch {
@@ -139,4 +145,48 @@ func (bus *Bus) Write(address uint16, value uint8) {
 
 func (bus *Bus) DmaActive() bool {
 	return bus.dma.Active()
+}
+
+const (
+	PhysicalBusMain = iota
+	PhysicalBusVram
+	PhysicalBusOam
+)
+
+func getPhysicalBus(addr uint16) int {
+	switch {
+	// ROM
+	case addr < 0x8000:
+		return PhysicalBusMain
+	// VRAM
+	case addr < 0xA000:
+		return PhysicalBusVram
+	// External RAM
+	case addr < 0xC000:
+		return PhysicalBusMain
+	default:
+		return PhysicalBusMain
+	}
+}
+
+func (bus *Bus) addressIsInDmaUse(address uint16) bool {
+	if !bus.dma.Active() {
+		return false
+	}
+
+	// ignore High Memory
+	if address >= 0xFE00 {
+		return false
+	}
+
+	// warm up
+	if bus.dma.Progress() == 0 || bus.dma.Progress() == 161 {
+		return false
+	}
+
+	if bus.dma.CurrentSourceAddress() == address {
+		return true
+	}
+
+	return getPhysicalBus(address) == getPhysicalBus(bus.dma.CurrentSourceAddress())
 }
