@@ -244,7 +244,9 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 			ppu.ly = 0
 			ppu.updateLycCoincidenceFlag()
 			ppu.dot = 0
-			ppu.changeMode(VerticalBlank)
+			// When LCD is disabled, STAT mode reads as 0 (HBlank)
+			// See: https://gbdev.io/pandocs/STAT.html#ff41--stat-lcd-status
+			ppu.changeMode(HorizontalBlank)
 		}
 		// LCD OFF -> LCD ON
 		if !lcdWasEnabled && lcdIsEnabled {
