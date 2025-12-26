@@ -115,6 +115,8 @@ func (fetcher *PixelFetcher) tick() {
 		fetcher.scanlineHadWindowPixels = true
 		fetcher.xPositionCounter = 0
 		fetcher.counter = 0
+		fetcher.pixelsToDiscard = 0
+		fetcher.backgroundScrollingPenalty = 0
 		return
 	}
 
