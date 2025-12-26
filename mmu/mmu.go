@@ -73,6 +73,9 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 	// ROM
 	case address <= 0x7FFF:
 		value = mmu.cartridge.Read(address)
+	// External RAM
+	case address >= 0xA000 && address <= 0x9FFF:
+		value = mmu.cartridge.Read(address)
 	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
 		value = mmu.workingRam[address-0xC000]
@@ -123,7 +126,7 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 	case address >= 0xFF80 && address <= 0xFFFE:
 		value = mmu.highRam[address-0xFF80]
 	default:
-		logger.Info("unhandled address while reading ->")
+		logger.Info("unhandled address while reading ->", "ADDRESS", fmt.Sprintf("%04X", address))
 		value = 0xFF
 	}
 
@@ -149,6 +152,10 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	switch {
 	// ROM
 	case address <= 0x7FFF:
+		mmu.cartridge.Write(address, value)
+	// External RAM
+	case address >= 0xA000 && address <= 0x9FFF:
+		mmu.cartridge.Write(address, value)
 	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
 		mmu.workingRam[address-0xC000] = value
@@ -171,7 +178,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	case address >= 0xFF80 && address <= 0xFFFE:
 		mmu.highRam[address-0xFF80] = value
 	default:
-		logger.Info("unhandled address while writing <-")
+		logger.Info("unhandled address while writing <-", "ADDRESS", fmt.Sprintf("%04X", address))
 	}
 }
 

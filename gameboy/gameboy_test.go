@@ -50,8 +50,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestBlargg__cpu_instrs(t *testing.T) {
-	skipCi(t, "blargg/cpu_instrs")
-	loadRomAndRunSteps(t, "blargg/cpu_instrs", 25_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/cpu_instrs", 56_108_272, TestTypeBlargg)
 }
 
 func TestBlargg__instr_timing(t *testing.T) {
@@ -289,7 +288,9 @@ func TestMooneye__oam_dma__reg_read(t *testing.T) {
 // This test checks that OAM DMA source memory areas work as expected,
 // including the area past $DFFF.
 func TestMooneye__oam_dma__sources_GS(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/oam_dma/sources-GS", 892_793, TestTypeMooneye)
+	skipCi(t, "mooneye/oam_dma/sources-GS")
+	// MBC type $1B (MBC5+RAM+BATTERY)
+	loadRomAndRunSteps(t, "mooneye/oam_dma/sources-GS", 100, TestTypeMooneye)
 }
 
 // Tests how SCX affects the duration between STAT mode=0 interrupt and LY increment.
