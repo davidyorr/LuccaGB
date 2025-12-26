@@ -46,13 +46,13 @@
 | **mooneye / interrupts** |  |  |
 |  | `ie_push.gb` | ✅ |
 | **mooneye / mbc1** |  |  |
-|  | `bits_bank1.gb` | ❌ |
-|  | `bits_bank2.gb` | ❌ |
-|  | `bits_mode.gb` | ❌ |
-|  | `bits_ramg.gb` | ❌ |
+|  | `bits_bank1.gb` | ✅ |
+|  | `bits_bank2.gb` | ✅ |
+|  | `bits_mode.gb` | ✅ |
+|  | `bits_ramg.gb` | ✅ |
 |  | `multicart_rom_8Mb.gb` | ❌ |
-|  | `ram_256kb.gb` | ❌ |
-|  | `ram_64kb.gb` | ❌ |
+|  | `ram_256kb.gb` | ✅ |
+|  | `ram_64kb.gb` | ✅ |
 |  | `rom_16Mb.gb` | ✅ |
 |  | `rom_1Mb.gb` | ✅ |
 |  | `rom_2Mb.gb` | ✅ |
