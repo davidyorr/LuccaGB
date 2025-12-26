@@ -3,7 +3,7 @@
 | Suite | ROM       | Status |
 |-------|-----------|--------|
 | **blargg** |  |  |
-|  | `cpu_instrs.gb` | ⏩ |
+|  | `cpu_instrs.gb` | ✅ |
 |  | `instr_timing.gb` | ✅ |
 |  | `mem_timing.gb` | ✅ |
 |  | `halt_bug.gb` | ❌ |
@@ -45,10 +45,24 @@
 |  | `daa.gb` | ✅ |
 | **mooneye / interrupts** |  |  |
 |  | `ie_push.gb` | ✅ |
+| **mooneye / mbc1** |  |  |
+|  | `bits_bank1.gb` | ❌ |
+|  | `bits_bank2.gb` | ❌ |
+|  | `bits_mode.gb` | ❌ |
+|  | `bits_ramg.gb` | ❌ |
+|  | `multicart_rom_8Mb.gb` | ❌ |
+|  | `ram_256kb.gb` | ❌ |
+|  | `ram_64kb.gb` | ❌ |
+|  | `rom_16Mb.gb` | ✅ |
+|  | `rom_1Mb.gb` | ✅ |
+|  | `rom_2Mb.gb` | ✅ |
+|  | `rom_4Mb.gb` | ✅ |
+|  | `rom_512kb.gb` | ✅ |
+|  | `rom_8Mb.gb` | ✅ |
 | **mooneye / oam_dma** |  |  |
 |  | `basic.gb` | ✅ |
 |  | `reg_read.gb` | ✅ |
-|  | `sources-GS.gb` | ❌ |
+|  | `sources-GS.gb` | ⏩ |
 | **mooneye / ppu** |  |  |
 |  | `hblank_ly_scx_timing-GS.gb` | ✅ |
 |  | `intr_1_2_timing-GS.gb` | ✅ |
