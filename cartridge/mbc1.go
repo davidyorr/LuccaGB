@@ -88,17 +88,17 @@ func (mbc *Mbc1) Read(address uint16) uint8 {
 			return 0xFF
 		}
 
+		// Default to Bank 0
+		bank := uint32(0)
 		offset := uint32(address - 0xA000)
 
-		if mbc.mode == 0b00 {
-			actualAddress := offset & mbc.ramAddressMask
-			return mbc.cartridge.ram[actualAddress]
-		} else if mbc.mode == 0b01 {
-			// RAM banking enabled, use Bank 2 to select RAM bank 0-3
-			bank := uint32(mbc.bank2)
-			actualAddress := ((bank << 13) | offset) & uint32(mbc.ramAddressMask)
-			return mbc.cartridge.ram[actualAddress]
+		// RAM banking enabled, use Bank 2 to select RAM bank 0-3
+		if mbc.mode == 0b01 {
+			bank = uint32(mbc.bank2)
 		}
+
+		actualAddress := ((bank << 13) | offset) & uint32(mbc.ramAddressMask)
+		return mbc.cartridge.ram[actualAddress]
 	}
 
 	logger.Error(
@@ -146,17 +146,16 @@ func (mbc *Mbc1) Write(address uint16, value uint8) {
 			return
 		}
 
+		// Default to Bank 0
+		bank := uint32(0)
 		offset := uint32(address - 0xA000)
 
-		if mbc.mode == 0b00 {
-			// Mode 0: Write to Bank 0
-			actualAddress := offset & mbc.ramAddressMask
-			mbc.cartridge.ram[actualAddress] = value
-		} else if mbc.mode == 0b01 {
-			// Mode 1: Write to specific Bank
-			bank := uint32(mbc.bank2)
-			actualAddress := ((bank << 13) | offset) & mbc.ramAddressMask
-			mbc.cartridge.ram[actualAddress] = value
+		// Mode 1: Write to specific Bank
+		if mbc.mode == 0b01 {
+			bank = uint32(mbc.bank2)
 		}
+
+		actualAddress := ((bank << 13) | offset) & mbc.ramAddressMask
+		mbc.cartridge.ram[actualAddress] = value
 	}
 }
