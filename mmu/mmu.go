@@ -74,7 +74,7 @@ func (mmu *MMU) Read(address uint16) (value uint8) {
 	case address <= 0x7FFF:
 		value = mmu.cartridge.Read(address)
 	// External RAM
-	case address >= 0xA000 && address <= 0x9FFF:
+	case address >= 0xA000 && address <= 0xBFFF:
 		value = mmu.cartridge.Read(address)
 	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
@@ -154,7 +154,7 @@ func (mmu *MMU) Write(address uint16, value uint8) {
 	case address <= 0x7FFF:
 		mmu.cartridge.Write(address, value)
 	// External RAM
-	case address >= 0xA000 && address <= 0x9FFF:
+	case address >= 0xA000 && address <= 0xBFFF:
 		mmu.cartridge.Write(address, value)
 	// working RAM
 	case address >= 0xC000 && address <= 0xDFFF:
