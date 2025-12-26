@@ -208,55 +208,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.body.removeChild(link);
 		});
 
-	// ====================================
-	// ====== set up display scaling ======
-	// ====================================
-	const scaleSelect = document.getElementById(
-		"scale-select",
-	) as HTMLSelectElement | null;
-	scaleSelect!.value = "1"; // default scale
-
-	scaleSelect?.addEventListener("change", () => {
-		const value = scaleSelect.value;
-
-		if (value === "fit") {
-			currentScale = "fit";
-		} else {
-			currentScale = parseInt(value, 10);
-		}
-
-		applyCanvasScale();
-	});
-
-	function applyCanvasScale() {
-		const container = document.getElementById("canvas-container");
-		const canvas = visibleCanvasCtx?.canvas;
-
-		if (!container || !canvas) return;
-
-		if (currentScale === "fit") {
-			// Fit to viewport (minus controls height)
-			const maxWidth = window.innerWidth;
-			const maxHeight = window.innerHeight - 56;
-
-			const scale = Math.floor(
-				Math.min(maxWidth / displayWidth, maxHeight / displayHeight),
-			);
-
-			const finalScale = Math.max(1, scale);
-
-			container.style.width = `${displayWidth * finalScale}px`;
-			container.style.height = `${displayHeight * finalScale}px`;
-		} else {
-			container.style.width = `${displayWidth * currentScale}px`;
-			container.style.height = `${displayHeight * currentScale}px`;
-		}
-	}
-
-	// apply default scale on load
-	applyCanvasScale();
-	window.addEventListener("resize", applyCanvasScale);
-
 	// ==================================
 	// ====== set up download logs ======
 	// ==================================
@@ -341,6 +292,57 @@ document.addEventListener("DOMContentLoaded", () => {
 		throw new Error("error getting offscreen canvas context");
 	}
 	offscreenCanvasCtx = ctx;
+
+	// ====================================
+	// ====== set up display scaling ======
+	// ====================================
+	const scaleSelect = document.getElementById(
+		"scale-select",
+	) as HTMLSelectElement | null;
+	currentScale = Number.parseInt(scaleSelect!.value) ?? 1;
+
+	scaleSelect?.addEventListener("change", () => {
+		const value = scaleSelect.value;
+
+		if (value === "fit") {
+			currentScale = "fit";
+		} else {
+			currentScale = parseInt(value, 10);
+		}
+
+		applyCanvasScale();
+	});
+
+	function applyCanvasScale() {
+		const container = document.getElementById("canvas-container");
+		const canvas = visibleCanvasCtx?.canvas;
+
+		if (!container || !canvas) {
+			return;
+		}
+
+		if (currentScale === "fit") {
+			// Fit to viewport (minus controls height)
+			const maxWidth = window.innerWidth;
+			const maxHeight = window.innerHeight - 56;
+
+			const scale = Math.floor(
+				Math.min(maxWidth / displayWidth, maxHeight / displayHeight),
+			);
+
+			const finalScale = Math.max(1, scale);
+
+			container.style.width = `${displayWidth * finalScale}px`;
+			container.style.height = `${displayHeight * finalScale}px`;
+		} else {
+			container.style.width = `${displayWidth * currentScale}px`;
+			container.style.height = `${displayHeight * currentScale}px`;
+		}
+	}
+
+	// apply default scale on load
+	applyCanvasScale();
+	window.addEventListener("resize", applyCanvasScale);
 
 	// =================================
 	// ====== set up joypad input ======
