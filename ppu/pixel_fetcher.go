@@ -108,7 +108,7 @@ func (fetcher *PixelFetcher) tick() {
 	}
 
 	windowEnabled := (fetcher.ppu.lcdc>>5)&1 == 1
-	if !fetcher.isFetchingWindow && (windowEnabled) && (fetcher.wyEqualedLyDuringFrame) && (fetcher.currentX >= fetcher.ppu.wx-7) {
+	if !fetcher.isFetchingWindow && (windowEnabled) && (fetcher.wyEqualedLyDuringFrame) && (fetcher.currentX+7 >= fetcher.ppu.wx) {
 		fetcher.state = StateGetTile
 		fetcher.backgroundFifo = nil
 		fetcher.isFetchingWindow = true
