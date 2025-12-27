@@ -345,33 +345,60 @@ document.addEventListener("DOMContentLoaded", () => {
 	applyCanvasScale();
 	window.addEventListener("resize", applyCanvasScale);
 
-	// =================================
-	// ====== set up joypad input ======
-	// =================================
+	// =================================================
+	// ====== set up joypad (and shortcuts) input ======
+	// =================================================
 	const keyToJoypadButton: { [key: string]: string } = {
 		Enter: "START",
 		Backspace: "SELECT",
-		z: "B",
-		x: "A",
+		KeyZ: "B",
+		KeyX: "A",
 		ArrowDown: "DOWN",
 		ArrowUp: "UP",
 		ArrowLeft: "LEFT",
 		ArrowRight: "RIGHT",
 	};
+	const nonJoypadShortcuts: { [key: string]: (() => void) | undefined } = {
+		Space: pauseOrResume,
+	};
 	window.addEventListener("keydown", (event) => {
-		if (!keyToJoypadButton[event.key] || event.repeat) {
+		if (event.repeat) {
 			return;
 		}
 
-		window.handleJoypadButtonPressed(keyToJoypadButton[event.key]);
+		const funcHandler = nonJoypadShortcuts[event.code];
+		if (funcHandler) {
+			funcHandler();
+			return;
+		}
+
+		if (!keyToJoypadButton[event.code]) {
+			return;
+		}
+
+		window.handleJoypadButtonPressed(keyToJoypadButton[event.code]);
 	});
 	window.addEventListener("keyup", (event) => {
-		if (!keyToJoypadButton[event.key]) {
+		if (!keyToJoypadButton[event.code]) {
 			return;
 		}
 
-		window.handleJoypadButtonReleased(keyToJoypadButton[event.key]);
+		window.handleJoypadButtonReleased(keyToJoypadButton[event.code]);
 	});
+
+	function pauseOrResume() {
+		if (!isRomLoaded) {
+			return;
+		}
+
+		isPaused = !isPaused;
+		if (isPaused) {
+			updateDebugView();
+		} else {
+			lastFrameTime = 0;
+			startAnimationLoop();
+		}
+	}
 
 	// ===================================
 	// ====== set up debug checkbox ======
@@ -418,34 +445,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	debugElements.flagN = document.getElementById("flag-n");
 	debugElements.flagH = document.getElementById("flag-h");
 	debugElements.flagC = document.getElementById("flag-c");
-
-	const pauseButton = document.getElementById(
-		"pause-button",
-	) as HTMLButtonElement;
-	const stepButton = document.getElementById(
-		"step-button",
-	) as HTMLButtonElement;
-
-	pauseButton?.addEventListener("click", () => {
-		isPaused = !isPaused;
-		if (isPaused) {
-			pauseButton.textContent = "Run";
-			stepButton.disabled = false;
-			updateDebugView();
-		} else {
-			pauseButton.textContent = "Pause";
-			stepButton.disabled = true;
-			lastFrameTime = 0;
-			startAnimationLoop();
-		}
-	});
-
-	stepButton?.addEventListener("click", () => {
-		if (isPaused) {
-			window.processEmulatorCycles(4);
-			updateDebugView();
-		}
-	});
 });
 
 // ===================================

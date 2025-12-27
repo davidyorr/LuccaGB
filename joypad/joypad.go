@@ -1,8 +1,6 @@
 package joypad
 
 import (
-	"fmt"
-
 	"github.com/davidyorr/LuccaGB/interrupt"
 	"github.com/davidyorr/LuccaGB/logger"
 )
@@ -73,9 +71,6 @@ func (joypad *Joypad) Read() uint8 {
 	value := joypad.calculateP1Register()
 	logger.GlobalTraceLogger.LogMemRead(0xFF00, value)
 
-	if !(value == 223 || value == 239) {
-		fmt.Println("JOYPAD READ", fmt.Sprintf("%08b", value))
-	}
 	return value
 }
 

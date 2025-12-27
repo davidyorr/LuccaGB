@@ -17,8 +17,6 @@
 				</select>
 				<label for="rom-input">Load ROM:</label>
 				<input id="rom-input" type="file" name="rom-input" accept=".gb" />
-				<button id="pause-button">Pause</button>
-				<button id="step-button" disabled>Step</button>
 				<button id="screenshot-button">Screenshot</button>
 				<label for="scale-select">Scale:</label>
 				<select id="scale-select">
@@ -183,6 +181,10 @@
 			border-top: 1px solid #333;
 
 			#rom-select {
+				max-width: 250px;
+			}
+
+			#rom-input {
 				max-width: 250px;
 			}
 		}
