@@ -54,7 +54,8 @@ func newPixelFetcher(ppu *PPU) *PixelFetcher {
 
 func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.state = StateGetTile
-	fetcher.backgroundFifo = nil
+	fetcher.backgroundFifo = fetcher.backgroundFifo[:0]
+	fetcher.spriteFifo = fetcher.spriteFifo[:0]
 	fetcher.isFirstFetchOfScanline = true
 	fetcher.isFetchingSprite = false
 	fetcher.isFetchingWindow = false
@@ -110,7 +111,7 @@ func (fetcher *PixelFetcher) tick() {
 	windowEnabled := (fetcher.ppu.lcdc>>5)&1 == 1
 	if !fetcher.isFetchingWindow && (windowEnabled) && (fetcher.wyEqualedLyDuringFrame) && (fetcher.currentX+7 >= fetcher.ppu.wx) {
 		fetcher.state = StateGetTile
-		fetcher.backgroundFifo = nil
+		fetcher.backgroundFifo = fetcher.backgroundFifo[:0]
 		fetcher.isFetchingWindow = true
 		fetcher.scanlineHadWindowPixels = true
 		fetcher.xPositionCounter = 0
