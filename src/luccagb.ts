@@ -8,6 +8,7 @@ let currentScale: number | "fit" = 1;
 let isPaused = false;
 let isHidden = false;
 let isFileInputOpen = false;
+let isRomLoaded = false;
 
 const displayWidth = 160;
 const displayHeight = 144;
@@ -491,11 +492,15 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 }
 
 function startAnimationLoop() {
+	if (!isRomLoaded) {
+		return;
+	}
 	cancelAnimationFrame(animationFrameId!);
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
 
 function onRomLoaded() {
+	isRomLoaded = true;
 	startAnimationLoop();
 }
 
