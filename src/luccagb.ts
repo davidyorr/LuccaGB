@@ -212,62 +212,68 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ==================================
 	// ====== set up download logs ======
 	// ==================================
-	document
-		.getElementById("download-trace-log-button")
-		?.addEventListener("click", () => {
-			const buffer = window.getTraceLogs();
+	const downloadTraceLogButton = document.getElementById(
+		"download-trace-log-button",
+	);
+	downloadTraceLogButton?.addEventListener("click", () => {
+		const buffer = window.getTraceLogs();
 
-			if (!buffer || buffer.length === 0) {
-				alert("No logs available.");
-				return;
+		if (!buffer || buffer.length === 0) {
+			alert("No logs available.");
+			return;
+		}
+
+		let lines = [];
+		for (let i = 0; i < buffer.length; ) {
+			const type = buffer[i];
+
+			if (type === 0) {
+				// Instruction
+				const pc = (buffer[i + 1] << 8) | buffer[i + 2];
+				const opcode = buffer[i + 3];
+				lines.push(
+					`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")}`,
+				);
+				// if we log a 3rd thing, use this instead
+				// const view = new DataView(buffer.buffer);
+				// const data = view.getUint32(i + 4, false);
+				// lines.push(
+				// 	`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")} OTHER:${data}`,
+				// );
+				i += 8;
+			} else if (type === 1) {
+				// Memory read
+				const addr = (buffer[i + 1] << 8) | buffer[i + 2];
+				const value = buffer[i + 3];
+				lines.push(
+					`READ [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
+				);
+				i += 4;
+			} else if (type === 2) {
+				// Memory write
+				const addr = (buffer[i + 1] << 8) | buffer[i + 2];
+				const value = buffer[i + 3];
+				lines.push(
+					`WRITE [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
+				);
+				i += 4;
+			} else {
+				i++; // Skip unknown types
 			}
+		}
 
-			let lines = [];
-			for (let i = 0; i < buffer.length; ) {
-				const type = buffer[i];
+		const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `luccagb-logs-${new Date().toISOString()}.txt`;
+		a.click();
+	});
 
-				if (type === 0) {
-					// Instruction
-					const pc = (buffer[i + 1] << 8) | buffer[i + 2];
-					const opcode = buffer[i + 3];
-					lines.push(
-						`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")}`,
-					);
-					// if we log a 3rd thing, use this instead
-					// const view = new DataView(buffer.buffer);
-					// const data = view.getUint32(i + 4, false);
-					// lines.push(
-					// 	`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")} OTHER:${data}`,
-					// );
-					i += 8;
-				} else if (type === 1) {
-					// Memory read
-					const addr = (buffer[i + 1] << 8) | buffer[i + 2];
-					const value = buffer[i + 3];
-					lines.push(
-						`READ [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
-					);
-					i += 4;
-				} else if (type === 2) {
-					// Memory write
-					const addr = (buffer[i + 1] << 8) | buffer[i + 2];
-					const value = buffer[i + 3];
-					lines.push(
-						`WRITE [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
-					);
-					i += 4;
-				} else {
-					i++; // Skip unknown types
-				}
-			}
-
-			const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `luccagb-logs-${new Date().toISOString()}.txt`;
-			a.click();
-		});
+	// Hide the button in production
+	if (import.meta.env.PROD && downloadTraceLogButton) {
+		downloadTraceLogButton.style.display = "none";
+	}
 
 	// ===========================
 	// ====== set up canvas ======
