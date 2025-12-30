@@ -5,9 +5,9 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/davidyorr/LuccaGB/gameboy"
-	"github.com/davidyorr/LuccaGB/joypad"
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/gameboy"
+	"github.com/davidyorr/LuccaGB/internal/joypad"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package cartridge
 import (
 	"fmt"
 
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 type Mbc1 struct {

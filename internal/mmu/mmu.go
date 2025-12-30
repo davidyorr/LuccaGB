@@ -3,11 +3,11 @@ package mmu
 import (
 	"fmt"
 
-	"github.com/davidyorr/LuccaGB/cartridge"
-	"github.com/davidyorr/LuccaGB/debug"
-	"github.com/davidyorr/LuccaGB/interrupt"
-	"github.com/davidyorr/LuccaGB/joypad"
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/cartridge"
+	"github.com/davidyorr/LuccaGB/internal/debug"
+	"github.com/davidyorr/LuccaGB/internal/interrupt"
+	"github.com/davidyorr/LuccaGB/internal/joypad"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 type MMU struct {

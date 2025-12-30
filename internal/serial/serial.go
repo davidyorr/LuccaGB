@@ -3,7 +3,7 @@ package serial
 import (
 	"fmt"
 
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 type Serial struct {

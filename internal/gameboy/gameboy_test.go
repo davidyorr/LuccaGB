@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 var (
@@ -438,7 +438,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 	logger.Init(testLogger.Handler())
 	defer logger.Init(slog.Default().Handler())
 
-	romBytes, err := os.ReadFile(fmt.Sprintf("../roms/test/%s.gb", romName))
+	romBytes, err := os.ReadFile(fmt.Sprintf("../../roms/test/%s.gb", romName))
 	if err != nil {
 		t.Fatal("Error reading file:", err)
 	}

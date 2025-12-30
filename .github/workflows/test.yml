@@ -41,7 +41,7 @@ jobs:
         if: always()
         with:
           name: screenshots-out
-          path: screenshots_out/
+          path: internal/screenshots_out/
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4

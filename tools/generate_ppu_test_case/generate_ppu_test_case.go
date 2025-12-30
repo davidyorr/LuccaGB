@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davidyorr/LuccaGB/gameboy"
+	"github.com/davidyorr/LuccaGB/internal/gameboy"
 	"github.com/davidyorr/LuccaGB/tools"
 )
 

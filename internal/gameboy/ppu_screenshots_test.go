@@ -228,7 +228,7 @@ func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash stri
 	t.Logf("TESTCASE: %s.gb", romName)
 
 	// 1. Setup
-	romBytes, err := os.ReadFile(fmt.Sprintf("../roms/test/%s.gb", romName))
+	romBytes, err := os.ReadFile(fmt.Sprintf("../../roms/test/%s.gb", romName))
 	if err != nil {
 		t.Fatalf("❌ SETUP FAIL: %v", err)
 	}
@@ -258,7 +258,7 @@ func runPpuTest(t *testing.T, romName string, framesToRun int, expectedHash stri
 	t.Errorf("❌ FAIL: %s", fmt.Sprintf("%s.gb", romName))
 
 	outputName := strings.TrimPrefix(romName, "../")
-	expectedPath := filepath.Join("../testdata", "screenshots", outputName+".png")
+	expectedPath := filepath.Join("../../testdata", "screenshots", outputName+".png")
 	actualPath := filepath.Join(screenshotOutDir, outputName, "actual.png")
 	baselinePath := filepath.Join(screenshotOutDir, outputName, "expected.png")
 	diffPath := filepath.Join(screenshotOutDir, outputName, "diff.png")

@@ -3,10 +3,10 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/davidyorr/LuccaGB/bus"
-	"github.com/davidyorr/LuccaGB/debug"
-	"github.com/davidyorr/LuccaGB/interrupt"
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/bus"
+	"github.com/davidyorr/LuccaGB/internal/debug"
+	"github.com/davidyorr/LuccaGB/internal/interrupt"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 type CPU struct {

@@ -1,8 +1,8 @@
 package joypad
 
 import (
-	"github.com/davidyorr/LuccaGB/interrupt"
-	"github.com/davidyorr/LuccaGB/logger"
+	"github.com/davidyorr/LuccaGB/internal/interrupt"
+	"github.com/davidyorr/LuccaGB/internal/logger"
 )
 
 type Joypad struct {
