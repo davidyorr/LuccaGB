@@ -15,6 +15,7 @@ func main() {
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
+	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
 	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
 	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
 	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
@@ -107,6 +108,7 @@ func handleJoypadButtonReleased(this js.Value, args []js.Value) interface{} {
 
 var goImageData [displayWidth * displayHeight * 4]byte
 var jsImageData js.Value
+var frameReady bool = false
 
 func presentFrame() {
 	frameBuffer := gb.FrameBuffer()
@@ -128,8 +130,19 @@ func presentFrame() {
 		}
 	}
 
+	frameReady = true
+}
+
+// pollFrame returns a newly completed frame, if one is available.
+// The frame is consumed exactly once.
+func pollFrame(this js.Value, args []js.Value) interface{} {
+	if !frameReady {
+		return nil
+	}
+
+	frameReady = false
 	js.CopyBytesToJS(jsImageData, goImageData[:])
-	js.Global().Get("updateCanvas").Invoke(jsImageData)
+	return jsImageData
 }
 
 func getTraceLogs(this js.Value, args []js.Value) interface{} {

@@ -1,5 +1,4 @@
 (window as any).onRomLoaded = onRomLoaded;
-(window as any).updateCanvas = updateCanvas;
 
 let visibleCanvasCtx: CanvasRenderingContext2D;
 let offscreenCanvasCtx: CanvasRenderingContext2D;
@@ -456,6 +455,18 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===================================
 // ============ GAME LOOP ============
 // ===================================
+//
+// Emulation runs at the Game Boy's hardware-accurate rate (~59.7275 Hz),
+// while the browser renders at the display refresh rate (typically 60 Hz).
+//
+// Because these rates do not match, we decouple generation from presentation.
+// This implements a Pull Architecture:
+//   - The Emulator acts as a Producer, latching the latest completed frame.
+//   - The Browser acts as a Consumer, polling for frames during requestAnimationFrame.
+//
+// This prevents lag accumulation and keeps timing accurate. The trade-off is
+// minor visual judder (frame doubling) when the same frame is displayed twice to
+// maintain synchronization.
 
 let animationFrameId: number | undefined;
 
@@ -485,6 +496,11 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 
 	const { tCyclesUsed } = window.processEmulatorCycles(tCycleAccumulator);
 	tCycleAccumulator -= tCyclesUsed;
+
+	const frame = window.pollFrame();
+	if (frame) {
+		updateCanvas(frame);
+	}
 
 	const debuggerEnabled =
 		(document.getElementById("debug-checkbox") as HTMLInputElement | null)

@@ -4,6 +4,7 @@ declare global {
 		processEmulatorCycles: (cycles: number) => {
 			tCyclesUsed: number;
 		};
+		pollFrame: () => Uint8Array;
 		handleJoypadButtonPressed: (button: string) => void;
 		handleJoypadButtonReleased: (button: string) => void;
 		getTraceLogs: () => Uint8Array;
