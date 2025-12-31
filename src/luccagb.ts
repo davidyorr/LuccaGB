@@ -425,10 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 		syncDebugVisibility();
-
-		if (debugCheckbox.checked && isPaused) {
-			updateDebugView();
-		}
+		updateDebugView();
 	});
 
 	syncDebugVisibility();
@@ -502,13 +499,6 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 		updateCanvas(frame);
 	}
 
-	const debuggerEnabled =
-		(document.getElementById("debug-checkbox") as HTMLInputElement | null)
-			?.checked ?? false;
-	if (debuggerEnabled) {
-		updateDebugView();
-	}
-
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
 
@@ -522,6 +512,7 @@ function startAnimationLoop() {
 
 function onRomLoaded() {
 	isRomLoaded = true;
+	updateDebugView();
 	startAnimationLoop();
 }
 
