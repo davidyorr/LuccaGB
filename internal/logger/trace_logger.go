@@ -7,6 +7,7 @@ type TraceLogger struct {
 	buffer  []byte
 	offset  int
 	maxSize int
+	enabled bool
 }
 
 var (
@@ -28,8 +29,20 @@ func init() {
 	}
 }
 
+func (t *TraceLogger) Enable() {
+	t.enabled = true
+}
+
+func (t *TraceLogger) Disable() {
+	t.enabled = false
+}
+
 // Log instruction with optional data: [type:1][pc:2][opcode:1][data:4]
 func (t *TraceLogger) LogInstruction(pc uint16, opcode byte, optionalData ...int) {
+	if !t.enabled {
+		return
+	}
+
 	if t.offset+8 > t.maxSize {
 		return
 	}

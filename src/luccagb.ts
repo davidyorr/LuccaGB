@@ -214,6 +214,27 @@ document.addEventListener("DOMContentLoaded", () => {
 	const downloadTraceLogButton = document.getElementById(
 		"download-trace-log-button",
 	);
+	const traceLogCheckbox = document.getElementById(
+		"trace-log-checkbox",
+	) as HTMLInputElement | null;
+	const traceLogLabel = document.getElementById("trace-log-toggle-container");
+
+	traceLogCheckbox?.addEventListener("change", (event) => {
+		const isEnabled = (event.target as HTMLInputElement).checked;
+
+		if (isEnabled) {
+			window.enableTraceLogging();
+			if (downloadTraceLogButton) {
+				downloadTraceLogButton.style.display = "inline-block";
+			}
+		} else {
+			window.disableTraceLogging();
+			if (downloadTraceLogButton) {
+				downloadTraceLogButton.style.display = "none";
+			}
+		}
+	});
+
 	downloadTraceLogButton?.addEventListener("click", () => {
 		const buffer = window.getTraceLogs();
 
@@ -269,9 +290,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		a.click();
 	});
 
-	// Hide the button in production
-	if (import.meta.env.PROD && downloadTraceLogButton) {
-		downloadTraceLogButton.style.display = "none";
+	// Hide the button and checkbox in production
+	if (import.meta.env.PROD) {
+		if (downloadTraceLogButton) {
+			downloadTraceLogButton.style.display = "none";
+		}
+		if (traceLogLabel) {
+			traceLogLabel.style.display = "none";
+		}
 	}
 
 	// ===========================

@@ -7,6 +7,8 @@ declare global {
 		pollFrame: () => Uint8Array;
 		handleJoypadButtonPressed: (button: string) => void;
 		handleJoypadButtonReleased: (button: string) => void;
+		enableTraceLogging: () => void;
+		disableTraceLogging: () => void;
 		getTraceLogs: () => Uint8Array;
 		getDebugInfo: () => GameboyDebugInfo | null;
 	}

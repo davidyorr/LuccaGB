@@ -18,6 +18,8 @@ func main() {
 	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
 	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
 	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
+	js.Global().Set("enableTraceLogging", js.FuncOf(enableTraceLogging))
+	js.Global().Set("disableTraceLogging", js.FuncOf(disableTraceLogging))
 	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
@@ -143,6 +145,16 @@ func pollFrame(this js.Value, args []js.Value) interface{} {
 	frameReady = false
 	js.CopyBytesToJS(jsImageData, goImageData[:])
 	return jsImageData
+}
+
+func enableTraceLogging(this js.Value, args []js.Value) interface{} {
+	logger.GlobalTraceLogger.Enable()
+	return nil
+}
+
+func disableTraceLogging(this js.Value, args []js.Value) interface{} {
+	logger.GlobalTraceLogger.Disable()
+	return nil
 }
 
 func getTraceLogs(this js.Value, args []js.Value) interface{} {
