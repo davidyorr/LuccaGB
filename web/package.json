@@ -3,7 +3,6 @@
 	"version": "0.0.0",
 	"description": "Game Boy emulator",
 	"author": "David Orr <davidyorr@gmail.com>",
-	"packageManager": "pnpm@10.11.1",
 	"scripts": {
 		"dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
 		"build": "go version && pnpm run build:wasm && vite build",

@@ -14,4 +14,5 @@ go version
 
 # run the package.json build script
 cd web
+pnpm --version
 pnpm run build

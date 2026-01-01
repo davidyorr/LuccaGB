@@ -1,5 +1,4 @@
 {
-	"installCommand": "cd web && corepack enable && pnpm install",
 	"buildCommand": "./vercel-build.sh",
 	"outputDirectory": "web/dist"
 }
