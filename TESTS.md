@@ -59,6 +59,15 @@
 |  | `rom_4Mb.gb` | ✅ |
 |  | `rom_512kb.gb` | ✅ |
 |  | `rom_8Mb.gb` | ✅ |
+| **mooneye / mbc5** |  |  |
+|  | `rom_16Mb.gb` | ✅ |
+|  | `rom_1Mb.gb` | ✅ |
+|  | `rom_2Mb.gb` | ✅ |
+|  | `rom_32Mb.gb` | ✅ |
+|  | `rom_4Mb.gb` | ✅ |
+|  | `rom_512kb.gb` | ✅ |
+|  | `rom_64Mb.gb` | ✅ |
+|  | `rom_8Mb.gb` | ✅ |
 | **mooneye / oam_dma** |  |  |
 |  | `basic.gb` | ✅ |
 |  | `reg_read.gb` | ✅ |
