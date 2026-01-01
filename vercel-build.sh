@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# download Go
+# download go
 curl -L -o go.tar.gz https://go.dev/dl/go1.24.3.linux-amd64.tar.gz
 
 # extract it
@@ -13,6 +13,4 @@ export PATH="$(pwd)/go/bin:$PATH"
 go version
 
 # run the package.json build script
-cd web
-pnpm --version
 pnpm run build

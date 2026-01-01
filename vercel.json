@@ -1,5 +1,4 @@
 {
-	"installCommand": "corepack enable && cd web && pnpm install --frozen-lockfile",
 	"buildCommand": "./vercel-build.sh",
-	"outputDirectory": "web/dist"
+	"outputDirectory": "dist"
 }
