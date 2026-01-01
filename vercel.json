@@ -1,4 +1,4 @@
 {
 	"buildCommand": "./vercel-build.sh",
-	"outputDirectory": "dist"
+	"outputDirectory": "web/dist"
 }

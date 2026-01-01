@@ -7,8 +7,8 @@ node_modules
 # VS Code
 .vscode
 
-# GitHub Pages
-/dist
+# Vercel
+dist/
 
 # test logs
 *.log

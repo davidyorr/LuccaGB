@@ -7,15 +7,15 @@
 	"scripts": {
 		"dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
 		"build": "go version && pnpm run build:wasm && vite build",
-		"build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm ./cmd/luccagb",
-		"watch:wasm": "chokidar '**/*.go' -c 'GOOS=js GOARCH=wasm go build -o public/main.wasm -tags trace ./cmd/luccagb' --initial",
+		"build:wasm": "GOOS=js GOARCH=wasm go build -C .. -o web/public/main.wasm ./cmd/luccagb",
+		"watch:wasm": "chokidar '../**/*.go' -c 'GOOS=js GOARCH=wasm go build -C .. -o web/public/main.wasm -tags trace ./cmd/luccagb' --initial",
 		"preview": "vite preview",
 		"format": "prettier --write '{**/*,*}.{ts,css,html}'",
-		"test": "go test ./... -v",
-		"test:debug": "go test ./... -tags debug -v",
-		"tail": "sh -c 'tail -n ${1:-20} testoutput.log | sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\"' --",
-		"less": "sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" testoutput.log | perl -pe 's/^(.*M-CYCLE=1.*)$/\\e[38;5;208m$1\\e[0m/g' | less -R",
-		"generate-ppu-test": "go run tools/generate_ppu_test_case/generate_ppu_test_case.go"
+		"test": "cd .. && go test ./... -v",
+		"test:debug": "cd .. && go test ./... -tags debug -v",
+		"tail": "cd .. && sh -c 'tail -n ${1:-20} internal/testoutput.log | sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\"' --",
+		"less": "cd .. && sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" internal/testoutput.log | perl -pe 's/^(.*M-CYCLE=1.*)$/\\e[38;5;208m$1\\e[0m/g' | less -R",
+		"generate-ppu-test": "cd .. && go run tools/generate_ppu_test_case/generate_ppu_test_case.go"
 	},
 	"devDependencies": {
 		"@types/golang-wasm-exec": "1.15.2",

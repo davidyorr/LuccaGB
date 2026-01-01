@@ -34,7 +34,7 @@ const debugElements = {
 	flagC: null as HTMLElement | null,
 };
 
-const romFiles = import.meta.glob("../roms/**/*.gb", {
+const romFiles = import.meta.glob("../../roms/**/*.gb", {
 	query: "?url",
 	import: "default",
 });
@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	for (const path of sortedPaths) {
 		const option = document.createElement("option");
-		option.text = path.replace("../roms/", "");
+		option.text = path.replace("../../roms/", "");
 		option.value = path;
 		romSelect.appendChild(option);
 	}
