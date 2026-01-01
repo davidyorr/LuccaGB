@@ -1,4 +1,5 @@
 {
 	"buildCommand": "./vercel-build.sh",
+	"installCommand": "echo 'Skipping automatic install - handled in build script'",
 	"outputDirectory": "web/dist"
 }
