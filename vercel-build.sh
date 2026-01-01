@@ -14,6 +14,4 @@ go version
 
 # run the package.json build script
 cd web
-corepack enable
-pnpm install
 pnpm run build
