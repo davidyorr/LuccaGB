@@ -52,6 +52,24 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 	// MBC1+RAM+BATTERY
 	case 0x03:
 		cartridge.mbc = newMbc1(cartridge)
+	// MBC5
+	case 0x19:
+		cartridge.mbc = newMbc5(cartridge)
+	// MBC5+RAM
+	case 0x1A:
+		cartridge.mbc = newMbc5(cartridge)
+	// MBC5+RAM+BATTERY
+	case 0x1B:
+		cartridge.mbc = newMbc5(cartridge)
+	// MBC5+RUMBLE
+	case 0x1C:
+		cartridge.mbc = newMbc5(cartridge)
+	// MBC5+RUMBLE+RAM
+	case 0x1D:
+		cartridge.mbc = newMbc5(cartridge)
+	// MBC5+RUMBLE+RAM+BATTERY
+	case 0x1E:
+		cartridge.mbc = newMbc5(cartridge)
 	default:
 		cartridge.mbc = nil
 	}

@@ -254,7 +254,7 @@ func TestMooneye__mbc1__rom_16Mb(t *testing.T) {
 }
 
 func TestMooneye__mbc1__rom_1Mb(t *testing.T) {
-	loadRomAndRunSteps(t, "mooneye/mbc1/rom_1Mb", 500_000, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/mbc1/rom_1Mb", 233_004, TestTypeMooneye)
 }
 
 func TestMooneye__mbc1__rom_2Mb(t *testing.T) {
@@ -271,6 +271,38 @@ func TestMooneye__mbc1__rom_512kb(t *testing.T) {
 
 func TestMooneye__mbc1__rom_8Mb(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/mbc1/rom_8Mb", 233_004, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_16Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_16Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_1Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_1Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_2Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_2Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_32Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_32Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_4Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_4Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_512kb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_512kb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_64Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_64Mb", 233_012, TestTypeMooneye)
+}
+
+func TestMooneye__mbc5__rom_8Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc5/rom_8Mb", 233_012, TestTypeMooneye)
 }
 
 // This test checks that OAM DMA copies all bytes correctly.
