@@ -71,7 +71,7 @@
 | **mooneye / oam_dma** |  |  |
 |  | `basic.gb` | ✅ |
 |  | `reg_read.gb` | ✅ |
-|  | `sources-GS.gb` | ⏩ |
+|  | `sources-GS.gb` | ✅ |
 | **mooneye / ppu** |  |  |
 |  | `hblank_ly_scx_timing-GS.gb` | ✅ |
 |  | `intr_1_2_timing-GS.gb` | ✅ |
@@ -139,6 +139,8 @@
 |  | `m3_wx_4_change_sprites.gb` | ❌ |
 |  | `m3_wx_5_change.gb` | ❌ |
 |  | `m3_wx_6_change.gb` | ❌ |
+| **mooneye** |  |  |
+|  | `sprite_priority.gb` | ✅ |
 | **other** |  |  |
 |  | `lucca.gb` | ✅ |
 
