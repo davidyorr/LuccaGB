@@ -52,6 +52,12 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) {
 	// MBC1+RAM+BATTERY
 	case 0x03:
 		cartridge.mbc = newMbc1(cartridge)
+	// MBC2
+	case 0x05:
+		cartridge.mbc = newMbc2(cartridge)
+	// MBC2+BATTERY
+	case 0x06:
+		cartridge.mbc = newMbc2(cartridge)
 	// MBC5
 	case 0x19:
 		cartridge.mbc = newMbc5(cartridge)

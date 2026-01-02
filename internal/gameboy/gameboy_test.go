@@ -273,6 +273,34 @@ func TestMooneye__mbc1__rom_8Mb(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/mbc1/rom_8Mb", 233_004, TestTypeMooneye)
 }
 
+func TestMooneye__mbc2__bits_ramg(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/bits_ramg", 6_237_157, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__bits_romb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/bits_romb", 3_270_201, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__bits_unused(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/bits_unused", 3_059_522, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__ram(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/ram", 496_351, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__rom_1Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/rom_1Mb", 180_347, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__rom_2Mb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/rom_2Mb", 180_347, TestTypeMooneye)
+}
+
+func TestMooneye__mbc2__rom_512kb(t *testing.T) {
+	loadRomAndRunSteps(t, "mooneye/mbc2/rom_512kb", 180_347, TestTypeMooneye)
+}
+
 func TestMooneye__mbc5__rom_16Mb(t *testing.T) {
 	loadRomAndRunSteps(t, "mooneye/mbc5/rom_16Mb", 233_012, TestTypeMooneye)
 }
