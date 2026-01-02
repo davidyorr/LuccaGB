@@ -218,6 +218,10 @@ func TestMealybug_tearoom__m3_wx_6_change(t *testing.T) {
 	runPpuTest(t, "mealybug_tearoom/m3_wx_6_change", 100, "e35b12a8ca4c5e216bd39c652e7c44a2dcf9c92b5b67764553262aeed698b15b")
 }
 
+func TestMooneye__sprite_priority(t *testing.T) {
+	runPpuTest(t, "mooneye/sprite_priority", 2, "dceeb080de25312534d2107fd710e80af34b63c7f6f083b2989f86475372de55")
+}
+
 func Test__lucca(t *testing.T) {
 	runPpuTest(t, "../lucca", 2, "b77a59fe8c635f5db714d0b5eea19b23cfab3fbe7001a541c8056bbc6834a3e5")
 }
