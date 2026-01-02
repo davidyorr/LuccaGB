@@ -320,9 +320,7 @@ func TestMooneye__oam_dma__reg_read(t *testing.T) {
 // This test checks that OAM DMA source memory areas work as expected,
 // including the area past $DFFF.
 func TestMooneye__oam_dma__sources_GS(t *testing.T) {
-	skipCi(t, "mooneye/oam_dma/sources-GS")
-	// MBC type $1B (MBC5+RAM+BATTERY)
-	loadRomAndRunSteps(t, "mooneye/oam_dma/sources-GS", 100, TestTypeMooneye)
+	loadRomAndRunSteps(t, "mooneye/oam_dma/sources-GS", 636_933, TestTypeMooneye)
 }
 
 // Tests how SCX affects the duration between STAT mode=0 interrupt and LY increment.

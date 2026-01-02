@@ -92,6 +92,15 @@ func (dma *DMA) executeMachineCycle() {
 		source := dma.sourceAddress + uint16(dma.progress)
 		destination := 0xFE00 + uint16(dma.progress)
 
+		// Handle Echo RAM:
+		// Standard Echo RAM is $E000-$FDFF. However, on DMG, if the DMA source
+		// is OAM ($FE00+), the read falls through to the backing WRAM because
+		// OAM cannot be read while being written.
+		if source >= 0xE000 && source <= 0xFFFF {
+			// Map back to the underlying WRAM address (8KB offset)
+			source -= 0x2000
+		}
+
 		dma.currentTransferByte = dma.bus.DirectRead(source)
 		dma.ppu.WriteOam(destination, dma.currentTransferByte)
 
