@@ -59,6 +59,14 @@
 |  | `rom_4Mb.gb` | ✅ |
 |  | `rom_512kb.gb` | ✅ |
 |  | `rom_8Mb.gb` | ✅ |
+| **mooneye / mbc2** |  |  |
+|  | `bits_ramg.gb` | ✅ |
+|  | `bits_romb.gb` | ✅ |
+|  | `bits_unused.gb` | ✅ |
+|  | `ram.gb` | ✅ |
+|  | `rom_1Mb.gb` | ✅ |
+|  | `rom_2Mb.gb` | ✅ |
+|  | `rom_512kb.gb` | ✅ |
 | **mooneye / mbc5** |  |  |
 |  | `rom_16Mb.gb` | ✅ |
 |  | `rom_1Mb.gb` | ✅ |
