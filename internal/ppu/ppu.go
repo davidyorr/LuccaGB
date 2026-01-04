@@ -90,6 +90,7 @@ func (ppu *PPU) Reset() {
 	ppu.scx = 0x00
 	ppu.wy = 0x00
 	ppu.wx = 0x00
+	ppu.bgp = 0xFC
 	ppu.mode = OamScan
 	ppu.dot = 0
 }

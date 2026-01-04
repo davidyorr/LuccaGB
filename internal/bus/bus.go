@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/davidyorr/LuccaGB/internal/apu"
 	"github.com/davidyorr/LuccaGB/internal/dma"
 	"github.com/davidyorr/LuccaGB/internal/logger"
 	"github.com/davidyorr/LuccaGB/internal/mmu"
@@ -13,6 +14,7 @@ import (
 
 type Bus struct {
 	ppu    *ppu.PPU
+	apu    *apu.APU
 	mmu    *mmu.MMU
 	dma    *dma.DMA
 	timer  *timer.Timer
@@ -25,12 +27,13 @@ func New() *Bus {
 	return bus
 }
 
-func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial, ppu *ppu.PPU, dma *dma.DMA) {
+func (bus *Bus) Connect(mmu *mmu.MMU, timer *timer.Timer, serial *serial.Serial, ppu *ppu.PPU, apu *apu.APU, dma *dma.DMA) {
 	bus.mmu = mmu
 	bus.dma = dma
 	bus.timer = timer
 	bus.serial = serial
 	bus.ppu = ppu
+	bus.apu = apu
 }
 
 func (bus *Bus) Read(address uint16) (value uint8) {
@@ -71,6 +74,9 @@ func (bus *Bus) Read(address uint16) (value uint8) {
 // logic for bus contention.
 func (bus *Bus) DirectRead(address uint16) (value uint8) {
 	switch {
+	// APU
+	case address >= 0xFF10 && address <= 0xFF3F:
+		return bus.apu.Read(address)
 	// DMA
 	case address == 0xFF46:
 		return bus.dma.DmaRegister()
@@ -118,6 +124,9 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	}
 
 	switch {
+	// APU
+	case address >= 0xFF10 && address <= 0xFF3F:
+		bus.apu.Write(address, value)
 	// PPU LCD
 	case address >= 0xFF40 && address <= 0xFF4B:
 		bus.ppu.Write(address, value)

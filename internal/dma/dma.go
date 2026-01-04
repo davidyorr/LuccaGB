@@ -52,6 +52,7 @@ func New() *DMA {
 }
 
 func (dma *DMA) Reset() {
+	dma.dmaRegister = 0xFF
 	dma.state = StateIdle
 	dma.sourceAddress = 0
 	dma.progress = 0

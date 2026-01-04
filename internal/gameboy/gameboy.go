@@ -1,6 +1,7 @@
 package gameboy
 
 import (
+	"github.com/davidyorr/LuccaGB/internal/apu"
 	"github.com/davidyorr/LuccaGB/internal/bus"
 	"github.com/davidyorr/LuccaGB/internal/cartridge"
 	"github.com/davidyorr/LuccaGB/internal/cpu"
@@ -17,6 +18,7 @@ import (
 type Gameboy struct {
 	cpu       *cpu.CPU
 	ppu       *ppu.PPU
+	apu       *apu.APU
 	mmu       *mmu.MMU
 	dma       *dma.DMA
 	timer     *timer.Timer
@@ -28,6 +30,7 @@ type Gameboy struct {
 func New() *Gameboy {
 	cartridge := cartridge.New()
 	cpu := cpu.New()
+	apu := apu.New()
 	timer := timer.New()
 	serial := serial.New()
 	bus := bus.New()
@@ -37,7 +40,7 @@ func New() *Gameboy {
 	joypad := joypad.New(mmu.RequestInterrupt)
 
 	mmu.ConnectJoypad(joypad)
-	bus.Connect(mmu, timer, serial, ppu, dma)
+	bus.Connect(mmu, timer, serial, ppu, apu, dma)
 	cpu.ConnectBus(bus)
 	dma.ConnectBus(bus)
 	dma.ConnectPpu(ppu)
@@ -45,6 +48,7 @@ func New() *Gameboy {
 	return &Gameboy{
 		cpu:       cpu,
 		ppu:       ppu,
+		apu:       apu,
 		mmu:       mmu,
 		dma:       dma,
 		timer:     timer,
@@ -73,6 +77,7 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 	for range 4 {
 		gameboy.dma.Step()
 		frameReady = gameboy.ppu.Step()
+		gameboy.apu.Step()
 		gameboy.cpu.Step()
 		requestTimerInterrupt := gameboy.timer.Step()
 		if requestTimerInterrupt {
