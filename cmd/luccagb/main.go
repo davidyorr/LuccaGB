@@ -14,6 +14,8 @@ func main() {
 	logger.Info("Hello LuccaGB!")
 
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
+	js.Global().Set("getCartridgeRam", js.FuncOf(getCartridgeRam))
+	js.Global().Set("setCartridgeRam", js.FuncOf(setCartridgeRam))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
 	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
 	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
@@ -36,17 +38,38 @@ func loadRom(this js.Value, args []js.Value) interface{} {
 	js.CopyBytesToGo(cartridgeRom, jsRomData)
 
 	gb = gameboy.New()
-	gb.LoadRom(cartridgeRom)
+	cartridgeInfo := gb.LoadRom(cartridgeRom)
 
-	js.Global().Get("onRomLoaded").Invoke()
+	return map[string]interface{}{
+		"title":      cartridgeInfo.Title,
+		"ramSize":    cartridgeInfo.RamSize,
+		"hasBattery": cartridgeInfo.HasBattery,
+	}
+}
+
+func getCartridgeRam(this js.Value, args []js.Value) interface{} {
+	cartridgeRam := gb.CartridgeRam()
+	jsBuffer := js.Global().Get("Uint8Array").New(len(cartridgeRam))
+	js.CopyBytesToJS(jsBuffer, cartridgeRam)
+
+	return jsBuffer
+}
+
+func setCartridgeRam(this js.Value, args []js.Value) interface{} {
+	jsRamData := args[0]
+	var cartridgeRam []byte
+
+	if jsRamData.IsUndefined() || jsRamData.IsNull() {
+		cartridgeRam = nil
+	} else {
+		cartridgeRam = make([]byte, jsRamData.Get("length").Int())
+		js.CopyBytesToGo(cartridgeRam, jsRamData)
+	}
+
+	gb.SetCartridgeRam(cartridgeRam)
 
 	return nil
 }
-
-const (
-	displayWidth  = 160
-	displayHeight = 144
-)
 
 func processEmulatorCycles(this js.Value, args []js.Value) interface{} {
 	tCyclesToRun := args[0].Float()
@@ -107,6 +130,11 @@ func handleJoypadButtonReleased(this js.Value, args []js.Value) interface{} {
 	gb.ReleaseJoypadInput(input)
 	return nil
 }
+
+const (
+	displayWidth  = 160
+	displayHeight = 144
+)
 
 var goImageData [displayWidth * displayHeight * 4]byte
 var jsImageData js.Value

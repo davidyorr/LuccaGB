@@ -1,6 +1,8 @@
 declare global {
 	interface Window {
-		loadRom: (data: Uint8Array) => void;
+		loadRom: (data: Uint8Array) => CartridgeInfo;
+		setCartridgeRam: (data: Uint8Array | null) => void;
+		getCartridgeRam: () => Uint8Array;
 		processEmulatorCycles: (cycles: number) => {
 			tCyclesUsed: number;
 		};
@@ -14,6 +16,12 @@ declare global {
 	}
 }
 
+export interface CartridgeInfo {
+	title: string;
+	ramSize: number;
+	hasBattery: boolean;
+}
+
 interface GameboyDebugInfo {
 	cartridge: CartridgeDebugInfo;
 	cpu: CpuDebugInfo;
@@ -22,7 +30,7 @@ interface GameboyDebugInfo {
 
 interface CartridgeDebugInfo {
 	title: string;
-	mbcType: number;
+	cartridgeType: number;
 	romSizeCode: number;
 	ramSizeCode: number;
 }

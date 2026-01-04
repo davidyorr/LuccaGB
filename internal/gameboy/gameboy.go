@@ -54,10 +54,18 @@ func New() *Gameboy {
 	}
 }
 
-func (gameboy *Gameboy) LoadRom(rom []uint8) {
+func (gameboy *Gameboy) LoadRom(rom []uint8) cartridge.CartridgeInfo {
 	logger.Info("GAMEBOY LOAD ROM", "SIZE", len(rom))
 
-	gameboy.cartridge.LoadRom(rom)
+	return gameboy.cartridge.LoadRom(rom)
+}
+
+func (gameboy *Gameboy) CartridgeRam() []uint8 {
+	return gameboy.cartridge.Ram()
+}
+
+func (gameboy *Gameboy) SetCartridgeRam(ram []uint8) {
+	gameboy.cartridge.SetRam(ram)
 }
 
 // Advance the entire system by 1 M-cycle (4 T-cycles)
