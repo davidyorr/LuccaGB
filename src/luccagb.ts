@@ -89,6 +89,69 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	// ==================================
+	// ====== set up Drag and Drop ======
+	// ==================================
+	const dragOverlay = document.getElementById("drag-overlay");
+	if (dragOverlay) {
+		window.addEventListener("dragenter", (e) => {
+			// Only show if dragging files
+			if (e.dataTransfer?.types.includes("Files")) {
+				dragOverlay.style.display = "flex";
+			}
+		});
+
+		dragOverlay.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			if (e.dataTransfer) {
+				e.dataTransfer.dropEffect = "copy";
+			}
+		});
+
+		// Hide overlay if user leaves the window (dragging out)
+		dragOverlay.addEventListener("dragleave", (e) => {
+			if (e.target === dragOverlay) {
+				dragOverlay.style.display = "none";
+			}
+		});
+
+		dragOverlay.addEventListener("drop", async (e) => {
+			e.preventDefault();
+			dragOverlay.style.display = "none";
+
+			const files = e.dataTransfer?.files;
+			if (files && files.length > 0) {
+				const file = files[0];
+
+				if (file.name.toLowerCase().endsWith(".gb")) {
+					try {
+						const arrayBuffer = await file.arrayBuffer();
+						await handleRomLoad(arrayBuffer);
+
+						// Clear UI inputs to match state
+						const romSelect = document.getElementById(
+							"rom-select",
+						) as HTMLSelectElement;
+						const fileInput = document.getElementById(
+							"rom-input",
+						) as HTMLInputElement;
+						if (romSelect) {
+							romSelect.value = "";
+						}
+						if (fileInput) {
+							fileInput.value = "";
+						}
+					} catch (err) {
+						console.error("Error reading dropped file", err);
+						alert("Failed to load dropped file.");
+					}
+				} else {
+					alert("Please drop a valid .gb file.");
+				}
+			}
+		});
+	}
+
 	// ==================================================
 	// ====== set up tab visibility event listener ======
 	// ==================================================
