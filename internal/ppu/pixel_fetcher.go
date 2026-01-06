@@ -306,6 +306,10 @@ func (fetcher *PixelFetcher) fetchTileData(offset uint16) uint8 {
 				rowInSprite -= 8
 			}
 		} else {
+			// 8x8 Mode
+			// Limit to 3 bits (0-7), so that if a tall sprite was picked during
+			// Mode 2, we wrap correctly within the 8x8 tile.
+			rowInSprite &= 0b0111
 			// handle y flipping
 			if flipY {
 				rowInSprite = 7 - rowInSprite
