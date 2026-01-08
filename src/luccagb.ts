@@ -547,6 +547,9 @@ let tCycleAccumulator = 0;
 // 4,194,304 T-cycles per second
 const systemClockFrequency = 4.194304 * 1_000_000;
 
+const audioContext = new AudioContext();
+let nextStartTime = 0;
+
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 	if (isPaused || isHidden || isFileInputOpen) {
@@ -572,6 +575,40 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 	const frame = window.pollFrame();
 	if (frame) {
 		updateCanvas(frame);
+	}
+
+	// ===================
+	// ====== AUDIO ======
+	// ===================
+
+	const samples = window.pollAudioBuffer();
+	if (samples?.length > 0) {
+		const buffer = audioContext.createBuffer(1, samples.length, 48000);
+		const channelData = buffer.getChannelData(0);
+
+		for (let i = 0; i < samples.length; i++) {
+			// Normalize sample to range [-1.0, 1.0]
+			// Divide by 32768.0 to convert int16 range to float range
+			// 32768.0 = max positive int16 value (2^15)
+			channelData[i] = samples[i] / 32768.0;
+		}
+
+		// Handle underrun
+		// If nextStartTime is in the past, reset it to "now" so we don't delay
+		if (nextStartTime < audioContext.currentTime) {
+			nextStartTime = audioContext.currentTime;
+		}
+
+		// Create a source to play this buffer
+		const source = audioContext.createBufferSource();
+		source.buffer = buffer;
+		source.connect(audioContext.destination);
+
+		// Schedule it to play
+		source.start(nextStartTime);
+
+		// Advance the pointer so the next chunk plays right after this one
+		nextStartTime += buffer.duration;
 	}
 
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);

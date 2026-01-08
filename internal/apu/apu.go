@@ -1,5 +1,7 @@
 package apu
 
+import "fmt"
+
 type APU struct {
 	// ======================================
 	// ====== Global Control Registers ======
@@ -70,6 +72,40 @@ type APU struct {
 	nr43 uint8
 	// 0xFF23 - NR44: Channel 4 control
 	nr44 uint8
+
+	// ===================
+	// ====== State ======
+	// ===================
+
+	// wave position: 3 bits (0-7) because waveforms are 8 samples long
+
+	internalTimer uint8
+	sampleTimer   uint8
+	outputBuffer  []int16
+
+	// 0xFF04 - Timer DIV register
+	// See: https://gbdev.io/pandocs/Audio_details.html#div-apu
+	divApuCounter uint16
+
+	// the step counter (0-7) to track which events to fire:
+	// Event           Rate    Frequency
+	// ----------------------------------
+	// Envelope sweep  8       64 Hz
+	// Sound length    2       256 Hz
+	// CH1 freq sweep  4       128 Hz
+	divApuStep uint8
+
+	ch1Enabled       bool
+	ch1PeriodDivider uint16
+	ch1WavePosition  uint8
+	ch1OutputBit     uint8
+	ch1LengthTimer   uint8
+
+	ch2Enabled       bool
+	ch2PeriodDivider uint16
+	ch2WavePosition  uint8
+	ch2OutputBit     uint8
+	ch2LengthTimer   uint8
 }
 
 func New() *APU {
@@ -104,8 +140,85 @@ func (apu *APU) Reset() {
 	apu.nr52 = 0xF1
 }
 
-// Perform 1 T-cycle of work
+// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Square_Wave
+var dutyTable = [4][8]uint8{
+	{0, 0, 0, 0, 0, 0, 0, 1}, // Duty 0 (12.5%)
+	{1, 0, 0, 0, 0, 0, 0, 1}, // Duty 1 (25%)
+	{1, 0, 0, 0, 0, 1, 1, 1}, // Duty 2 (50%)
+	{0, 1, 1, 1, 1, 1, 1, 0}, // Duty 3 (75%)
+}
+
+// CPU clock speed / audio sampling rate
+const downsampledRate = uint8(4194304 / 48000)
+
+// See: https://gbdev.io/pandocs/Audio.html#length-timer
+const MaxLengthTimer = uint8(64)
+
+// Step performs 1 T-cycle of work
 func (apu *APU) Step() {
+	apu.divApuCounter++
+	apu.internalTimer++
+	apu.sampleTimer++
+
+	// Runs at 512 Hz (4194304 / 512 = 8192)
+	// See: https://gbdev.io/pandocs/Audio_details.html#div-apu
+	if apu.divApuCounter == 8192 {
+		apu.divApuCounter = 0
+
+		apu.divApuStep++
+		if apu.divApuStep > 7 {
+			apu.divApuStep = 0
+		}
+
+		// Length runs at 256 Hz
+		if apu.divApuStep%2 == 0 {
+			lengthEnabled := (apu.nr24 & 0b0100_0000) != 0
+
+			if lengthEnabled && apu.ch2LengthTimer < MaxLengthTimer {
+				apu.ch2LengthTimer++
+
+				if apu.ch2LengthTimer == MaxLengthTimer {
+					apu.ch2Enabled = false
+				}
+			}
+		}
+	}
+
+	if apu.internalTimer == 4 {
+		apu.ch2PeriodDivider++
+		apu.internalTimer = 0
+	}
+
+	// overflow check
+	if apu.ch2PeriodDivider == 0b1_0000_0000_0000 {
+		apu.ch2PeriodDivider = (uint16(apu.nr24&0b111) << 8) | uint16(apu.nr23)
+		apu.ch2WavePosition++
+
+		if apu.ch2WavePosition > 0b111 {
+			apu.ch2WavePosition = 0
+		}
+
+		dutyType := (apu.nr21 & 0b1100_0000) >> 6
+		apu.ch2OutputBit = dutyTable[dutyType][apu.ch2WavePosition&0b111]
+	}
+
+	if apu.sampleTimer == downsampledRate {
+		apu.sampleTimer = 0
+
+		var sample int16 = 0
+
+		if apu.ch2Enabled {
+			volume := (apu.nr22 & 0b1111_0000) >> 4
+			// divide by 15.0 to normalize, then multiply by max int16 value
+			// "The digital value produced by the generator, which ranges between $0 and $F (0 and 15)"
+			// See: https://gbdev.io/pandocs/Audio_details.html#audio-details
+			amplitude := int16((float32(volume) / 15.0) * 32767.0)
+			sample = int16(apu.ch2OutputBit) * amplitude
+		}
+
+		apu.outputBuffer = append(apu.outputBuffer, sample)
+	}
+
 }
 
 func (apu *APU) Read(address uint16) uint8 {
@@ -160,5 +273,83 @@ func (apu *APU) Read(address uint16) uint8 {
 }
 
 func (apu *APU) Write(address uint16, value uint8) {
+	switch {
+	case address == 0xFF10:
+		apu.nr10 = value
+	case address == 0xFF11:
+		apu.nr11 = value
+	case address == 0xFF12:
+		apu.nr12 = value
+	case address == 0xFF13:
+		apu.nr13 = value
+	case address == 0xFF14:
+		apu.nr14 = value
+	case address == 0xFF16:
+		apu.nr21 = value
 
+		apu.ch2LengthTimer = value & 0b0011_1111
+		fmt.Println("APU: Channel 2 length timer set to", apu.ch2LengthTimer)
+	case address == 0xFF17:
+		apu.nr22 = value
+	case address == 0xFF18:
+		apu.nr23 = value
+	case address == 0xFF19:
+		apu.nr24 = value
+
+		if (value & 0b1000_0000) != 0 {
+			fmt.Println("APU: Channel 2 enabled")
+			apu.ch2Enabled = true
+			apu.ch2PeriodDivider = (uint16(apu.nr24&0b111) << 8) | uint16(apu.nr23)
+
+			if apu.ch2LengthTimer == MaxLengthTimer {
+				apu.ch2LengthTimer = 0
+			}
+		}
+	case address == 0xFF1A:
+		apu.nr30 = value
+	case address == 0xFF1B:
+		apu.nr31 = value
+	case address == 0xFF1C:
+		apu.nr32 = value
+	case address == 0xFF1D:
+		apu.nr33 = value
+	case address == 0xFF1E:
+		apu.nr34 = value
+	case address == 0xFF20:
+		apu.nr41 = value
+	case address == 0xFF21:
+		apu.nr42 = value
+	case address == 0xFF22:
+		apu.nr43 = value
+	case address == 0xFF23:
+		apu.nr44 = value
+	case address == 0xFF24:
+		apu.nr50 = value
+	case address == 0xFF25:
+		apu.nr51 = value
+	case address == 0xFF26:
+		apu.nr52 = value
+	case address >= 0xFF30 && address <= 0xFF3F:
+		apu.waveRam[address-0xFF30] = value
+	}
+}
+
+// OnDivReset is called when the DIV register (0xFF04) is reset, to keep the
+// DIV-APU in sync because they are physically the same counter.
+func (apu *APU) OnDivReset() {
+	apu.divApuCounter = 0
+}
+
+// ConsumeAudioBuffer returns the current audio buffer and clears it.
+func (apu *APU) ConsumeAudioBuffer() []int16 {
+	if (len(apu.outputBuffer)) == 0 {
+		return nil
+	}
+
+	result := make([]int16, len(apu.outputBuffer))
+	copy(result, apu.outputBuffer)
+
+	apu.outputBuffer = apu.outputBuffer[:0]
+
+	return result
 }

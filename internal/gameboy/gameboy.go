@@ -104,6 +104,10 @@ func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
 	return gameboy.ppu.FrameBuffer()
 }
 
+func (gameboy *Gameboy) ConsumeAudioBuffer() []int16 {
+	return gameboy.apu.ConsumeAudioBuffer()
+}
+
 // Debug gathers debug information from all components, acting as a single entry
 // point for the frontend to get a snapshot of the machine state.
 func (gb *Gameboy) Debug() map[string]interface{} {

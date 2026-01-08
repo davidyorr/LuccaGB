@@ -143,6 +143,7 @@ func (bus *Bus) Write(address uint16, value uint8) {
 	// timers
 	case address >= 0xFF04 && address <= 0xFF07:
 		bus.timer.Write(address, value)
+		bus.apu.OnDivReset()
 	// serial data transfer
 	case address == 0xFF01 || address == 0xFF02:
 		bus.serial.Write(address, value)

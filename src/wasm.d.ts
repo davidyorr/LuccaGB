@@ -7,6 +7,7 @@ declare global {
 			tCyclesUsed: number;
 		};
 		pollFrame: () => Uint8Array;
+		pollAudioBuffer: () => Array<number>;
 		handleJoypadButtonPressed: (button: string) => void;
 		handleJoypadButtonReleased: (button: string) => void;
 		enableTraceLogging: () => void;

@@ -4,6 +4,7 @@ package main
 
 import (
 	"syscall/js"
+	"unsafe"
 
 	"github.com/davidyorr/LuccaGB/internal/gameboy"
 	"github.com/davidyorr/LuccaGB/internal/joypad"
@@ -18,6 +19,7 @@ func main() {
 	js.Global().Set("setCartridgeRam", js.FuncOf(setCartridgeRam))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
 	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
+	js.Global().Set("pollAudioBuffer", js.FuncOf(pollAudioBuffer))
 	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
 	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
 	js.Global().Set("enableTraceLogging", js.FuncOf(enableTraceLogging))
@@ -173,6 +175,28 @@ func pollFrame(this js.Value, args []js.Value) interface{} {
 	frameReady = false
 	js.CopyBytesToJS(jsImageData, goImageData[:])
 	return jsImageData
+}
+
+func pollAudioBuffer(this js.Value, args []js.Value) interface{} {
+	samples := gb.ConsumeAudioBuffer()
+
+	if len(samples) == 0 {
+		return nil
+	}
+
+	byteLen := len(samples) * 2
+	bytes := unsafe.Slice((*byte)(unsafe.Pointer(&samples[0])), byteLen)
+
+	jsUint8Array := js.Global().Get("Uint8Array").New(byteLen)
+	js.CopyBytesToJS(jsUint8Array, bytes)
+
+	jsInt16Array := js.Global().Get("Int16Array").New(
+		jsUint8Array.Get("buffer"),
+		jsUint8Array.Get("byteOffset"),
+		len(samples),
+	)
+
+	return jsInt16Array
 }
 
 func enableTraceLogging(this js.Value, args []js.Value) interface{} {
