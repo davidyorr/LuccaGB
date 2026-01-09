@@ -156,6 +156,10 @@ const MaxLengthTimer = uint8(64)
 
 // Step performs 1 T-cycle of work
 func (apu *APU) Step() {
+	if !apu.poweredOn() {
+		return
+	}
+
 	apu.divApuCounter++
 	apu.internalTimer++
 	apu.sampleTimer++
@@ -226,39 +230,39 @@ func (apu *APU) Read(address uint16) uint8 {
 	case address == 0xFF10:
 		return apu.nr10 | 0b1000_0000
 	case address == 0xFF11:
-		return apu.nr11
+		return apu.nr11 | 0b0011_1111
 	case address == 0xFF12:
 		return apu.nr12
 	case address == 0xFF13:
-		return apu.nr13
+		return 0xFF
 	case address == 0xFF14:
-		return apu.nr14
+		return apu.nr14 | 0b1011_1111
 	case address == 0xFF16:
-		return apu.nr21
+		return apu.nr21 | 0b0011_1111
 	case address == 0xFF17:
 		return apu.nr22
 	case address == 0xFF18:
-		return apu.nr23
+		return 0xFF
 	case address == 0xFF19:
-		return apu.nr24
+		return apu.nr24 | 0b1011_1111
 	case address == 0xFF1A:
 		return apu.nr30 | 0b0111_1111
 	case address == 0xFF1B:
-		return apu.nr31 | 0b1000_0001
+		return 0xFF
 	case address == 0xFF1C:
 		return apu.nr32 | 0b1001_1111
 	case address == 0xFF1D:
-		return apu.nr33
+		return 0xFF
 	case address == 0xFF1E:
-		return apu.nr34
+		return apu.nr34 | 0b1011_1111
 	case address == 0xFF20:
-		return apu.nr41 | 0b1100_0000
+		return 0xFF
 	case address == 0xFF21:
 		return apu.nr42
 	case address == 0xFF22:
 		return apu.nr43
 	case address == 0xFF23:
-		return apu.nr44 | 0b0011_1111
+		return apu.nr44 | 0b1011_1111
 	case address == 0xFF24:
 		return apu.nr50
 	case address == 0xFF25:
@@ -273,17 +277,34 @@ func (apu *APU) Read(address uint16) uint8 {
 }
 
 func (apu *APU) Write(address uint16, value uint8) {
+	// Only Wave RAM and NR52 are writable when APU is powered off
+	if !apu.poweredOn() && address != 0xFF26 && !(address >= 0xFF30 && address <= 0xFF3F) {
+		return
+	}
+
 	switch {
 	case address == 0xFF10:
 		apu.nr10 = value
 	case address == 0xFF11:
 		apu.nr11 = value
+
+		apu.ch1LengthTimer = value & 0b0011_1111
+		fmt.Println("APU: Channel 1 length timer set to", apu.ch1LengthTimer)
 	case address == 0xFF12:
 		apu.nr12 = value
 	case address == 0xFF13:
 		apu.nr13 = value
 	case address == 0xFF14:
 		apu.nr14 = value
+
+		if (value & 0b1000_0000) != 0 {
+			fmt.Println("APU: Channel 1 enabled")
+			apu.ch1Enabled = true
+
+			if apu.ch1LengthTimer == MaxLengthTimer {
+				apu.ch1LengthTimer = 0
+			}
+		}
 	case address == 0xFF16:
 		apu.nr21 = value
 
@@ -328,10 +349,47 @@ func (apu *APU) Write(address uint16, value uint8) {
 	case address == 0xFF25:
 		apu.nr51 = value
 	case address == 0xFF26:
-		apu.nr52 = value
+		wasPoweredOn := apu.poweredOn()
+		apu.nr52 = (apu.nr52 & 0b0111_1111) | (value & 0b1000_0000)
+		isPoweredOn := apu.poweredOn()
+
+		// APU ON -> APU OFF
+		if wasPoweredOn && !isPoweredOn {
+			powerBit := apu.nr52 & 0b1000_0000
+			apu.nr52 = powerBit
+
+			// Set all registers to 0x00
+			apu.nr10 = 0x00
+			apu.nr11 = 0x00
+			apu.nr12 = 0x00
+			apu.nr13 = 0x00
+			apu.nr14 = 0x00
+			apu.nr21 = 0x00
+			apu.nr22 = 0x00
+			apu.nr23 = 0x00
+			apu.nr24 = 0x00
+			apu.nr30 = 0x00
+			apu.nr31 = 0x00
+			apu.nr32 = 0x00
+			apu.nr33 = 0x00
+			apu.nr34 = 0x00
+			apu.nr41 = 0x00
+			apu.nr42 = 0x00
+			apu.nr43 = 0x00
+			apu.nr44 = 0x00
+			apu.nr50 = 0x00
+			apu.nr51 = 0x00
+		}
+		// APU OFF -> APU ON
+		if !wasPoweredOn && isPoweredOn {
+		}
 	case address >= 0xFF30 && address <= 0xFF3F:
 		apu.waveRam[address-0xFF30] = value
 	}
+}
+
+func (apu *APU) poweredOn() bool {
+	return (apu.nr52 & 0b1000_0000) != 0
 }
 
 // OnDivReset is called when the DIV register (0xFF04) is reset, to keep the
