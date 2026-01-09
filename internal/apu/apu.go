@@ -315,8 +315,12 @@ func (apu *APU) Read(address uint16) uint8 {
 }
 
 func (apu *APU) Write(address uint16, value uint8) {
-	// Only Wave RAM and NR52 are writable when APU is powered off
-	if !apu.poweredOn() && address != 0xFF26 && !(address >= 0xFF30 && address <= 0xFF3F) {
+	isNR52 := address == 0xFF26
+	isWaveRam := address >= 0xFF30 && address <= 0xFF3F
+	isNR41 := address == 0xFF20
+
+	// Only Wave RAM, NR52, and NR41 are writable when APU is powered off
+	if !apu.poweredOn() && !isNR52 && !isWaveRam && !isNR41 {
 		return
 	}
 
