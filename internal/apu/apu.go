@@ -106,6 +106,13 @@ type APU struct {
 	ch2WavePosition  uint8
 	ch2OutputBit     uint8
 	ch2LengthTimer   uint8
+
+	ch3Enabled       bool
+	ch3PeriodDivider uint16
+	ch3LengthTimer   uint16
+
+	ch4Enabled     bool
+	ch4LengthTimer uint8
 }
 
 func New() *APU {
@@ -152,7 +159,8 @@ var dutyTable = [4][8]uint8{
 const downsampledRate = uint8(4194304 / 48000)
 
 // See: https://gbdev.io/pandocs/Audio.html#length-timer
-const MaxLengthTimer = uint8(64)
+const MaxLengthTimer_Ch1Ch2Ch4 = uint8(64)
+const MaxLengthTimer_Ch3 = uint16(256)
 
 // Step performs 1 T-cycle of work
 func (apu *APU) Step() {
@@ -176,13 +184,43 @@ func (apu *APU) Step() {
 
 		// Length runs at 256 Hz
 		if apu.divApuStep%2 == 0 {
-			lengthEnabled := (apu.nr24 & 0b0100_0000) != 0
+			ch1LengthEnabled := (apu.nr14 & 0b0100_0000) != 0
+			if ch1LengthEnabled && apu.ch1LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
+				apu.ch1LengthTimer++
 
-			if lengthEnabled && apu.ch2LengthTimer < MaxLengthTimer {
+				if apu.ch1LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
+					apu.ch1Enabled = false
+					apu.nr52 &^= 0b0001
+				}
+			}
+
+			ch2LengthEnabled := (apu.nr24 & 0b0100_0000) != 0
+			if ch2LengthEnabled && apu.ch2LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
 				apu.ch2LengthTimer++
 
-				if apu.ch2LengthTimer == MaxLengthTimer {
+				if apu.ch2LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
 					apu.ch2Enabled = false
+					apu.nr52 &^= 0b0010
+				}
+			}
+
+			ch3LengthEnabled := (apu.nr34 & 0b0100_0000) != 0
+			if ch3LengthEnabled && apu.ch3LengthTimer < MaxLengthTimer_Ch3 {
+				apu.ch3LengthTimer++
+
+				if apu.ch3LengthTimer == MaxLengthTimer_Ch3 {
+					apu.ch3Enabled = false
+					apu.nr52 &^= 0b0100
+				}
+			}
+
+			ch4LengthEnabled := (apu.nr44 & 0b0100_0000) != 0
+			if ch4LengthEnabled && apu.ch4LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
+				apu.ch4LengthTimer++
+
+				if apu.ch4LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
+					apu.ch4Enabled = false
+					apu.nr52 &^= 0b1000
 				}
 			}
 		}
@@ -292,17 +330,28 @@ func (apu *APU) Write(address uint16, value uint8) {
 		fmt.Println("APU: Channel 1 length timer set to", apu.ch1LengthTimer)
 	case address == 0xFF12:
 		apu.nr12 = value
+
+		// Ch 1 DAC disabled
+		if (value & 0b1111_1000) == 0 {
+			apu.ch1Enabled = false
+			apu.nr52 &^= 0b0001
+		}
 	case address == 0xFF13:
 		apu.nr13 = value
 	case address == 0xFF14:
 		apu.nr14 = value
 
+		// Trigger bit is set
 		if (value & 0b1000_0000) != 0 {
-			fmt.Println("APU: Channel 1 enabled")
-			apu.ch1Enabled = true
-
-			if apu.ch1LengthTimer == MaxLengthTimer {
+			if apu.ch1LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
 				apu.ch1LengthTimer = 0
+			}
+
+			// Only enable channel if DAC is also enabled
+			if (apu.nr12&0b1111_1000) != 0 && apu.ch1LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
+				fmt.Println("APU: Channel 1 enabled")
+				apu.ch1Enabled = true
+				apu.nr52 |= 0b0000_0001
 			}
 		}
 	case address == 0xFF16:
@@ -312,38 +361,97 @@ func (apu *APU) Write(address uint16, value uint8) {
 		fmt.Println("APU: Channel 2 length timer set to", apu.ch2LengthTimer)
 	case address == 0xFF17:
 		apu.nr22 = value
+
+		// Ch 2 DAC disabled
+		if (value & 0b1111_1000) == 0 {
+			apu.ch2Enabled = false
+			apu.nr52 &^= 0b0010
+		}
 	case address == 0xFF18:
 		apu.nr23 = value
 	case address == 0xFF19:
 		apu.nr24 = value
 
+		// Trigger bit is set
 		if (value & 0b1000_0000) != 0 {
-			fmt.Println("APU: Channel 2 enabled")
-			apu.ch2Enabled = true
 			apu.ch2PeriodDivider = (uint16(apu.nr24&0b111) << 8) | uint16(apu.nr23)
 
-			if apu.ch2LengthTimer == MaxLengthTimer {
+			if apu.ch2LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
 				apu.ch2LengthTimer = 0
+			}
+
+			// Only enable channel if DAC is also enabled
+			if (apu.nr22&0b1111_1000) != 0 && apu.ch2LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
+				fmt.Println("APU: Channel 2 enabled")
+				apu.ch2Enabled = true
+				apu.nr52 |= 0b0000_0010
 			}
 		}
 	case address == 0xFF1A:
 		apu.nr30 = value
+
+		// Ch 3 DAC disabled
+		if (value & 0b1000_0000) == 0 {
+			apu.ch3Enabled = false
+			apu.nr52 &^= 0b0000_0100
+		}
 	case address == 0xFF1B:
 		apu.nr31 = value
+
+		apu.ch3LengthTimer = uint16(value)
 	case address == 0xFF1C:
 		apu.nr32 = value
 	case address == 0xFF1D:
 		apu.nr33 = value
 	case address == 0xFF1E:
 		apu.nr34 = value
+
+		// Trigger bit is set
+		if (value & 0b1000_0000) != 0 {
+			apu.ch3PeriodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
+
+			if apu.ch3LengthTimer == MaxLengthTimer_Ch3 {
+				apu.ch3LengthTimer = 0
+			}
+
+			// Only enable channel if DAC is also enabled
+			if (apu.nr30&0b1000_0000) != 0 && apu.ch3LengthTimer < MaxLengthTimer_Ch3 {
+				fmt.Println("APU: Channel 3 enabled")
+				apu.ch3Enabled = true
+				apu.nr52 |= 0b0000_0100
+			}
+		}
 	case address == 0xFF20:
-		apu.nr41 = value
+		apu.nr41 = (value & 0b0011_1111)
+
+		apu.ch4LengthTimer = value & 0b0011_1111
+		fmt.Println("APU: Channel 4 length timer set to", apu.ch4LengthTimer)
 	case address == 0xFF21:
 		apu.nr42 = value
+
+		// Ch 4 DAC disabled
+		if (value & 0b1111_1000) == 0 {
+			apu.ch4Enabled = false
+			apu.nr52 &^= 0b1000
+		}
 	case address == 0xFF22:
 		apu.nr43 = value
 	case address == 0xFF23:
-		apu.nr44 = value
+		apu.nr44 = (value & 0b1100_0000)
+
+		// Trigger bit is set
+		if (value & 0b1000_0000) != 0 {
+			if apu.ch4LengthTimer == MaxLengthTimer_Ch1Ch2Ch4 {
+				apu.ch4LengthTimer = 0
+			}
+
+			// Only enable channel if DAC is also enabled
+			if (apu.nr42&0b1111_1000) != 0 && apu.ch4LengthTimer < MaxLengthTimer_Ch1Ch2Ch4 {
+				fmt.Println("APU: Channel 4 enabled")
+				apu.ch4Enabled = true
+				apu.nr52 |= 0b0000_1000
+			}
+		}
 	case address == 0xFF24:
 		apu.nr50 = value
 	case address == 0xFF25:
