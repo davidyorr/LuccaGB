@@ -80,7 +80,7 @@ type APU struct {
 	// wave position: 3 bits (0-7) because waveforms are 8 samples long
 
 	internalTimer uint8
-	sampleTimer   uint8
+	sampleTimer   int
 	outputBuffer  []int16
 
 	// 0xFF04 - Timer DIV register
@@ -185,8 +185,8 @@ var dutyTable = [4][8]uint8{
 	{0, 1, 1, 1, 1, 1, 1, 0}, // Duty 3 (75%)
 }
 
-// CPU clock speed / audio sampling rate
-const downsampledRate = uint8(4194304 / 48000)
+const CpuClockSpeed = 4_194_304
+const TargetSampleRate = 48_000
 
 // See: https://gbdev.io/pandocs/Audio.html#length-timer
 const MaxLengthTimer_Ch1Ch2Ch4 = uint16(64)
@@ -200,7 +200,7 @@ func (apu *APU) Step() {
 
 	apu.divApuCounter++
 	apu.internalTimer++
-	apu.sampleTimer++
+	apu.sampleTimer += TargetSampleRate
 
 	ch1 := apu.channels[1]
 	ch2 := apu.channels[2]
@@ -279,8 +279,8 @@ func (apu *APU) Step() {
 		ch2.outputBit = dutyTable[dutyType][ch2.wavePosition&0b111]
 	}
 
-	if apu.sampleTimer == downsampledRate {
-		apu.sampleTimer = 0
+	if apu.sampleTimer >= CpuClockSpeed {
+		apu.sampleTimer -= CpuClockSpeed
 
 		var sample int16 = 0
 
