@@ -1,7 +1,5 @@
 package apu
 
-import "fmt"
-
 type APU struct {
 	// ======================================
 	// ====== Global Control Registers ======
@@ -218,7 +216,7 @@ func (apu *APU) Step() {
 		}
 
 		// Length runs at 256 Hz
-		if apu.divApuStep%2 == 0 {
+		if apu.divApuStep&1 == 0 {
 			ch1LengthEnabled := (apu.nr14 & 0b0100_0000) != 0
 			if ch1LengthEnabled && ch1.lengthTimer < ch1.maxLength {
 				ch1.lengthTimer++
@@ -261,13 +259,34 @@ func (apu *APU) Step() {
 		}
 	}
 
-	if apu.internalTimer == 4 {
+	// Channels 1 & 2 (Pulse Channels) period dividers are clocked at 1048576 Hz, once per four dots
+	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only
+	if (apu.internalTimer & 0b11) == 0 {
+		ch1.periodDivider++
 		ch2.periodDivider++
-		apu.internalTimer = 0
 	}
 
-	// overflow check
-	if ch2.periodDivider == 0b1_0000_0000_0000 {
+	// Channel 3 (Wave Channel) period divider is clocked at 2097152 Hz, once per two dots
+	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff1d--nr33-channel-3-period-low-write-only
+	if (apu.internalTimer & 0b1) == 0 {
+		ch3.periodDivider++
+	}
+
+	// ch 1 overflow check
+	if ch1.periodDivider == 0b1000_0000_0000 {
+		ch1.periodDivider = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
+		ch1.wavePosition++
+
+		if ch1.wavePosition > 0b111 {
+			ch1.wavePosition = 0
+		}
+
+		dutyType := (apu.nr11 & 0b1100_0000) >> 6
+		ch1.outputBit = dutyTable[dutyType][ch1.wavePosition&0b111]
+	}
+
+	// ch 2 overflow check
+	if ch2.periodDivider == 0b1000_0000_0000 {
 		ch2.periodDivider = (uint16(apu.nr24&0b111) << 8) | uint16(apu.nr23)
 		ch2.wavePosition++
 
@@ -282,20 +301,33 @@ func (apu *APU) Step() {
 	if apu.sampleTimer >= CpuClockSpeed {
 		apu.sampleTimer -= CpuClockSpeed
 
-		var sample int16 = 0
+		var accumulator int32 = 0
+
+		if ch1.enabled {
+			volume := (apu.nr12 & 0b1111_0000) >> 4
+			sample := int32(ch1.outputBit) * int32(volume)
+			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			accumulator += sample
+		}
 
 		if ch2.enabled {
 			volume := (apu.nr22 & 0b1111_0000) >> 4
-			// divide by 15.0 to normalize, then multiply by max int16 value
-			// "The digital value produced by the generator, which ranges between $0 and $F (0 and 15)"
-			// See: https://gbdev.io/pandocs/Audio_details.html#audio-details
-			amplitude := int16((float32(volume) / 15.0) * 32767.0)
-			sample = int16(ch2.outputBit) * amplitude
+			sample := int32(ch2.outputBit) * int32(volume)
+			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			accumulator += sample
 		}
 
-		apu.outputBuffer = append(apu.outputBuffer, sample)
-	}
+		// "The digital value produced by the generator, which ranges between $0 and $F (0 and 15)"
+		// See: https://gbdev.io/pandocs/Audio_details.html#audio-details
 
+		// Normalize the result
+		// We have 4 channels, each capable of outputting 0-15.
+		// The max accumulator = 15 * 4 = 60.
+		// So we want to map the range [0, 60] to [-32768, 32767] (for int16).
+		mixedSample := int16((float32(accumulator) / 60.0) * 32767.0)
+
+		apu.outputBuffer = append(apu.outputBuffer, mixedSample)
+	}
 }
 
 func (apu *APU) Read(address uint16) uint8 {
@@ -366,7 +398,6 @@ func (apu *APU) Write(address uint16, value uint8) {
 		apu.nr11 = value
 
 		apu.channels[1].lengthTimer = uint16(value & 0b0011_1111)
-		fmt.Println("APU: Channel 1 length timer set to", apu.channels[1].lengthTimer)
 	case address == 0xFF12:
 		apu.nr12 = value
 
@@ -379,11 +410,15 @@ func (apu *APU) Write(address uint16, value uint8) {
 		apu.nr13 = value
 	case address == 0xFF14:
 		apu.writeNRx4(address, value)
+
+		// Trigger bit is set
+		if (value & 0b1000_0000) != 0 {
+			apu.channels[1].periodDivider = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
+		}
 	case address == 0xFF16:
 		apu.nr21 = value
 
 		apu.channels[2].lengthTimer = uint16(value & 0b0011_1111)
-		fmt.Println("APU: Channel 2 length timer set to", apu.channels[2].lengthTimer)
 	case address == 0xFF17:
 		apu.nr22 = value
 
@@ -428,7 +463,6 @@ func (apu *APU) Write(address uint16, value uint8) {
 		apu.nr41 = (value & 0b0011_1111)
 
 		apu.channels[4].lengthTimer = uint16(value & 0b0011_1111)
-		fmt.Println("APU: Channel 4 length timer set to", apu.channels[4].lengthTimer)
 	case address == 0xFF21:
 		apu.nr42 = value
 
