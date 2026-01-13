@@ -21,9 +21,9 @@ type PixelFetcher struct {
 	spriteIndex      uint8
 
 	// background and window FIFO
-	backgroundFifo []FIFO
+	backgroundFifo PixelFifo
 	// sprite (object) FIFO
-	spriteFifo []FIFO
+	spriteFifo PixelFifo
 }
 
 type FetcherState int
@@ -36,14 +36,6 @@ const (
 	StatePush
 )
 
-type FIFO struct {
-	// 4 possible colors
-	colorId uint8
-	// only applies to objects (sprites)
-	palette            uint8
-	backgroundPriority uint8
-}
-
 func newPixelFetcher(ppu *PPU) *PixelFetcher {
 	pixelFetcher := &PixelFetcher{
 		ppu: ppu,
@@ -54,8 +46,8 @@ func newPixelFetcher(ppu *PPU) *PixelFetcher {
 
 func (fetcher *PixelFetcher) prepareForScanline() {
 	fetcher.state = StateGetTile
-	fetcher.backgroundFifo = fetcher.backgroundFifo[:0]
-	fetcher.spriteFifo = fetcher.spriteFifo[:0]
+	fetcher.backgroundFifo.Reset()
+	fetcher.spriteFifo.Reset()
 	fetcher.isFirstFetchOfScanline = true
 	fetcher.isFetchingSprite = false
 	fetcher.isFetchingWindow = false
@@ -111,7 +103,7 @@ func (fetcher *PixelFetcher) tick() {
 	windowEnabled := (fetcher.ppu.lcdc>>5)&1 == 1
 	if !fetcher.isFetchingWindow && (windowEnabled) && (fetcher.wyEqualedLyDuringFrame) && (fetcher.currentX+7 >= fetcher.ppu.wx) {
 		fetcher.state = StateGetTile
-		fetcher.backgroundFifo = fetcher.backgroundFifo[:0]
+		fetcher.backgroundFifo.Reset()
 		fetcher.isFetchingWindow = true
 		fetcher.scanlineHadWindowPixels = true
 		fetcher.xPositionCounter = 0
@@ -229,14 +221,15 @@ func (fetcher *PixelFetcher) tick() {
 				fifoIndex := i - int(pixelsToDiscard)
 
 				// if the FIFO is not big enough to hold this pixel we need to expand it
-				if fifoIndex >= len(fetcher.spriteFifo) {
-					fetcher.spriteFifo = append(fetcher.spriteFifo, tempBuffer[i])
+				if fifoIndex >= fetcher.spriteFifo.size {
+					fetcher.spriteFifo.Push(tempBuffer[i])
 				} else {
 					// if the FIFO already has a pixel in this slot we only overwrite it if
 					// 1. the existing pixel is transparent (color ID 0)
 					// 2. the new pixel is not transparent (color ID not 0)
-					if fetcher.spriteFifo[fifoIndex].colorId == 0 && tempBuffer[i].colorId != 0 {
-						fetcher.spriteFifo[fifoIndex] = tempBuffer[i]
+					slot := fetcher.spriteFifo.Peek(fifoIndex)
+					if slot.colorId == 0 && tempBuffer[i].colorId != 0 {
+						*slot = tempBuffer[i]
 					}
 				}
 			}
@@ -247,7 +240,7 @@ func (fetcher *PixelFetcher) tick() {
 			// Note: While fetching background pixels, this step is only executed if the background FIFO is fully empty.
 			// If it is not, this step repeats every cycle until it succeeds.
 			// See: https://ashiepaws.github.io/GBEDG/ppu/#background-pixel-fetching
-			if len(fetcher.backgroundFifo) == 0 {
+			if fetcher.backgroundFifo.size == 0 {
 				for i := 7; i >= 0; i-- {
 					lowBit := (fetcher.fetchedTileDataLow >> i) & 1
 					highBit := (fetcher.fetchedTileDataHigh >> i) & 1
@@ -257,7 +250,7 @@ func (fetcher *PixelFetcher) tick() {
 						palette:            0, // only applies to sprites
 						backgroundPriority: 0, // only applies to sprites
 					}
-					fetcher.backgroundFifo = append(fetcher.backgroundFifo, pixel)
+					fetcher.backgroundFifo.Push(pixel)
 				}
 				fetcher.state = StateGetTile
 				fetcher.xPositionCounter++
@@ -349,7 +342,7 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 	}
 
 	// do nothing if the FIFO is empty
-	if len(fetcher.backgroundFifo) == 0 {
+	if fetcher.backgroundFifo.size == 0 {
 		return
 	}
 
@@ -358,15 +351,14 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 		fetcher.backgroundScrollingPenalty--
 
 		if fetcher.pixelsToDiscard > 0 {
-			fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
+			fetcher.backgroundFifo.Pop()
 			fetcher.pixelsToDiscard--
 		}
 		return
 	}
 
 	// otherwise add to the framebuffer
-	backgroundPixel := fetcher.backgroundFifo[0]
-	fetcher.backgroundFifo = fetcher.backgroundFifo[1:]
+	backgroundPixel := fetcher.backgroundFifo.Pop()
 	var color uint8
 
 	// use the background pixel's color as the default
@@ -381,9 +373,8 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 
 	// See: https://ashiepaws.github.io/GBEDG/ppu/#pixel-mixing
 	var spritePixel FIFO
-	if len(fetcher.spriteFifo) > 0 {
-		spritePixel = fetcher.spriteFifo[0]
-		fetcher.spriteFifo = fetcher.spriteFifo[1:]
+	if fetcher.spriteFifo.size > 0 {
+		spritePixel = fetcher.spriteFifo.Pop()
 		spriteIsTransparent := spritePixel.colorId == 0
 		backgroundHasPriority := spritePixel.backgroundPriority == 1 && backgroundPixel.colorId != 0
 		objEnabled := (fetcher.ppu.lcdc>>1)&1 == 1
