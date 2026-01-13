@@ -79,7 +79,7 @@ type APU struct {
 
 	internalTimer uint8
 	sampleTimer   int
-	outputBuffer  []int16
+	outputBuffer  AudioBuffer
 
 	// 0xFF04 - Timer DIV register
 	// See: https://gbdev.io/pandocs/Audio_details.html#div-apu
@@ -326,7 +326,7 @@ func (apu *APU) Step() {
 		// So we want to map the range [0, 60] to [-32768, 32767] (for int16).
 		mixedSample := int16((float32(accumulator) / 60.0) * 32767.0)
 
-		apu.outputBuffer = append(apu.outputBuffer, mixedSample)
+		apu.outputBuffer.Write(mixedSample)
 	}
 }
 
@@ -584,16 +584,8 @@ func (apu *APU) OnDivReset() {
 	apu.divApuCounter = 0
 }
 
-// ConsumeAudioBuffer returns the current audio buffer and clears it.
-func (apu *APU) ConsumeAudioBuffer() []int16 {
-	if (len(apu.outputBuffer)) == 0 {
-		return nil
-	}
-
-	result := make([]int16, len(apu.outputBuffer))
-	copy(result, apu.outputBuffer)
-
-	apu.outputBuffer = apu.outputBuffer[:0]
-
-	return result
+// ReadSamples copies up to len(dst) samples into dst.
+// Returns number of samples written.
+func (apu *APU) ReadSamples(dst []int16) int {
+	return apu.outputBuffer.Read(dst)
 }

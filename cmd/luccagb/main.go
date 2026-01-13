@@ -6,6 +6,7 @@ import (
 	"syscall/js"
 	"unsafe"
 
+	"github.com/davidyorr/LuccaGB/internal/apu"
 	"github.com/davidyorr/LuccaGB/internal/gameboy"
 	"github.com/davidyorr/LuccaGB/internal/joypad"
 	"github.com/davidyorr/LuccaGB/internal/logger"
@@ -177,15 +178,18 @@ func pollFrame(this js.Value, args []js.Value) interface{} {
 	return jsImageData
 }
 
-func pollAudioBuffer(this js.Value, args []js.Value) interface{} {
-	samples := gb.ConsumeAudioBuffer()
+const AudioChunkSize = apu.AudioBufferSize
 
-	if len(samples) == 0 {
+var audioTransferBuffer = make([]int16, AudioChunkSize)
+
+func pollAudioBuffer(this js.Value, args []js.Value) interface{} {
+	numOfSamples := gb.ReadSamples(audioTransferBuffer)
+	if numOfSamples == 0 {
 		return nil
 	}
 
-	byteLen := len(samples) * 2
-	bytes := unsafe.Slice((*byte)(unsafe.Pointer(&samples[0])), byteLen)
+	byteLen := numOfSamples * 2
+	bytes := unsafe.Slice((*byte)(unsafe.Pointer(&audioTransferBuffer[0])), byteLen)
 
 	jsUint8Array := js.Global().Get("Uint8Array").New(byteLen)
 	js.CopyBytesToJS(jsUint8Array, bytes)
@@ -193,7 +197,7 @@ func pollAudioBuffer(this js.Value, args []js.Value) interface{} {
 	jsInt16Array := js.Global().Get("Int16Array").New(
 		jsUint8Array.Get("buffer"),
 		jsUint8Array.Get("byteOffset"),
-		len(samples),
+		numOfSamples,
 	)
 
 	return jsInt16Array

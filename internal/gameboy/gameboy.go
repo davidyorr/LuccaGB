@@ -104,8 +104,8 @@ func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
 	return gameboy.ppu.FrameBuffer()
 }
 
-func (gameboy *Gameboy) ConsumeAudioBuffer() []int16 {
-	return gameboy.apu.ConsumeAudioBuffer()
+func (gameboy *Gameboy) ReadSamples(dst []int16) int {
+	return gameboy.apu.ReadSamples(dst)
 }
 
 // Debug gathers debug information from all components, acting as a single entry
