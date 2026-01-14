@@ -33,6 +33,10 @@ type CPU struct {
 	opcode uint8
 	// the current CB opcode
 	cbOpcode *uint8
+	// Backing storage for the cbOpcode pointer.
+	// This avoids a heap allocation caused by taking the address of a
+	// function-local variable (escape analysis).
+	cbOpcodeValue uint8
 	// the current immediate value
 	immediateValue uint16
 	// the current M-cycle, 1 indexed
@@ -160,8 +164,8 @@ func (cpu *CPU) executeInstructionStep() {
 
 	// fetch the CB opcode
 	if cpu.mCycle == 2 && cpu.opcode == 0xCB {
-		cbOpcode := cpu.fetchByte()
-		cpu.cbOpcode = &cbOpcode
+		cpu.cbOpcodeValue = cpu.fetchByte()
+		cpu.cbOpcode = &cpu.cbOpcodeValue
 	}
 
 	done := cpu.instruction.step(cpu)
