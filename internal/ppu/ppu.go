@@ -66,7 +66,7 @@ type PPU struct {
 	mode                           Mode
 	previousStatInterruptLineState bool
 	// 10 sprites can be displayed per scanline
-	spriteBuffer       []uint8
+	spriteBuffer       SpriteBuffer
 	frameBuffer        [144][160]uint8
 	interruptRequester func(interruptType interrupt.Interrupt)
 	dot                uint16
@@ -109,7 +109,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 	if ppu.ly < 144 {
 		if ppu.dot == 0 {
 			ppu.changeMode(OamScan)
-			ppu.spriteBuffer = nil
+			ppu.spriteBuffer.Reset()
 		} else if ppu.dot == 80 {
 			ppu.changeMode(DrawingPixels)
 			ppu.pixelFetcher.prepareForScanline()
@@ -121,7 +121,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 		// Mode 2
 		case OamScan:
 			if ppu.dot%2 == 0 {
-				if len(ppu.spriteBuffer) < 10 {
+				if ppu.spriteBuffer.size < MaxSpriteBufferSize {
 					oamIndex := ppu.dot / 2
 					spriteY := ppu.oam[oamIndex*4]
 					spriteX := ppu.oam[oamIndex*4+1]
@@ -131,7 +131,7 @@ func (ppu *PPU) Step() (frameReady bool) {
 					}
 					// See: https://ashiepaws.github.io/GBEDG/ppu/#oam-scan-mode-2
 					if ppu.ly+16 >= spriteY && ppu.ly+16 < spriteY+height && spriteX > 0 {
-						ppu.spriteBuffer = append(ppu.spriteBuffer, uint8(oamIndex))
+						ppu.spriteBuffer.Push(uint8(oamIndex))
 					}
 				}
 			}

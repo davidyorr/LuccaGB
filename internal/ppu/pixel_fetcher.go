@@ -79,7 +79,8 @@ func (fetcher *PixelFetcher) tick() {
 		// If the X-Position of any sprite in the sprite buffer is less than or
 		// equal to the current Pixel-X-Position + 8, a sprite fetch is initiated.
 		// See: https://ashiepaws.github.io/GBEDG/ppu/#sprite-fetching
-		for i, oamIndex := range fetcher.ppu.spriteBuffer {
+		for i := 0; i < fetcher.ppu.spriteBuffer.size; i++ {
+			oamIndex := fetcher.ppu.spriteBuffer.data[i]
 			// each sprite is 4 bytes long
 			baseAddress := oamIndex * 4
 			spriteX := fetcher.ppu.oam[baseAddress+1]
@@ -88,7 +89,7 @@ func (fetcher *PixelFetcher) tick() {
 				fetcher.isFetchingSprite = true
 				fetcher.state = StateGetTile
 				fetcher.spriteIndex = oamIndex
-				fetcher.ppu.spriteBuffer = append(fetcher.ppu.spriteBuffer[:i], fetcher.ppu.spriteBuffer[i+1:]...)
+				fetcher.ppu.spriteBuffer.Remove(i)
 
 				// reset background fetcher
 				fetcher.counter = 0
