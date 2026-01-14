@@ -166,13 +166,12 @@ func (cpu *CPU) executeInstructionStep() {
 
 	done := cpu.instruction.step(cpu)
 
-	// for logging
-	var cbo uint8 = 0
-	if cpu.cbOpcode != nil {
-		cbo = *cpu.cbOpcode
-	}
-
 	if debug.Enabled {
+		var cbo uint8 = 0
+		if cpu.cbOpcode != nil {
+			cbo = *cpu.cbOpcode
+		}
+
 		logger.Info(
 			"INSTRUCTION STEP",
 			"M-CYCLE", mCycleForLog,

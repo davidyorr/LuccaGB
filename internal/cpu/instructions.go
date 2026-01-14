@@ -1,6 +1,10 @@
 package cpu
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/davidyorr/LuccaGB/internal/debug"
+)
 
 type instruction struct {
 	mnemonic string
@@ -343,16 +347,24 @@ func executeCbInstructionStep(cpu *CPU) bool {
 
 	switch operation {
 	case 0b00:
-		cpu.instruction.mnemonic = fmt.Sprintf("%s %s", cbShiftRotates[u3], cbRegisters[r8])
+		if debug.Enabled {
+			cpu.instruction.mnemonic = fmt.Sprintf("%s %s", cbShiftRotates[u3], cbRegisters[r8])
+		}
 		return cpu.shift_rotate_u3_r8(u3, r8)
 	case 0b01:
-		cpu.instruction.mnemonic = fmt.Sprintf("BIT %d, %s", u3, cbRegisters[r8])
+		if debug.Enabled {
+			cpu.instruction.mnemonic = fmt.Sprintf("BIT %d, %s", u3, cbRegisters[r8])
+		}
 		return cpu.bit_u3_r8(u3, r8)
 	case 0b10:
-		cpu.instruction.mnemonic = fmt.Sprintf("RES %d, %s", u3, cbRegisters[r8])
+		if debug.Enabled {
+			cpu.instruction.mnemonic = fmt.Sprintf("RES %d, %s", u3, cbRegisters[r8])
+		}
 		return cpu.res_u3_r8(u3, r8)
 	case 0b11:
-		cpu.instruction.mnemonic = fmt.Sprintf("SET %d, %s", u3, cbRegisters[r8])
+		if debug.Enabled {
+			cpu.instruction.mnemonic = fmt.Sprintf("SET %d, %s", u3, cbRegisters[r8])
+		}
 		return cpu.set_u3_r8(u3, r8)
 	}
 
