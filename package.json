@@ -15,7 +15,10 @@
 		"test:debug": "go test ./... -tags debug -v",
 		"tail": "sh -c 'tail -n ${1:-20} internal/testoutput.log | sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\"' --",
 		"less": "sed \"s/time=[0-9:.\\-]*[[:space:]]*//; s/level=INFO[[:space:]]*//\" internal/testoutput.log | perl -pe 's/^(.*M-CYCLE=1.*)$/\\e[38;5;208m$1\\e[0m/g' | less -R",
-		"generate-ppu-test": "go run tools/generate_ppu_test_case/generate_ppu_test_case.go"
+		"generate-ppu-test": "go run tools/generate_ppu_test_case/generate_ppu_test_case.go",
+		"benchmark:cpu": "go test ./internal/gameboy -bench=BenchmarkRom -benchtime=10s -benchmem -cpuprofile=cpu.out -run=^$",
+		"benchmark:mem": "go test ./internal/gameboy -bench=BenchmarkRom -benchtime=10s -memprofile=mem.out -run=^$",
+		"benchmark:viz": "go tool pprof -http=:8080"
 	},
 	"devDependencies": {
 		"@types/golang-wasm-exec": "1.15.2",

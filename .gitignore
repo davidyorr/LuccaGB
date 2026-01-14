@@ -8,7 +8,7 @@ node_modules
 .vscode
 
 # GitHub Pages
-/dist
+dist/
 
 # test logs
 *.log
@@ -16,6 +16,8 @@ node_modules
 # test output
 test_results.json
 screenshots_test_results.json
+cpu.out
+mem.out
 
 # PPU screenshots test output
 screenshots_out/

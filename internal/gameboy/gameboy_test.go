@@ -3,13 +3,17 @@
 package gameboy
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/davidyorr/LuccaGB/internal/logger"
 )
@@ -38,13 +42,17 @@ func TestMain(m *testing.M) {
 	total := atomic.LoadInt32(&testsRun)
 	passed := atomic.LoadInt32(&testsPassed)
 
-	fmt.Printf(
-		"\n==================== TEST SUMMARY ===================\n"+
-			"  %d / %d tests passing\n"+
-			"=====================================================\n",
-		passed,
-		total,
-	)
+	// only print the Test Summary if we are NOT benchmarking
+	isBenchmarking := flag.Lookup("test.bench").Value.String() != ""
+	if !isBenchmarking {
+		fmt.Printf(
+			"\n==================== TEST SUMMARY ===================\n"+
+				"  %d / %d tests passing\n"+
+				"=====================================================\n",
+			passed,
+			total,
+		)
+	}
 
 	os.Exit(code)
 }
@@ -603,4 +611,104 @@ func initTestLogger() (*logBuffer, *slog.Logger) {
 	}))
 
 	return logBuffer, testLogger
+}
+
+// ==========================
+// ====== BENCHMARKING ======
+// ==========================
+
+var romPath = flag.String("rom", "", "Absolute path to ROM file")
+
+func BenchmarkRom(b *testing.B) {
+	// Check if ROM path was provided
+	if *romPath == "" {
+		b.Fatal("ROM path not provided. Use -rom flag to specify a ROM file")
+	}
+
+	// 1. SETUP: Load the ROM
+	romBytes, err := os.ReadFile(*romPath)
+	if err != nil {
+		b.Fatal("Error reading file:", err)
+	}
+
+	silentHandler := slog.NewTextHandler(io.Discard, nil)
+	logger.Init(silentHandler)
+	defer logger.Init(slog.Default().Handler())
+
+	gb := New()
+	gb.LoadRom(romBytes)
+
+	// Snapshot Memory before loop
+	var m1 runtime.MemStats
+	runtime.ReadMemStats(&m1)
+
+	// 2. RESET TIMER: Don't count the setup time above
+	b.ResetTimer()
+	startTime := time.Now()
+
+	// 3. THE LOOP
+	for b.Loop() {
+		stepFrame(gb)
+	}
+
+	b.StopTimer()
+	duration := time.Since(startTime)
+
+	// Snapshot Memory after loop
+	var m2 runtime.MemStats
+	runtime.ReadMemStats(&m2)
+
+	// 4. REPORTING
+	printReport(b.N, duration, &m1, &m2)
+}
+
+func stepFrame(gb *Gameboy) {
+	// A Game Boy frame is 70224 clock cycles
+	const cyclesPerFrame = 70224
+
+	currentCycles := 0
+	for currentCycles < cyclesPerFrame {
+		gb.Step()
+		currentCycles += 4
+	}
+}
+
+func printReport(count int, d time.Duration, m1, m2 *runtime.MemStats) {
+	// Constants for Game Boy hardware
+	const gbClockSpeed = 4194304.0
+	const cyclesPerFrame = 70224
+	const hardwareFps = gbClockSpeed / float64(cyclesPerFrame)
+
+	// Calculate Stats
+	seconds := d.Seconds()
+	fps := float64(count) / seconds
+	msPerFrame := 1000.0 / fps
+	speedMultiplier := fps / hardwareFps
+
+	// Memory Stats
+	totalAllocs := m2.Mallocs - m1.Mallocs
+	allocsPerFrame := totalAllocs / uint64(count)
+	bytesPerFrame := (m2.TotalAlloc - m1.TotalAlloc) / uint64(count)
+
+	// ASCII Report
+	fmt.Printf("\n======================================================\n")
+	fmt.Printf("                  PERFORMANCE REPORT              \n")
+	fmt.Printf("======================================================\n")
+	fmt.Printf("    Duration:       %.2fs for %d frames\n", seconds, count)
+	fmt.Printf("    FPS:            %.0f FPS (Target: ~%.2f)\n", fps, hardwareFps)
+	fmt.Printf("    Speedup:        %.2fx real-time speed\n", speedMultiplier)
+	fmt.Printf("    Frame Time:     %.3fms (Budget: 16.74ms)\n", msPerFrame)
+	fmt.Printf("------------------------------------------------------\n")
+	fmt.Printf("                     MEMORY USAGE\n")
+	fmt.Printf("------------------------------------------------------\n")
+	fmt.Printf("    Allocations:    %d per frame\n", allocsPerFrame)
+	fmt.Printf("    Bytes Created:  %d bytes per frame\n", bytesPerFrame)
+
+	if allocsPerFrame == 0 {
+		fmt.Printf("    ✅ PERFECT: Zero allocations in main loop.\n")
+	} else {
+		fmt.Printf("    ⚠️  WARNING: Allocations detected! Wasm will stutter.\n")
+		fmt.Printf("       Run 'pnpm run benchmark:mem' to find the cause.\n")
+	}
+	fmt.Printf("======================================================\n\n")
 }
