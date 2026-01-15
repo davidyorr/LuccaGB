@@ -113,6 +113,11 @@ type channel struct {
 	// ====== Not Common Fields ======
 	periodDivider uint16
 	wavePosition  uint8
+
+	// Ch 1 Sweep Unit
+	sweepTimer          uint16
+	sweepEnabled        bool
+	sweepShadowRegister uint16 // output period
 }
 
 func New() *APU {
@@ -213,6 +218,31 @@ func (apu *APU) Step() {
 		apu.divApuStep++
 		if apu.divApuStep > 7 {
 			apu.divApuStep = 0
+		}
+
+		// Ch1 Freq Sweep runs at 128 Hz
+		if apu.divApuStep&0b11 == 0 {
+			if ch1.sweepTimer > 0 {
+				ch1.sweepTimer--
+			}
+
+			if ch1.sweepTimer == 0 {
+				apu.reloadCh1SweepTimer()
+
+				pace := (apu.nr10 & 0b0111_0000) >> 4
+				if ch1.sweepEnabled && pace != 0 {
+					frequency := apu.calculateCh1Frequency()
+					individualStep := apu.nr10 & 0b0000_0111
+
+					if frequency <= 2047 && individualStep != 0 {
+						ch1.sweepShadowRegister = uint16(frequency)
+						apu.nr13 = uint8(frequency & 0xFF)
+						apu.nr14 = (apu.nr14 & 0b1111_1000) | uint8((frequency>>8)&0b0111)
+						ch1.periodDivider = uint16(frequency)
+						apu.calculateCh1Frequency()
+					}
+				}
+			}
 		}
 
 		// Length runs at 256 Hz
@@ -414,6 +444,19 @@ func (apu *APU) Write(address uint16, value uint8) {
 		// Trigger bit is set
 		if (value & 0b1000_0000) != 0 {
 			apu.ch1.periodDivider = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
+
+			// sweep initialization
+			pace := (apu.nr10 & 0b0111_0000) >> 4
+			individualStep := apu.nr10 & 0b0000_0111
+
+			apu.ch1.sweepShadowRegister = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
+			apu.ch1.sweepEnabled = pace != 0 || individualStep != 0
+
+			apu.reloadCh1SweepTimer()
+
+			if individualStep != 0 {
+				apu.calculateCh1Frequency()
+			}
 		}
 	case address == 0xFF16:
 		apu.nr21 = value
@@ -573,6 +616,39 @@ func (apu *APU) writeNRx4(address uint16, value uint8) {
 			ch.enabled = true
 			apu.nr52 |= ch.nr52BitMask
 		}
+	}
+}
+
+// calculateCh1Frequency consists of taking the value in the frequency “shadow
+// register”, shifting it right by the individual step, optionally negating the
+// value (depending on the direction) and summing this with the frequency
+// “shadow register” to produce a new frequency.
+// See: https://gbdev.io/pandocs/Audio_details.html#pulse-channel-with-sweep-ch1
+func (apu *APU) calculateCh1Frequency() int {
+	direction := (apu.nr10 & 0b0000_1000) >> 3
+	individualStep := apu.nr10 & 0b0000_0111
+
+	frequency := int(apu.ch1.sweepShadowRegister)
+	delta := int(apu.ch1.sweepShadowRegister >> individualStep)
+	if direction == 1 {
+		frequency -= delta
+	} else {
+		frequency += delta
+	}
+
+	if frequency > 2047 {
+		apu.ch1.enabled = false
+		apu.nr52 &^= 0b0001
+	}
+
+	return frequency
+}
+
+func (apu *APU) reloadCh1SweepTimer() {
+	pace := (apu.nr10 & 0b0111_0000) >> 4
+	apu.ch1.sweepTimer = uint16(pace)
+	if pace == 0 {
+		apu.ch1.sweepTimer = 8
 	}
 }
 
