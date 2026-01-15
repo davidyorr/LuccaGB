@@ -61,6 +61,14 @@ func TestBlargg__cpu_instrs(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/cpu_instrs", 56_108_272, TestTypeBlargg)
 }
 
+func TestBlargg__dmg_sound(t *testing.T) {
+	loadRomAndRunSteps(t, "blargg/dmg_sound", 2_000_000, TestTypeBlargg)
+}
+
+func TestBlargg__halt_bug(t *testing.T) {
+	loadRomAndRunSteps(t, "blargg/halt_bug", 2_000_000, TestTypeBlargg)
+}
+
 func TestBlargg__instr_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/instr_timing", 676_091, TestTypeBlargg)
 }
@@ -69,8 +77,8 @@ func TestBlargg__mem_timing(t *testing.T) {
 	loadRomAndRunSteps(t, "blargg/mem_timing", 1_597_872, TestTypeBlargg)
 }
 
-func TestBlargg__halt_bug(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/halt_bug", 2_000_000, TestTypeBlargg)
+func TestBlargg__oam_bug(t *testing.T) {
+	loadRomAndRunSteps(t, "blargg/oam_bug", 2_000_000, TestTypeBlargg)
 }
 
 func TestMooneye__add_sp_e_timing(t *testing.T) {
