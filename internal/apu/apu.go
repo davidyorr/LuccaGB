@@ -86,11 +86,27 @@ type APU struct {
 	divApuCounter uint16
 
 	// the step counter (0-7) to track which events to fire:
+	//
 	// Event           Rate    Frequency
 	// ----------------------------------
 	// Envelope sweep  8       64 Hz
 	// Sound length    2       256 Hz
 	// CH1 freq sweep  4       128 Hz
+	//
+	// 	Step   Length Ctr  Vol Env     Sweep
+	// ---------------------------------------
+	// 0      Clock       -           -
+	// 1      -           -           -
+	// 2      Clock       -           Clock
+	// 3      -           -           -
+	// 4      Clock       -           -
+	// 5      -           -           -
+	// 6      Clock       -           Clock
+	// 7      -           Clock       -
+	// ---------------------------------------
+	// Rate   256 Hz      64 Hz       128 Hz
+	//
+	// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer
 	divApuStep uint8
 
 	ch1 channel
@@ -221,8 +237,8 @@ func (apu *APU) Step() {
 			apu.divApuStep = 0
 		}
 
-		// Ch1 Freq Sweep runs at 128 Hz
-		if apu.divApuStep&0b11 == 0 {
+		// Ch1 Freq Sweep runs at 128 Hz (2, 6)
+		if apu.divApuStep&0b11 == 0b10 {
 			if ch1.sweepTimer > 0 {
 				ch1.sweepTimer--
 			}
@@ -246,7 +262,7 @@ func (apu *APU) Step() {
 			}
 		}
 
-		// Length runs at 256 Hz
+		// Length runs at 256 Hz (0, 2, 4, 6)
 		if apu.divApuStep&1 == 0 {
 			ch1LengthEnabled := (apu.nr14 & 0b0100_0000) != 0
 			if ch1LengthEnabled && ch1.lengthTimer < ch1.maxLength {
@@ -577,6 +593,9 @@ func (apu *APU) Write(address uint16, value uint8) {
 		}
 		// APU OFF -> APU ON
 		if !wasPoweredOn && isPoweredOn {
+			apu.divApuCounter = 0
+			// set to 7 so that the first tick wraps it to 0
+			apu.divApuStep = 7
 		}
 	case address >= 0xFF30 && address <= 0xFF3F:
 		apu.waveRam[address-0xFF30] = value
