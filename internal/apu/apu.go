@@ -118,6 +118,7 @@ type channel struct {
 	sweepTimer          uint16
 	sweepEnabled        bool
 	sweepShadowRegister uint16 // output period
+	sweepNegateModeUsed bool
 }
 
 func New() *APU {
@@ -423,6 +424,25 @@ func (apu *APU) Write(address uint16, value uint8) {
 
 	switch {
 	case address == 0xFF10:
+		// Clearing the sweep negate mode bit in NR10 after at least one sweep
+		// calculation has been made using the negate mode since the last
+		// trigger causes the channel to be immediately disabled. This prevents
+		// you from having the sweep lower the frequency then raise the
+		// frequency without a trigger inbetween.
+		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+		prevDirection := (apu.nr10 & 0b000_1000) >> 3
+		newDirection := (value & 0b000_1000) >> 3
+
+		// if we have used negation since the last trigger
+		if apu.ch1.sweepNegateModeUsed {
+			// and we are switching from subtraction to addition
+			if prevDirection == 1 && newDirection == 0 {
+				// then disable the channel
+				apu.ch1.enabled = false
+				apu.nr52 &^= 0b0001
+			}
+		}
+
 		apu.nr10 = value
 	case address == 0xFF11:
 		apu.nr11 = value
@@ -446,6 +466,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 			apu.ch1.periodDivider = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
 
 			// sweep initialization
+			apu.ch1.sweepNegateModeUsed = false
 			pace := (apu.nr10 & 0b0111_0000) >> 4
 			individualStep := apu.nr10 & 0b0000_0111
 
@@ -631,6 +652,7 @@ func (apu *APU) calculateCh1Frequency() int {
 	frequency := int(apu.ch1.sweepShadowRegister)
 	delta := int(apu.ch1.sweepShadowRegister >> individualStep)
 	if direction == 1 {
+		apu.ch1.sweepNegateModeUsed = true
 		frequency -= delta
 	} else {
 		frequency += delta
