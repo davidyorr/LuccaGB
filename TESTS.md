@@ -4,9 +4,11 @@
 |-------|-----------|--------|
 | **blargg** |  |  |
 |  | `cpu_instrs.gb` | ✅ |
+|  | `dmg_sound.gb` | ❌ |
+|  | `halt_bug.gb` | ❌ |
 |  | `instr_timing.gb` | ✅ |
 |  | `mem_timing.gb` | ✅ |
-|  | `halt_bug.gb` | ❌ |
+|  | `oam_bug.gb` | ❌ |
 | **mooneye** |  |  |
 |  | `add_sp_e_timing.gb` | ✅ |
 |  | `call_cc_timing.gb` | ✅ |
