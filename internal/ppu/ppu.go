@@ -76,6 +76,7 @@ func New(interruptRequest func(interrupt.Interrupt)) *PPU {
 	ppu := &PPU{}
 	ppu.interruptRequester = interruptRequest
 	ppu.pixelFetcher = newPixelFetcher(ppu)
+	ppu.initStatInterruptLookup()
 	ppu.Reset()
 
 	return ppu
@@ -310,6 +311,21 @@ const (
 	DrawingPixels   Mode = 0b11
 )
 
+var statInterruptLookup [4][256]bool // [mode][statRegister] -> STAT interrupt line state
+
+func (ppu *PPU) initStatInterruptLookup() {
+	for mode := range 4 {
+		for stat := range 256 {
+			mode0 := (mode == int(HorizontalBlank)) && ((stat & 0b0000_1000) != 0)
+			mode1 := (mode == int(VerticalBlank)) && ((stat & 0b0001_0000) != 0)
+			mode2 := (mode == int(OamScan)) && ((stat & 0b0010_0000) != 0)
+			lycLyMatch := ((stat & 0b0100_0000) != 0) && ((stat & 0b0000_0100) != 0)
+
+			statInterruptLookup[mode][stat] = mode0 || mode1 || mode2 || lycLyMatch
+		}
+	}
+}
+
 func (ppu *PPU) changeMode(mode Mode) {
 	ppu.mode = mode
 	ppu.stat = (ppu.stat & 0b1111_1100) | uint8(mode)
@@ -325,12 +341,10 @@ func (ppu *PPU) changeMode(mode Mode) {
 // from low to high) on the STAT interrupt line.
 // See: https://gbdev.io/pandocs/Interrupt_Sources.html#int-48--stat-interrupt
 func (ppu *PPU) updateStatInterruptLine() {
-	mode0 := (ppu.mode == HorizontalBlank) && ((ppu.stat & 0b0000_1000) != 0)
-	mode1 := (ppu.mode == VerticalBlank) && ((ppu.stat & 0b0001_0000) != 0)
-	mode2 := (ppu.mode == OamScan) && ((ppu.stat & 0b0010_0000) != 0)
-	lycLyMatch := ((ppu.stat & 0b0100_0000) != 0) && ((ppu.stat & 0b0000_0100) != 0)
-
-	currentStatInterruptLineState := mode0 || mode1 || mode2 || lycLyMatch
+	// Use a precomputed lookup table instead of bit masking operations.
+	// This function is called very frequently, so avoiding repeated bit masks
+	// provides a measurable performance improvement.
+	currentStatInterruptLineState := statInterruptLookup[ppu.mode][ppu.stat]
 
 	// Check for a rising edge
 	if !ppu.previousStatInterruptLineState && currentStatInterruptLineState {
