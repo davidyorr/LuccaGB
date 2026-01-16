@@ -271,45 +271,10 @@ func (apu *APU) Step() {
 
 		// Length runs at 256 Hz (0, 2, 4, 6)
 		if apu.divApuStep&1 == 0 {
-			ch1LengthEnabled := (apu.nr14 & 0b0100_0000) != 0
-			if ch1LengthEnabled && ch1.lengthTimer < ch1.maxLength {
-				ch1.lengthTimer++
-
-				if ch1.lengthTimer == ch1.maxLength {
-					ch1.enabled = false
-					apu.nr52 &^= ch1.nr52BitMask
-				}
-			}
-
-			ch2LengthEnabled := (apu.nr24 & 0b0100_0000) != 0
-			if ch2LengthEnabled && ch2.lengthTimer < ch2.maxLength {
-				ch2.lengthTimer++
-
-				if ch2.lengthTimer == ch2.maxLength {
-					ch2.enabled = false
-					apu.nr52 &^= ch2.nr52BitMask
-				}
-			}
-
-			ch3LengthEnabled := (apu.nr34 & 0b0100_0000) != 0
-			if ch3LengthEnabled && ch3.lengthTimer < ch3.maxLength {
-				ch3.lengthTimer++
-
-				if ch3.lengthTimer == ch3.maxLength {
-					ch3.enabled = false
-					apu.nr52 &^= ch3.nr52BitMask
-				}
-			}
-
-			ch4LengthEnabled := (apu.nr44 & 0b0100_0000) != 0
-			if ch4LengthEnabled && ch4.lengthTimer < ch4.maxLength {
-				ch4.lengthTimer++
-
-				if ch4.lengthTimer == ch4.maxLength {
-					ch4.enabled = false
-					apu.nr52 &^= ch4.nr52BitMask
-				}
-			}
+			apu.clockLength(ch1)
+			apu.clockLength(ch2)
+			apu.clockLength(ch3)
+			apu.clockLength(ch4)
 		}
 
 		// Ch 1, 2, and 4 Envelope Sweep runs at 64 Hz (7)
@@ -715,6 +680,18 @@ func (apu *APU) reloadCh1SweepTimer() {
 	apu.ch1.sweepTimer = uint16(pace)
 	if pace == 0 {
 		apu.ch1.sweepTimer = 8
+	}
+}
+
+func (apu *APU) clockLength(ch *channel) {
+	lengthEnabled := (*ch.register & 0b0100_0000) != 0
+	if lengthEnabled && ch.lengthTimer < ch.maxLength {
+		ch.lengthTimer++
+
+		if ch.lengthTimer == ch.maxLength {
+			ch.enabled = false
+			apu.nr52 &^= ch.nr52BitMask
+		}
 	}
 }
 
