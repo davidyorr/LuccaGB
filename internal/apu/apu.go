@@ -117,14 +117,18 @@ type APU struct {
 
 type channel struct {
 	// ====== Common Fields ======
-	register        *uint8
-	lengthTimer     uint16
-	enabled         bool
-	maxLength       uint16
-	nr52BitMask     uint8
-	dacRegister     *uint8
-	dacRegisterMask uint8
-	outputBit       uint8
+	register         *uint8
+	lengthTimer      uint16
+	enabled          bool
+	envelopeEnabled  bool
+	currentVolume    uint8
+	envelopeTimer    uint8
+	envelopeRegister *uint8
+	maxLength        uint16
+	nr52BitMask      uint8
+	dacRegister      *uint8
+	dacRegisterMask  uint8
+	outputBit        uint8
 
 	// ====== Not Common Fields ======
 	periodDivider uint16
@@ -140,18 +144,20 @@ type channel struct {
 func New() *APU {
 	apu := &APU{}
 	apu.ch1 = channel{
-		register:        &apu.nr14,
-		maxLength:       MaxLengthTimer_Ch1Ch2Ch4,
-		nr52BitMask:     0b0001,
-		dacRegister:     &apu.nr12,
-		dacRegisterMask: 0b1111_1000,
+		register:         &apu.nr14,
+		maxLength:        MaxLengthTimer_Ch1Ch2Ch4,
+		nr52BitMask:      0b0001,
+		dacRegister:      &apu.nr12,
+		dacRegisterMask:  0b1111_1000,
+		envelopeRegister: &apu.nr12,
 	}
 	apu.ch2 = channel{
-		register:        &apu.nr24,
-		maxLength:       MaxLengthTimer_Ch1Ch2Ch4,
-		nr52BitMask:     0b0010,
-		dacRegister:     &apu.nr22,
-		dacRegisterMask: 0b1111_1000,
+		register:         &apu.nr24,
+		maxLength:        MaxLengthTimer_Ch1Ch2Ch4,
+		nr52BitMask:      0b0010,
+		dacRegister:      &apu.nr22,
+		dacRegisterMask:  0b1111_1000,
+		envelopeRegister: &apu.nr22,
 	}
 	apu.ch3 = channel{
 		register:        &apu.nr34,
@@ -161,11 +167,12 @@ func New() *APU {
 		dacRegisterMask: 0b1000_0000,
 	}
 	apu.ch4 = channel{
-		register:        &apu.nr44,
-		maxLength:       MaxLengthTimer_Ch1Ch2Ch4,
-		nr52BitMask:     0b1000,
-		dacRegister:     &apu.nr42,
-		dacRegisterMask: 0b1111_1000,
+		register:         &apu.nr44,
+		maxLength:        MaxLengthTimer_Ch1Ch2Ch4,
+		nr52BitMask:      0b1000,
+		dacRegister:      &apu.nr42,
+		dacRegisterMask:  0b1111_1000,
+		envelopeRegister: &apu.nr42,
 	}
 
 	apu.Reset()
@@ -304,6 +311,13 @@ func (apu *APU) Step() {
 				}
 			}
 		}
+
+		// Ch 1, 2, and 4 Envelope Sweep runs at 64 Hz (7)
+		if apu.divApuStep == 7 {
+			apu.clockEnvelope(ch1)
+			apu.clockEnvelope(ch2)
+			apu.clockEnvelope(ch4)
+		}
 	}
 
 	// Channels 1 & 2 (Pulse Channels) period dividers are clocked at 1048576 Hz, once per four dots
@@ -351,14 +365,14 @@ func (apu *APU) Step() {
 		var accumulator int32 = 0
 
 		if ch1.enabled {
-			volume := (apu.nr12 & 0b1111_0000) >> 4
+			volume := ch1.currentVolume
 			sample := int32(ch1.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
 			accumulator += sample
 		}
 
 		if ch2.enabled {
-			volume := (apu.nr22 & 0b1111_0000) >> 4
+			volume := ch2.currentVolume
 			sample := int32(ch2.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
 			accumulator += sample
@@ -651,6 +665,17 @@ func (apu *APU) writeNRx4(address uint16, value uint8) {
 			}
 		}
 
+		// Ch 1, 2, and 4 Envelope initialization
+		if ch == &apu.ch1 || ch == &apu.ch2 || ch == &apu.ch4 {
+			ch.envelopeEnabled = true
+			ch.currentVolume = (*ch.envelopeRegister & 0b1111_0000) >> 4
+			ch.envelopeTimer = (*ch.envelopeRegister & 0b0000_0111)
+
+			if ch.envelopeTimer == 0 {
+				ch.envelopeTimer = 8 // to reload
+			}
+		}
+
 		dacEnabled := (*ch.dacRegister & ch.dacRegisterMask) != 0
 		if dacEnabled {
 			ch.enabled = true
@@ -690,6 +715,38 @@ func (apu *APU) reloadCh1SweepTimer() {
 	apu.ch1.sweepTimer = uint16(pace)
 	if pace == 0 {
 		apu.ch1.sweepTimer = 8
+	}
+}
+
+func (apu *APU) clockEnvelope(ch *channel) {
+	if !ch.envelopeEnabled {
+		return
+	}
+
+	envelopePeriod := *ch.envelopeRegister & 0b111
+	if envelopePeriod == 0 {
+		return
+	}
+
+	ch.envelopeTimer--
+
+	if ch.envelopeTimer == 0 {
+		ch.envelopeTimer = envelopePeriod
+
+		direction := (*ch.envelopeRegister & 0b0000_1000) >> 3
+		if direction == 1 {
+			if ch.currentVolume < 15 {
+				ch.currentVolume++
+			} else {
+				ch.envelopeEnabled = false
+			}
+		} else {
+			if ch.currentVolume > 0 {
+				ch.currentVolume--
+			} else {
+				ch.envelopeEnabled = false
+			}
+		}
 	}
 }
 
