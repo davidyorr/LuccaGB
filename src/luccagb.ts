@@ -1,8 +1,6 @@
+import { CanvasRenderer } from "./services/canvas-renderer";
 import type { CartridgeInfo } from "./wasm";
 
-let visibleCanvasCtx: CanvasRenderingContext2D;
-let offscreenCanvasCtx: CanvasRenderingContext2D;
-let imageData: ImageData;
 let currentScale: number | "fit" = 1;
 let isPaused = false;
 let isHidden = false;
@@ -11,10 +9,8 @@ let isRomLoaded = false;
 let romHash = "";
 let cartridgeInfo: CartridgeInfo | null = null;
 
-const displayWidth = 160;
-const displayHeight = 144;
-
 const go = new Go();
+const canvasRenderer = new CanvasRenderer("canvas");
 
 // ==========================
 // ====== for debugger ======
@@ -237,22 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document
 		.getElementById("screenshot-button")
 		?.addEventListener("click", () => {
-			if (!visibleCanvasCtx) {
-				return;
-			}
-
-			// grab the current pixels as a PNG image string
-			const imageURL = visibleCanvasCtx.canvas.toDataURL("image/png");
-
-			// create a temporary link element to trigger the download
-			const link = document.createElement("a");
-			link.href = imageURL;
-			link.download = `luccagb-screenshot-${new Date().toISOString()}.png`;
-
-			// trigger the click and cleanup
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
+			canvasRenderer.takeScreenshot();
 		});
 
 	// ==================================
@@ -347,31 +328,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	}
 
-	// ===========================
-	// ====== set up canvas ======
-	// ===========================
-	const visibleCanvas = document.getElementById("canvas");
-	if (visibleCanvas instanceof HTMLCanvasElement) {
-		const ctx = visibleCanvas.getContext("2d");
-		if (!ctx) {
-			throw new Error("error getting canvas context");
-		}
-		visibleCanvasCtx = ctx;
-		visibleCanvasCtx.imageSmoothingEnabled = false;
-		imageData = visibleCanvasCtx.createImageData(displayWidth, displayHeight);
-
-		visibleCanvas.width = displayWidth;
-		visibleCanvas.height = displayHeight;
-	}
-	const offscreenCanvas = document.createElement("canvas");
-	offscreenCanvas.width = 160;
-	offscreenCanvas.height = 144;
-	const ctx = offscreenCanvas.getContext("2d");
-	if (!ctx) {
-		throw new Error("error getting offscreen canvas context");
-	}
-	offscreenCanvasCtx = ctx;
-
 	// ====================================
 	// ====== set up display scaling ======
 	// ====================================
@@ -389,39 +345,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			currentScale = parseInt(value, 10);
 		}
 
-		applyCanvasScale();
+		canvasRenderer.setScale(currentScale);
 	});
 
-	function applyCanvasScale() {
-		const container = document.getElementById("canvas-container");
-		const canvas = visibleCanvasCtx?.canvas;
-
-		if (!container || !canvas) {
-			return;
-		}
-
-		if (currentScale === "fit") {
-			// Fit to viewport (minus controls height)
-			const maxWidth = window.innerWidth;
-			const maxHeight = window.innerHeight - 56;
-
-			const scale = Math.floor(
-				Math.min(maxWidth / displayWidth, maxHeight / displayHeight),
-			);
-
-			const finalScale = Math.max(1, scale);
-
-			container.style.width = `${displayWidth * finalScale}px`;
-			container.style.height = `${displayHeight * finalScale}px`;
-		} else {
-			container.style.width = `${displayWidth * currentScale}px`;
-			container.style.height = `${displayHeight * currentScale}px`;
-		}
-	}
-
 	// apply default scale on load
-	applyCanvasScale();
-	window.addEventListener("resize", applyCanvasScale);
+	canvasRenderer.setScale(currentScale);
+	window.addEventListener("resize", () => {
+		canvasRenderer.setScale(currentScale);
+	});
 
 	// =================================================
 	// ====== set up joypad (and shortcuts) input ======
@@ -574,7 +505,7 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 
 	const frame = window.pollFrame();
 	if (frame) {
-		updateCanvas(frame);
+		canvasRenderer.drawFrame(frame);
 	}
 
 	// ===================
@@ -621,21 +552,6 @@ function startAnimationLoop() {
 	lastFrameTime = 0;
 	cancelAnimationFrame(animationFrameId!);
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
-}
-
-function updateCanvas(uint8Array: Uint8Array) {
-	// put the 160x144 data onto the same size offscreen canvas
-	imageData.data.set(uint8Array);
-	offscreenCanvasCtx.putImageData(imageData, 0, 0);
-
-	// scale the image from the offscreen canvas onto the visible canvas
-	visibleCanvasCtx.drawImage(
-		offscreenCanvasCtx.canvas,
-		0,
-		0,
-		visibleCanvasCtx.canvas.width,
-		visibleCanvasCtx.canvas.height,
-	);
 }
 
 async function handleRomLoad(arrayBuffer: ArrayBuffer) {
