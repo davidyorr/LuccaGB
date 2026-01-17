@@ -139,6 +139,9 @@ type channel struct {
 	sweepEnabled        bool
 	sweepShadowRegister uint16 // output period
 	sweepNegateModeUsed bool
+
+	// Ch 4
+	lfsr uint16
 }
 
 func New() *APU {
@@ -298,6 +301,14 @@ func (apu *APU) Step() {
 		ch3.periodDivider++
 	}
 
+	// Channel 4 (Noise) is clocked at 262144 Hz, once per 16 dots.
+	// Shift being equal to 14 or 15 stops the channel from being clocked entirely.
+	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff22--nr43-channel-4-frequency--randomness
+	clockShift := (apu.nr43 & 0b1111_0000) >> 4
+	if (apu.internalTimer&0b1111) == 0 && (clockShift != 14 && clockShift != 15) {
+		ch4.periodDivider--
+	}
+
 	// ch 1 overflow check
 	if ch1.periodDivider == 0b1000_0000_0000 {
 		ch1.periodDivider = (uint16(apu.nr14&0b111) << 8) | uint16(apu.nr13)
@@ -324,6 +335,39 @@ func (apu *APU) Step() {
 		ch2.outputBit = dutyTable[dutyType][ch2.wavePosition&0b111]
 	}
 
+	// ch 4 period divider counts down to 0
+	if ch4.periodDivider == 0 {
+		// See: https://gbdev.io/pandocs/Audio_details.html#noise-channel-ch4
+
+		// reset timer
+		ch4.periodDivider = apu.calculateCh4Period()
+
+		// XNOR ("1 if bit 0 and bit 1 are identical")
+		bit0 := ch4.lfsr & 0b01
+		bit1 := (ch4.lfsr & 0b10) >> 1
+		result := ^(bit0 ^ bit1) & 1
+
+		// apply result to bit 15
+		ch4.lfsr &= 0b0111_1111_1111_1111 // clear bit
+		ch4.lfsr |= (result << 15)        // OR in the result
+
+		// short mode (if width mode bit is 1, apply to bit 6)
+		if (apu.nr43 & 0b0000_1000) != 0 {
+			ch4.lfsr &= 0b1111_1111_0111_1111 // clear bit
+			ch4.lfsr |= (result << 7)         // OR in the result
+		}
+
+		// shift LFSR right
+		ch4.lfsr >>= 1
+
+		// set output bit
+		if (ch4.lfsr & 1) == 0 {
+			ch4.outputBit = 1
+		} else {
+			ch4.outputBit = 0
+		}
+	}
+
 	if apu.sampleTimer >= CpuClockSpeed {
 		apu.sampleTimer -= CpuClockSpeed
 
@@ -339,6 +383,13 @@ func (apu *APU) Step() {
 		if ch2.enabled {
 			volume := ch2.currentVolume
 			sample := int32(ch2.outputBit) * int32(volume)
+			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			accumulator += sample
+		}
+
+		if ch4.enabled {
+			volume := ch4.currentVolume
+			sample := int32(ch4.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
 			accumulator += sample
 		}
@@ -534,6 +585,12 @@ func (apu *APU) Write(address uint16, value uint8) {
 		apu.nr43 = value
 	case address == 0xFF23:
 		apu.writeNRx4(address, value)
+
+		// Trigger bit is set
+		if (value & 0b1000_0000) != 0 {
+			apu.ch4.lfsr = 0
+			apu.ch4.periodDivider = apu.calculateCh4Period()
+		}
 	case address == 0xFF24:
 		apu.nr50 = value
 	case address == 0xFF25:
@@ -681,6 +738,25 @@ func (apu *APU) reloadCh1SweepTimer() {
 	if pace == 0 {
 		apu.ch1.sweepTimer = 8
 	}
+}
+
+// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Noise_Channel
+var noiseChannelLookupTable [8]uint16 = [8]uint16{
+	8, 16, 32, 48, 64, 80, 96, 112,
+}
+
+func (apu *APU) calculateCh4Period() uint16 {
+	clockShift := (apu.nr43 & 0b1111_0000) >> 4
+	clockDivider := (apu.nr43 & 0b0000_0111)
+
+	baseDivisor := noiseChannelLookupTable[clockDivider]
+
+	// Calculate the number of clock ticks (at 262144 Hz) to wait.
+	// Period = Base Divisor * 2^Shift
+	// Left shift is the same as multiplying by power of 2
+	period := baseDivisor << clockShift
+
+	return period
 }
 
 func (apu *APU) clockLength(ch *channel) {
