@@ -140,6 +140,11 @@ type channel struct {
 	sweepShadowRegister uint16 // output period
 	sweepNegateModeUsed bool
 
+	// Ch 3
+	sampleIndex             uint8
+	sampleBuffer            uint8
+	cyclesSinceWaveRamFetch uint8
+
 	// Ch 4
 	lfsr uint16
 }
@@ -178,6 +183,8 @@ func New() *APU {
 		envelopeRegister: &apu.nr42,
 	}
 
+	apu.ch3.cyclesSinceWaveRamFetch = 255
+
 	apu.Reset()
 
 	return apu
@@ -215,6 +222,15 @@ var dutyTable = [4][8]uint8{
 	{0, 1, 1, 1, 1, 1, 1, 0}, // Duty 3 (75%)
 }
 
+// how many bits to shift
+// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Wave_Channel
+var ch3OutputLevelMap = [4]uint8{
+	4, // 0% (silent)
+	0, // 100%
+	1, // 50%
+	2, // 25%
+}
+
 const CpuClockSpeed = 4_194_304
 const TargetSampleRate = 48_000
 
@@ -231,6 +247,10 @@ func (apu *APU) Step() {
 	apu.divApuCounter++
 	apu.internalTimer++
 	apu.sampleTimer += TargetSampleRate
+
+	if apu.ch3.cyclesSinceWaveRamFetch < 255 {
+		apu.ch3.cyclesSinceWaveRamFetch++
+	}
 
 	ch1 := &apu.ch1
 	ch2 := &apu.ch2
@@ -335,6 +355,25 @@ func (apu *APU) Step() {
 		ch2.outputBit = dutyTable[dutyType][ch2.wavePosition&0b111]
 	}
 
+	// ch 3 overflow check
+	if ch3.periodDivider == 0b1000_0000_0000 {
+		ch3.cyclesSinceWaveRamFetch = 0
+		ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
+
+		// wave RAM is 16 bytes long, we fetch a nibble at a time (half a byte),
+		// so we limit to 31
+		ch3.sampleIndex = (ch3.sampleIndex + 1) & 31
+
+		byteIndex := ch3.sampleIndex >> 1
+		sampleByte := apu.waveRam[byteIndex]
+
+		if ch3.sampleIndex&1 == 0 {
+			ch3.sampleBuffer = sampleByte >> 4
+		} else {
+			ch3.sampleBuffer = sampleByte & 0b0000_1111
+		}
+	}
+
 	// ch 4 period divider counts down to 0
 	if ch4.periodDivider == 0 {
 		// See: https://gbdev.io/pandocs/Audio_details.html#noise-channel-ch4
@@ -384,6 +423,13 @@ func (apu *APU) Step() {
 			volume := ch2.currentVolume
 			sample := int32(ch2.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			accumulator += sample
+		}
+
+		if ch3.enabled {
+			shift := ch3OutputLevelMap[ch3.currentVolume]
+			sample := int32(ch3.sampleBuffer >> shift)
+			sample -= (15 >> shift) / 2 // center to [-max/2, +max/2]
 			accumulator += sample
 		}
 
@@ -452,6 +498,19 @@ func (apu *APU) Read(address uint16) uint8 {
 	case address == 0xFF26:
 		return apu.nr52 | 0b0111_0000
 	case address >= 0xFF30 && address <= 0xFF3F:
+		// If the wave channel is enabled, accessing any byte from $FF30-$FF3F
+		// is equivalent to accessing the current byte selected by the waveform
+		// position. Further, on the DMG accesses will only work in this manner
+		// if made within a couple of clocks of the wave channel accessing wave
+		// RAM; if made at any other time, reads return $FF and writes have no
+		// effect.
+		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+		if apu.ch3.enabled {
+			if apu.ch3.cyclesSinceWaveRamFetch < 2 {
+				return apu.waveRam[apu.ch3.sampleIndex>>1]
+			}
+			return 0xFF
+		}
 		return apu.waveRam[address-0xFF30]
 	}
 
@@ -560,6 +619,8 @@ func (apu *APU) Write(address uint16, value uint8) {
 		apu.ch3.lengthTimer = uint16(value)
 	case address == 0xFF1C:
 		apu.nr32 = value
+
+		apu.ch3.currentVolume = (value & 0b0110_0000) >> 6
 	case address == 0xFF1D:
 		apu.nr33 = value
 	case address == 0xFF1E:
@@ -567,7 +628,14 @@ func (apu *APU) Write(address uint16, value uint8) {
 
 		// Trigger bit is set
 		if (value & 0b1000_0000) != 0 {
-			apu.ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
+			// Delay by 3 extra clocks.
+			// I can't find any docs that mention this, but the Blargg
+			// 09-wave_read_while_on.gb test fails without this delay.
+			apu.ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33) - 3
+			apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 6
+
+			apu.ch3.sampleIndex = 0
+			apu.ch3.cyclesSinceWaveRamFetch = 255
 		}
 	case address == 0xFF20:
 		apu.nr41 = (value & 0b0011_1111)
@@ -634,6 +702,11 @@ func (apu *APU) Write(address uint16, value uint8) {
 			apu.divApuStep = 7
 		}
 	case address >= 0xFF30 && address <= 0xFF3F:
+		if apu.ch3.enabled {
+			if apu.ch3.cyclesSinceWaveRamFetch >= 2 {
+				return
+			}
+		}
 		apu.waveRam[address-0xFF30] = value
 	}
 }
