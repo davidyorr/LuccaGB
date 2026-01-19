@@ -410,34 +410,59 @@ func (apu *APU) Step() {
 	if apu.sampleTimer >= CpuClockSpeed {
 		apu.sampleTimer -= CpuClockSpeed
 
-		var accumulator int32 = 0
+		var leftAccumulator int32 = 0
+		var rightAccumulator int32 = 0
 
 		if ch1.enabled {
 			volume := ch1.currentVolume
 			sample := int32(ch1.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
-			accumulator += sample
+
+			if apu.nr51&0b0001_0000 != 0 {
+				leftAccumulator += sample
+			}
+			if apu.nr51&0b0001 != 0 {
+				rightAccumulator += sample
+			}
 		}
 
 		if ch2.enabled {
 			volume := ch2.currentVolume
 			sample := int32(ch2.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
-			accumulator += sample
+
+			if apu.nr51&0b0010_0000 != 0 {
+				leftAccumulator += sample
+			}
+			if apu.nr51&0b0010 != 0 {
+				rightAccumulator += sample
+			}
 		}
 
 		if ch3.enabled {
 			shift := ch3OutputLevelMap[ch3.currentVolume]
 			sample := int32(ch3.sampleBuffer >> shift)
 			sample -= (15 >> shift) / 2 // center to [-max/2, +max/2]
-			accumulator += sample
+
+			if apu.nr51&0b0100_0000 != 0 {
+				leftAccumulator += sample
+			}
+			if apu.nr51&0b0100 != 0 {
+				rightAccumulator += sample
+			}
 		}
 
 		if ch4.enabled {
 			volume := ch4.currentVolume
 			sample := int32(ch4.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
-			accumulator += sample
+
+			if apu.nr51&0b1000_0000 != 0 {
+				leftAccumulator += sample
+			}
+			if apu.nr51&0b1000 != 0 {
+				rightAccumulator += sample
+			}
 		}
 
 		// "The digital value produced by the generator, which ranges between $0 and $F (0 and 15)"
@@ -447,9 +472,12 @@ func (apu *APU) Step() {
 		// We have 4 channels, each capable of outputting 0-15.
 		// The max accumulator = 15 * 4 = 60.
 		// So we want to map the range [0, 60] to [-32768, 32767] (for int16).
-		mixedSample := int16((float32(accumulator) / 60.0) * 32767.0)
+		leftSample := int16((float32(leftAccumulator) / 60.0) * 32767.0)
+		rightSample := int16((float32(rightAccumulator) / 60.0) * 32767.0)
 
-		apu.outputBuffer.Write(mixedSample)
+		// apu.outputBuffer.Write(mixedSample)
+		apu.outputBuffer.Write(leftSample)
+		apu.outputBuffer.Write(rightSample)
 	}
 }
 
