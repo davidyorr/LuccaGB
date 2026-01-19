@@ -1,3 +1,4 @@
+import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
 import type { CartridgeInfo } from "./wasm";
@@ -12,6 +13,7 @@ let cartridgeInfo: CartridgeInfo | null = null;
 
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
+const audioController = new AudioController();
 
 // ==========================
 // ====== for debugger ======
@@ -486,9 +488,6 @@ let tCycleAccumulator = 0;
 // 4,194,304 T-cycles per second
 const systemClockFrequency = 4.194304 * 1_000_000;
 
-const audioContext = new AudioContext();
-let nextStartTime = 0;
-
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 	if (isPaused || isHidden || isFileInputOpen) {
@@ -505,50 +504,21 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 	const deltaSeconds = (timestamp - lastFrameTime) / 1000;
 	lastFrameTime = timestamp;
 
+	// run emulator steps
 	const tCyclesToAdd = systemClockFrequency * deltaSeconds;
 	tCycleAccumulator += tCyclesToAdd;
-
 	const { tCyclesUsed } = window.processEmulatorCycles(tCycleAccumulator);
 	tCycleAccumulator -= tCyclesUsed;
 
+	// render video
 	const frame = window.pollFrame();
 	if (frame) {
 		canvasRenderer.drawFrame(frame);
 	}
 
-	// ===================
-	// ====== AUDIO ======
-	// ===================
-
+	// play audio
 	const samples = window.pollAudioBuffer();
-	if (samples?.length > 0) {
-		const buffer = audioContext.createBuffer(1, samples.length, 48000);
-		const channelData = buffer.getChannelData(0);
-
-		for (let i = 0; i < samples.length; i++) {
-			// Normalize sample to range [-1.0, 1.0]
-			// Divide by 32768.0 to convert int16 range to float range
-			// 32768.0 = max positive int16 value (2^15)
-			channelData[i] = samples[i] / 32768.0;
-		}
-
-		// Handle underrun
-		// If nextStartTime is in the past, reset it to "now" so we don't delay
-		if (nextStartTime < audioContext.currentTime) {
-			nextStartTime = audioContext.currentTime;
-		}
-
-		// Create a source to play this buffer
-		const source = audioContext.createBufferSource();
-		source.buffer = buffer;
-		source.connect(audioContext.destination);
-
-		// Schedule it to play
-		source.start(nextStartTime);
-
-		// Advance the pointer so the next chunk plays right after this one
-		nextStartTime += buffer.duration;
-	}
+	audioController.scheduleAudioSamples(samples);
 
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
