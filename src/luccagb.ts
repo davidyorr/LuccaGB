@@ -1,6 +1,7 @@
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
+import { Debugger } from "./ui/debugger";
 import type { CartridgeInfo } from "./wasm";
 
 let currentScale: number | "fit" = 1;
@@ -14,26 +15,7 @@ let cartridgeInfo: CartridgeInfo | null = null;
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
-
-// ==========================
-// ====== for debugger ======
-// ==========================
-const debugElements = {
-	cartridgeTitle: null as HTMLElement | null,
-	cartridgeType: null as HTMLElement | null,
-	romSize: null as HTMLElement | null,
-	ramSize: null as HTMLElement | null,
-	regAF: null as HTMLElement | null,
-	regBC: null as HTMLElement | null,
-	regDE: null as HTMLElement | null,
-	regHL: null as HTMLElement | null,
-	regSP: null as HTMLElement | null,
-	regPC: null as HTMLElement | null,
-	flagZ: null as HTMLElement | null,
-	flagN: null as HTMLElement | null,
-	flagH: null as HTMLElement | null,
-	flagC: null as HTMLElement | null,
-};
+const debug = new Debugger();
 
 const romFiles = import.meta.glob("../roms/**/*.gb", {
 	query: "?url",
@@ -405,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		isPaused = !isPaused;
 		if (isPaused) {
-			updateDebugView();
+			debug.update();
 
 			if (!cartridgeInfo?.hasBattery || cartridgeInfo?.ramSize == 0) {
 				return;
@@ -439,30 +421,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 		syncDebugVisibility();
-		updateDebugView();
+		debug.update();
 	});
 
 	syncDebugVisibility();
-
-	// =============================
-	// ====== set up debugger ======
-	// =============================
-	debugElements.cartridgeTitle = document.getElementById("cartridge-title");
-	debugElements.cartridgeType = document.getElementById(
-		"cartridge-cartridge-type",
-	);
-	debugElements.romSize = document.getElementById("cartridge-rom-size-code");
-	debugElements.ramSize = document.getElementById("cartridge-ram-size-code");
-	debugElements.regAF = document.getElementById("reg-af");
-	debugElements.regBC = document.getElementById("reg-bc");
-	debugElements.regDE = document.getElementById("reg-de");
-	debugElements.regHL = document.getElementById("reg-hl");
-	debugElements.regSP = document.getElementById("reg-sp");
-	debugElements.regPC = document.getElementById("reg-pc");
-	debugElements.flagZ = document.getElementById("flag-z");
-	debugElements.flagN = document.getElementById("flag-n");
-	debugElements.flagH = document.getElementById("flag-h");
-	debugElements.flagC = document.getElementById("flag-c");
 });
 
 // ===================================
@@ -578,54 +540,6 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	// Start the animation loop
 	isRomLoaded = true;
 	isPaused = false;
-	updateDebugView();
+	debug.update();
 	startAnimationLoop();
-}
-
-// ===============================
-// ============ OTHER ============
-// ===============================
-
-function updateDebugView() {
-	const debugInfo = window.getDebugInfo();
-	if (!debugInfo) {
-		return;
-	}
-
-	const { cartridge, cpu } = debugInfo;
-
-	const toHex = (val: number) =>
-		"0x" + val.toString(16).toUpperCase().padStart(4, "0");
-
-	if (debugElements.cartridgeTitle)
-		debugElements.cartridgeTitle.textContent = cartridge.title;
-	if (debugElements.cartridgeType)
-		debugElements.cartridgeType.textContent =
-			cartridge.cartridgeType.toString();
-	if (debugElements.romSize)
-		debugElements.romSize.textContent = cartridge.romSizeCode.toString();
-	if (debugElements.ramSize)
-		debugElements.ramSize.textContent = cartridge.ramSizeCode.toString();
-
-	if (debugElements.regAF)
-		debugElements.regAF.textContent = toHex(cpu.registers16.AF);
-	if (debugElements.regBC)
-		debugElements.regBC.textContent = toHex(cpu.registers16.BC);
-	if (debugElements.regDE)
-		debugElements.regDE.textContent = toHex(cpu.registers16.DE);
-	if (debugElements.regHL)
-		debugElements.regHL.textContent = toHex(cpu.registers16.HL);
-	if (debugElements.regSP)
-		debugElements.regSP.textContent = toHex(cpu.registers16.SP);
-	if (debugElements.regPC)
-		debugElements.regPC.textContent = toHex(cpu.registers16.PC);
-
-	if (debugElements.flagZ)
-		debugElements.flagZ.textContent = cpu.flags.Z.toString();
-	if (debugElements.flagN)
-		debugElements.flagN.textContent = cpu.flags.N.toString();
-	if (debugElements.flagH)
-		debugElements.flagH.textContent = cpu.flags.H.toString();
-	if (debugElements.flagC)
-		debugElements.flagC.textContent = cpu.flags.C.toString();
 }
