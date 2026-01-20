@@ -6,8 +6,8 @@ export class AudioController {
 		this.audioContext = new AudioContext();
 	}
 
-	public scheduleAudioSamples(samples: number[]) {
-		if (samples.length === 0) {
+	public scheduleAudioSamples(samples: number[] | null) {
+		if (samples === null || samples.length === 0) {
 			return;
 		}
 

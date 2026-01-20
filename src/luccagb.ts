@@ -1,3 +1,4 @@
+import { emulatorState } from "./core/state";
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
@@ -5,11 +6,6 @@ import { Debugger } from "./ui/debugger";
 import type { CartridgeInfo } from "./wasm";
 
 let currentScale: number | "fit" = 1;
-let isPaused = false;
-let isHidden = false;
-let isFileInputOpen = false;
-let isRomLoaded = false;
-let romHash = "";
 let cartridgeInfo: CartridgeInfo | null = null;
 
 const go = new Go();
@@ -43,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ====== set up ROM input event listener ======
 	// =============================================
 	fileInput?.addEventListener("change", async (event) => {
-		isFileInputOpen = false;
+		emulatorState.setFileInputOpen(false);
 		const files = (event.target as HTMLInputElement | null)?.files;
 		if (files?.[0]) {
 			const arrayBuffer = await files?.[0].arrayBuffer();
@@ -60,14 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	fileInput?.addEventListener("click", () => {
-		isFileInputOpen = true;
+		emulatorState.setFileInputOpen(true);
 	});
 
 	fileInput?.addEventListener("cancel", () => {
-		isFileInputOpen = false;
-		if (!isPaused) {
-			startAnimationLoop();
-		}
+		emulatorState.setFileInputOpen(false);
 	});
 
 	// ==================================
@@ -138,13 +131,13 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ==================================================
 	document.addEventListener("visibilitychange", () => {
 		if (document.hidden) {
-			isHidden = true;
+			emulatorState.setHidden(true);
 
 			// suspend audio context
 		} else {
-			isHidden = false;
+			emulatorState.setHidden(false);
 
-			if (!isPaused) {
+			if (!emulatorState.isPaused) {
 				startAnimationLoop();
 			}
 
@@ -353,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		ArrowRight: "RIGHT",
 	};
 	const nonJoypadShortcuts: { [key: string]: (() => void) | undefined } = {
-		Space: pauseOrResume,
+		Space: emulatorState.togglePaused,
 	};
 	window.addEventListener("keydown", (event) => {
 		if (event.repeat) {
@@ -380,26 +373,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		window.handleJoypadButtonReleased(keyToJoypadButton[event.code]);
 	});
 
-	function pauseOrResume() {
-		if (!isRomLoaded) {
-			return;
-		}
-
-		isPaused = !isPaused;
-		if (isPaused) {
+	emulatorState.subscribe((state) => {
+		if (state.isPaused) {
 			debug.update();
 
-			if (!cartridgeInfo?.hasBattery || cartridgeInfo?.ramSize == 0) {
+			if (!cartridgeInfo?.hasBattery || cartridgeInfo?.ramSize === 0) {
 				return;
 			}
 			const ram = window.getCartridgeRam();
-			persistCartridgeRam(romHash, ram, {
+			persistCartridgeRam(state.currentRomHash, ram, {
 				name: cartridgeInfo.title,
 			});
 		} else {
 			startAnimationLoop();
 		}
-	}
+	});
 
 	// ===================================
 	// ====== set up debug checkbox ======
@@ -452,7 +440,11 @@ const systemClockFrequency = 4.194304 * 1_000_000;
 
 // timestamp is the end time of the previous frame's rendering
 function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
-	if (isPaused || isHidden || isFileInputOpen) {
+	if (
+		emulatorState.isPaused ||
+		emulatorState.isHidden ||
+		emulatorState.isFileInputOpen
+	) {
 		return;
 	}
 
@@ -486,11 +478,11 @@ function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
 }
 
 function startAnimationLoop() {
-	if (!isRomLoaded) {
+	if (!emulatorState.isRomLoaded) {
 		return;
 	}
-	lastFrameTime = 0;
 	cancelAnimationFrame(animationFrameId!);
+	lastFrameTime = 0;
 	animationFrameId = requestAnimationFrame(handleAnimationFrame);
 }
 
@@ -506,7 +498,7 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const hashHex = hashArray
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
-	romHash = hashHex;
+	emulatorState.setCurrentRomHash(hashHex);
 
 	// Load into Go
 	cartridgeInfo = window.loadRom(romData);
@@ -515,7 +507,7 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	// Attempt to load existing RAM
 	if (cartridgeInfo.hasBattery && cartridgeInfo.ramSize > 0) {
 		try {
-			const ram = await loadCartridgeRam(romHash);
+			const ram = await loadCartridgeRam(emulatorState.currentRomHash);
 			if (ram) {
 				// Ensure the loaded RAM size matches what the cartridge expects
 				if (ram.length !== cartridgeInfo.ramSize) {
@@ -538,8 +530,7 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	}
 
 	// Start the animation loop
-	isRomLoaded = true;
-	isPaused = false;
+	emulatorState.setRomLoaded(true);
 	debug.update();
 	startAnimationLoop();
 }
