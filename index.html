@@ -20,6 +20,9 @@
 				</select>
 				<label for="rom-input">Load ROM:</label>
 				<input id="rom-input" type="file" name="rom-input" accept=".gb" />
+				<div class="control-group">
+					<button id="data-manager-button">Manage Data</button>
+				</div>
 				<button id="screenshot-button">Screenshot</button>
 				<label for="scale-select">Scale:</label>
 				<select id="scale-select">
@@ -126,6 +129,38 @@
 					</tbody>
 				</table>
 			</div>
+
+			<dialog id="data-modal">
+				<form method="dialog">
+					<h2>Data Management</h2>
+
+					<div class="data-section">
+						<h3>Export</h3>
+						<p>Download all saves and settings to a JSON file.</p>
+						<button type="button" id="export-data-button">
+							Download Backup
+						</button>
+					</div>
+
+					<hr />
+
+					<div class="data-section">
+						<h3>Import</h3>
+						<p>
+							Restore from a JSON file. <br /><small
+								><em
+									>Note: Newer saves in the file will overwrite local data.</em
+								></small
+							>
+						</p>
+						<input type="file" id="import-data-input" accept=".json" />
+					</div>
+
+					<div class="dialog-footer">
+						<button value="close">Close</button>
+					</div>
+				</form>
+			</dialog>
 		</div>
 		<script type="module" src="/src/luccagb.ts"></script>
 	</body>
@@ -245,6 +280,32 @@
 		#cartridge-title {
 			width: calc(2 * var(--debug-table-content-padding) + 15ch);
 			white-space: nowrap;
+		}
+
+		/* ======== DATA MANAGER ======== */
+		dialog {
+			background: #333;
+			color: #e0e0e0;
+			border: 1px solid #555;
+			border-radius: 8px;
+			padding: 20px;
+			max-width: 400px;
+			font-family: system-ui, monospace;
+		}
+		dialog::backdrop {
+			background: rgba(0, 0, 0, 0.7);
+		}
+		.data-section {
+			margin-bottom: 20px;
+		}
+		.dialog-footer {
+			display: flex;
+			justify-content: flex-end;
+		}
+		hr {
+			border: 0;
+			border-top: 1px solid #555;
+			margin: 15px 0;
 		}
 
 		@media screen and (max-width: 767px) {

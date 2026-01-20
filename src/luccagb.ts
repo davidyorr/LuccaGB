@@ -12,6 +12,7 @@ import {
 	parseTraceLogs,
 } from "./utils/trace-logger";
 import type { CartridgeInfo } from "./wasm";
+import { setUpDataManagerHandlers } from "./ui/data-manager";
 
 let currentScale: number | "fit" = 1;
 let cartridgeInfo: CartridgeInfo | null = null;
@@ -34,6 +35,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			go.run(wasmModule.instance);
 		},
 	);
+
+	setUpDataManagerHandlers({
+		dataModalId: "data-modal",
+		dataButtonId: "data-manager-button",
+		exportButtonId: "export-data-button",
+		importId: "import-data-input",
+	});
 
 	// ========================================
 	// ====== force clear the file input ======

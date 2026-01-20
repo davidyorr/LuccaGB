@@ -12,6 +12,26 @@ type SaveData = {
 	};
 };
 
+type BackupFile = {
+	version: number; // Schema version
+	timestamp: number;
+	app: "LuccaGB";
+	saves: {
+		romHash: string;
+		ramBase64: string;
+		updatedAt: number;
+		meta?: SaveData["meta"];
+	}[];
+	settings?: Record<string, any>; // Placeholder for future settings
+};
+
+export type ImportStats = {
+	added: number;
+	updated: number;
+	skipped: number;
+	errors: number;
+};
+
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 export function openDatabase(): Promise<IDBDatabase> {
@@ -131,4 +151,173 @@ export async function persistCartridgeRam(
 
 		store.put(saveData);
 	});
+}
+
+export async function importData(jsonContent: string): Promise<ImportStats> {
+	let backup: any;
+	try {
+		backup = JSON.parse(jsonContent);
+	} catch (e) {
+		throw new Error("Invalid JSON file");
+	}
+
+	if (backup.app !== "LuccaGB" || !Array.isArray(backup.saves)) {
+		throw new Error("Unrecognized backup file format.");
+	}
+
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction([STORE_NAME], "readwrite");
+		const store = transaction.objectStore(STORE_NAME);
+
+		const stats: ImportStats = {
+			added: 0,
+			updated: 0,
+			skipped: 0,
+			errors: 0,
+		};
+
+		transaction.oncomplete = () => {
+			resolve(stats);
+		};
+
+		transaction.onerror = () => {
+			reject(transaction.error);
+		};
+
+		for (const saveBackup of backup.saves as BackupFile["saves"]) {
+			try {
+				const ramData = base64ToBuffer(saveBackup.ramBase64);
+				const importedUpdatedAt = saveBackup.updatedAt || 0;
+				const hash = saveBackup.romHash;
+
+				// Get the existing record for this ROM
+				const request = store.get(hash);
+
+				request.onsuccess = () => {
+					const existingSave = request.result as SaveData | undefined;
+
+					let shouldWrite = false;
+					let isUpdate = false;
+
+					if (!existingSave) {
+						// Save doesn't exist locally -> Add it
+						shouldWrite = true;
+						console.log(
+							`[Import] Adding ${hash} ${saveBackup.meta?.name}: (${new Date(importedUpdatedAt).toLocaleString()})`,
+						);
+					} else {
+						// Save exists -> Compare timestamps
+						const localUpdatedAt = existingSave.updatedAt || 0;
+
+						// Keep the most recent save
+						if (importedUpdatedAt > localUpdatedAt) {
+							shouldWrite = true;
+							isUpdate = true;
+							console.log(
+								`[Import] Upgrading ${hash} ${saveBackup.meta?.name}: Local(${new Date(localUpdatedAt).toLocaleString()}) < SaveFile(${new Date(importedUpdatedAt).toLocaleString()})`,
+							);
+						} else {
+							stats.skipped++;
+							console.log(
+								`[Import] Skipping ${saveBackup.romHash} ${saveBackup.meta?.name}: save file is older or same`,
+							);
+						}
+					}
+
+					if (shouldWrite) {
+						const newSave: SaveData = {
+							romHash: hash,
+							updatedAt: importedUpdatedAt,
+							meta: saveBackup.meta,
+							ram: ramData,
+						};
+
+						const putRequest = store.put(newSave);
+						putRequest.onsuccess = () => {
+							if (isUpdate) {
+								stats.updated++;
+							} else {
+								stats.added++;
+							}
+						};
+					}
+				};
+			} catch (error) {
+				console.error("Error processing save entry", error);
+				stats.errors++;
+			}
+		}
+	});
+}
+
+export async function exportData(): Promise<void> {
+	const db = await openDatabase();
+
+	const saves = await new Promise<SaveData[]>((resolve, reject) => {
+		const transaction = db.transaction([STORE_NAME], "readonly");
+		const store = transaction.objectStore(STORE_NAME);
+		const request = store.getAll();
+
+		request.onsuccess = () => {
+			resolve(request.result as SaveData[]);
+		};
+		request.onerror = () => {
+			reject(request.error);
+		};
+	});
+
+	// Transform SaveData (Uint8Array) -> Backup format (Base64)
+	const backup: BackupFile = {
+		version: 1,
+		timestamp: Date.now(),
+		app: "LuccaGB",
+		saves: saves.map((save) => ({
+			romHash: save.romHash,
+			updatedAt: save.updatedAt,
+			meta: save.meta,
+			// Convert raw bytes to Base64 string for JSON compatibility
+			ramBase64: bufferToBase64(
+				save.ram instanceof Uint8Array ? save.ram : new Uint8Array(save.ram),
+			),
+		})),
+		settings: {}, // TODO: Add settings export logic here later
+	};
+
+	// Create a blob and trigger download
+	const blob = new Blob([JSON.stringify(backup, null, 2)], {
+		type: "application/json",
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	const dateStr = new Date().toISOString().split("T")[0];
+
+	a.href = url;
+	a.download = `LuccaGB-Backup-${dateStr}.json`;
+	document.body.appendChild(a);
+	a.click();
+
+	// Cleanup
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+}
+
+function bufferToBase64(buffer: Uint8Array): string {
+	let binary = "";
+	const len = buffer.byteLength;
+	for (let i = 0; i < len; i++) {
+		binary += String.fromCharCode(buffer[i]);
+	}
+	return window.btoa(binary);
+}
+
+function base64ToBuffer(base64: string): Uint8Array {
+	const binaryString = window.atob(base64);
+	const len = binaryString.length;
+	const bytes = new Uint8Array(len);
+	for (let i = 0; i < len; i++) {
+		bytes[i] = binaryString.charCodeAt(i);
+	}
+	return bytes;
 }
