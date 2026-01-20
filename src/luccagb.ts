@@ -6,13 +6,13 @@ import { InputManager } from "./services/input-manager";
 import { TestRomLibrary } from "./services/test-rom-library";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
 import { Debugger } from "./ui/debugger";
-import { DragAndDropHandler } from "./ui/drag-and-drop-handler";
 import {
 	downloadTraceLogs as downloadTraceLog,
 	parseTraceLogs,
 } from "./utils/trace-logger";
 import type { CartridgeInfo } from "./wasm";
 import { setUpDataManagerHandlers } from "./ui/data-manager";
+import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 
 let currentScale: number | "fit" = 1;
 let cartridgeInfo: CartridgeInfo | null = null;
@@ -24,7 +24,6 @@ const testRomLibrary = new TestRomLibrary();
 new InputManager({
 	Space: emulatorState.togglePaused,
 });
-new DragAndDropHandler("drag-overlay", handleRomLoad);
 const debug = new Debugger();
 
 const gameLoop = new GameLoop(audioController, canvasRenderer);
@@ -35,6 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			go.run(wasmModule.instance);
 		},
 	);
+
+	setUpDragAndDropHandlers({
+		overlayId: "drag-overlay",
+		onRomLoaded: handleRomLoad,
+	});
 
 	setUpDataManagerHandlers({
 		dataModalId: "data-modal",
