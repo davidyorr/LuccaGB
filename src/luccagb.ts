@@ -5,6 +5,10 @@ import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
 import { Debugger } from "./ui/debugger";
+import {
+	downloadTraceLogs as downloadTraceLog,
+	parseTraceLogs,
+} from "./utils/trace-logger";
 import type { CartridgeInfo } from "./wasm";
 
 let currentScale: number | "fit" = 1;
@@ -13,7 +17,7 @@ let cartridgeInfo: CartridgeInfo | null = null;
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
-const inputManager = new InputManager({
+new InputManager({
 	Space: emulatorState.togglePaused,
 });
 const debug = new Debugger();
@@ -256,51 +260,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		let lines = [];
-		for (let i = 0; i < buffer.length; ) {
-			const type = buffer[i];
-
-			if (type === 0) {
-				// Instruction
-				const pc = (buffer[i + 1] << 8) | buffer[i + 2];
-				const opcode = buffer[i + 3];
-				lines.push(
-					`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")}`,
-				);
-				// if we log a 3rd thing, use this instead
-				// const view = new DataView(buffer.buffer);
-				// const data = view.getUint32(i + 4, false);
-				// lines.push(
-				// 	`EXEC PC:0x${pc.toString(16).padStart(4, "0")} OP:0x${opcode.toString(16).padStart(2, "0")} OTHER:${data}`,
-				// );
-				i += 8;
-			} else if (type === 1) {
-				// Memory read
-				const addr = (buffer[i + 1] << 8) | buffer[i + 2];
-				const value = buffer[i + 3];
-				lines.push(
-					`READ [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
-				);
-				i += 4;
-			} else if (type === 2) {
-				// Memory write
-				const addr = (buffer[i + 1] << 8) | buffer[i + 2];
-				const value = buffer[i + 3];
-				lines.push(
-					`WRITE [0x${addr.toString(16).padStart(4, "0")}] = 0x${value.toString(16).padStart(2, "0")}`,
-				);
-				i += 4;
-			} else {
-				i++; // Skip unknown types
-			}
-		}
-
-		const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `luccagb-logs-${new Date().toISOString()}.txt`;
-		a.click();
+		const text = parseTraceLogs(buffer);
+		downloadTraceLog(text);
 	});
 
 	// Hide the button and checkbox in production
@@ -338,11 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	window.addEventListener("resize", () => {
 		canvasRenderer.setScale(currentScale);
 	});
-
-	// =================================================
-	// ====== set up joypad (and shortcuts) input ======
-	// =================================================
-	inputManager.init();
 
 	emulatorState.subscribe((state) => {
 		if (state.isPaused) {

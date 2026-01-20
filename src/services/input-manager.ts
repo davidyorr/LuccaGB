@@ -14,9 +14,6 @@ export class InputManager {
 
 	constructor(shortcuts: Record<string, () => void>) {
 		this.shortcuts = shortcuts;
-	}
-
-	init() {
 		window.addEventListener("keydown", this.handleKeyDown);
 		window.addEventListener("keyup", this.handleKeyUp);
 	}
