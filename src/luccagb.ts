@@ -2,6 +2,7 @@ import { GameLoop } from "./core/game-loop";
 import { emulatorState } from "./core/state";
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
+import { InputManager } from "./services/input-manager";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
 import { Debugger } from "./ui/debugger";
 import type { CartridgeInfo } from "./wasm";
@@ -12,6 +13,9 @@ let cartridgeInfo: CartridgeInfo | null = null;
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
+const inputManager = new InputManager({
+	Space: emulatorState.togglePaused,
+});
 const debug = new Debugger();
 
 const gameLoop = new GameLoop(audioController, canvasRenderer);
@@ -338,43 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// =================================================
 	// ====== set up joypad (and shortcuts) input ======
 	// =================================================
-	const keyToJoypadButton: { [key: string]: string } = {
-		Enter: "START",
-		Backspace: "SELECT",
-		KeyZ: "B",
-		KeyX: "A",
-		ArrowDown: "DOWN",
-		ArrowUp: "UP",
-		ArrowLeft: "LEFT",
-		ArrowRight: "RIGHT",
-	};
-	const nonJoypadShortcuts: { [key: string]: (() => void) | undefined } = {
-		Space: emulatorState.togglePaused,
-	};
-	window.addEventListener("keydown", (event) => {
-		if (event.repeat) {
-			return;
-		}
-
-		const funcHandler = nonJoypadShortcuts[event.code];
-		if (funcHandler) {
-			funcHandler();
-			return;
-		}
-
-		if (!keyToJoypadButton[event.code]) {
-			return;
-		}
-
-		window.handleJoypadButtonPressed(keyToJoypadButton[event.code]);
-	});
-	window.addEventListener("keyup", (event) => {
-		if (!keyToJoypadButton[event.code]) {
-			return;
-		}
-
-		window.handleJoypadButtonReleased(keyToJoypadButton[event.code]);
-	});
+	inputManager.init();
 
 	emulatorState.subscribe((state) => {
 		if (state.isPaused) {
