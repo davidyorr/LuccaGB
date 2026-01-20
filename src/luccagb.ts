@@ -3,6 +3,7 @@ import { emulatorState } from "./core/state";
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
+import { TestRomLibrary } from "./services/test-rom-library";
 import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
 import { Debugger } from "./ui/debugger";
 import { DragAndDropHandler } from "./ui/drag-and-drop-handler";
@@ -18,6 +19,7 @@ let cartridgeInfo: CartridgeInfo | null = null;
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
+const testRomLibrary = new TestRomLibrary();
 new InputManager({
 	Space: emulatorState.togglePaused,
 });
@@ -25,11 +27,6 @@ new DragAndDropHandler("drag-overlay", handleRomLoad);
 const debug = new Debugger();
 
 const gameLoop = new GameLoop(audioController, canvasRenderer);
-
-const romFiles = import.meta.glob("../roms/**/*.gb", {
-	query: "?url",
-	import: "default",
-});
 
 document.addEventListener("DOMContentLoaded", () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
@@ -98,50 +95,16 @@ document.addEventListener("DOMContentLoaded", () => {
 	// =================================
 	// ====== set up ROM dropdown ======
 	// =================================
-	const romSelect = document.getElementById(
-		"rom-select",
-	) as HTMLSelectElement | null;
-
-	if (!romSelect) {
-		console.warn("Could not find #rom-select element");
-		return;
-	}
-
-	// populate options
-	const sortedPaths = Object.keys(romFiles).sort();
-
-	for (const path of sortedPaths) {
-		const option = document.createElement("option");
-		option.text = path.replace("../roms/", "");
-		option.value = path;
-		romSelect.appendChild(option);
-	}
+	testRomLibrary.populateSelect("rom-select");
 
 	// handle selection
-	romSelect.addEventListener("change", async (event) => {
-		const target = event.target as HTMLSelectElement;
-		const path = target.value;
+	document
+		.getElementById("rom-select")
+		?.addEventListener("change", async (event) => {
+			const target = event.target as HTMLSelectElement;
 
-		if (!path || !romFiles[path]) {
-			return;
-		}
-
-		// remove focus so keyboard controls don't toggle the dropdown
-		target.blur();
-
-		try {
-			// fetch the URL from Vite
-			const getUrl = romFiles[path] as () => Promise<string>;
-			const url = await getUrl();
-
-			const response = await fetch(url);
-			if (!response.ok) {
-				throw new Error(`Failed to fetch ${path}`);
-			}
-
-			const arrayBuffer = await response.arrayBuffer();
-			await handleRomLoad(arrayBuffer);
-
+			// remove focus so keyboard controls don't toggle the dropdown
+			target.blur();
 			// reset file input so it doesn't look like two things are selected
 			const fileInput = document.getElementById(
 				"rom-input",
@@ -149,11 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			if (fileInput) {
 				fileInput.value = "";
 			}
-		} catch (err) {
-			console.error("Error loading ROM from dropdown:", err);
-			alert("Failed to load selected ROM.");
-		}
-	});
+
+			const buffer = await testRomLibrary.loadRomByPath(target.value);
+			if (buffer) {
+				await handleRomLoad(buffer);
+			}
+		});
 
 	// ======================================
 	// ====== set up screenshot button ======
