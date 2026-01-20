@@ -1,3 +1,4 @@
+import { GameLoop } from "./core/game-loop";
 import { emulatorState } from "./core/state";
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
@@ -12,6 +13,8 @@ const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
 const debug = new Debugger();
+
+const gameLoop = new GameLoop(audioController, canvasRenderer);
 
 const romFiles = import.meta.glob("../roms/**/*.gb", {
 	query: "?url",
@@ -138,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			emulatorState.setHidden(false);
 
 			if (!emulatorState.isPaused) {
-				startAnimationLoop();
+				gameLoop.startAnimationLoop();
 			}
 
 			// resume audio context
@@ -385,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				name: cartridgeInfo.title,
 			});
 		} else {
-			startAnimationLoop();
+			gameLoop.startAnimationLoop();
 		}
 	});
 
@@ -414,77 +417,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	syncDebugVisibility();
 });
-
-// ===================================
-// ============ GAME LOOP ============
-// ===================================
-//
-// Emulation runs at the Game Boy's hardware-accurate rate (~59.7275 Hz),
-// while the browser renders at the display refresh rate (typically 60 Hz).
-//
-// Because these rates do not match, we decouple generation from presentation.
-// This implements a Pull Architecture:
-//   - The Emulator acts as a Producer, latching the latest completed frame.
-//   - The Browser acts as a Consumer, polling for frames during requestAnimationFrame.
-//
-// This prevents lag accumulation and keeps timing accurate. The trade-off is
-// minor visual judder (frame doubling) when the same frame is displayed twice to
-// maintain synchronization.
-
-let animationFrameId: number | undefined;
-
-let lastFrameTime = 0;
-let tCycleAccumulator = 0;
-// 4,194,304 T-cycles per second
-const systemClockFrequency = 4.194304 * 1_000_000;
-
-// timestamp is the end time of the previous frame's rendering
-function handleAnimationFrame(timestamp: DOMHighResTimeStamp) {
-	if (
-		emulatorState.isPaused ||
-		emulatorState.isHidden ||
-		emulatorState.isFileInputOpen
-	) {
-		return;
-	}
-
-	// start the loop
-	if (lastFrameTime === 0) {
-		lastFrameTime = timestamp;
-		animationFrameId = requestAnimationFrame(handleAnimationFrame);
-		return;
-	}
-
-	const deltaSeconds = (timestamp - lastFrameTime) / 1000;
-	lastFrameTime = timestamp;
-
-	// run emulator steps
-	const tCyclesToAdd = systemClockFrequency * deltaSeconds;
-	tCycleAccumulator += tCyclesToAdd;
-	const { tCyclesUsed } = window.processEmulatorCycles(tCycleAccumulator);
-	tCycleAccumulator -= tCyclesUsed;
-
-	// render video
-	const frame = window.pollFrame();
-	if (frame) {
-		canvasRenderer.drawFrame(frame);
-	}
-
-	// play audio
-	const samples = window.pollAudioBuffer();
-	audioController.scheduleAudioSamples(samples);
-
-	animationFrameId = requestAnimationFrame(handleAnimationFrame);
-}
-
-function startAnimationLoop() {
-	if (!emulatorState.isRomLoaded) {
-		return;
-	}
-	cancelAnimationFrame(animationFrameId!);
-	lastFrameTime = 0;
-	animationFrameId = requestAnimationFrame(handleAnimationFrame);
-}
 
 async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const romData = new Uint8Array(arrayBuffer);
@@ -532,5 +464,5 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	// Start the animation loop
 	emulatorState.setRomLoaded(true);
 	debug.update();
-	startAnimationLoop();
+	gameLoop.startAnimationLoop();
 }
