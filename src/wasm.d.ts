@@ -13,6 +13,8 @@ declare global {
 		enableTraceLogging: () => void;
 		disableTraceLogging: () => void;
 		getTraceLogs: () => Uint8Array;
+		setAudioChannelEnabled: (channel: number, enabled: boolean) => void;
+		getAudioChannelEnabled: (channel: number) => boolean;
 		getDebugInfo: () => GameboyDebugInfo | null;
 	}
 }

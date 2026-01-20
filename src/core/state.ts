@@ -11,6 +11,8 @@ class EmulatorState {
 	public isRomLoaded = false;
 	/** Read-only */
 	public currentRomHash = "";
+	/** Read-only */
+	public audioChannelsEnabled = [false, true, true, true, true];
 
 	// Simple event system if you need UI updates
 	private listeners: Set<StateListener> = new Set();
@@ -52,6 +54,13 @@ class EmulatorState {
 
 	public setCurrentRomHash(hash: string) {
 		this.currentRomHash = hash;
+		this.notify();
+	}
+
+	public setAudioChannelEnabled(channel: number, enabled: boolean) {
+		if (channel >= 1 && channel <= 4) {
+			this.audioChannelsEnabled[channel] = enabled;
+		}
 		this.notify();
 	}
 

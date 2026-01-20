@@ -32,6 +32,29 @@
 					<option value="4">4×</option>
 					<option value="fit">Fit</option>
 				</select>
+				<div class="dropdown-container">
+					<button id="audio-channels-button" type="button">
+						Audio Channels ▼
+					</button>
+					<div id="audio-channels-dropdown" class="dropdown-panel">
+						<label class="channel-label">
+							<input type="checkbox" id="audio-channel-1" checked />
+							Ch1: Square
+						</label>
+						<label class="channel-label">
+							<input type="checkbox" id="audio-channel-2" checked />
+							Ch2: Square
+						</label>
+						<label class="channel-label">
+							<input type="checkbox" id="audio-channel-3" checked />
+							Ch3: Wave
+						</label>
+						<label class="channel-label">
+							<input type="checkbox" id="audio-channel-4" checked />
+							Ch4: Noise
+						</label>
+					</div>
+				</div>
 				<label id="trace-log-toggle-container">
 					<input type="checkbox" id="trace-log-checkbox" />
 					Trace Log
@@ -250,6 +273,62 @@
 			font-weight: bold;
 			pointer-events: all;
 			border: 4px dashed #666;
+		}
+
+		/* ======== APU CHANNEL DROPDOWN ======== */
+		.dropdown-container {
+			position: relative;
+		}
+
+		#audio-channels-button {
+			background-color: #2a2a2a;
+			color: #e0e0e0;
+			border: 1px solid #555;
+			padding: 6px 12px;
+			cursor: pointer;
+			border-radius: 4px;
+			font-size: 14px;
+		}
+
+		#audio-channels-button:hover {
+			background-color: #333;
+		}
+
+		.dropdown-panel {
+			display: none;
+			position: absolute;
+			bottom: 100%;
+			left: 0;
+			margin-bottom: 4px;
+			background-color: #2a2a2a;
+			border: 1px solid #555;
+			border-radius: 4px;
+			padding: 8px;
+			min-width: 200px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+			z-index: 1000;
+		}
+
+		.dropdown-panel.show {
+			display: block;
+		}
+
+		.channel-label {
+			display: flex;
+			align-items: center;
+			padding: 6px 8px;
+			cursor: pointer;
+			user-select: none;
+			border-radius: 3px;
+		}
+
+		.channel-label:hover {
+			background-color: #333;
+		}
+
+		.channel-label input[type="checkbox"] {
+			margin-right: 8px;
+			cursor: pointer;
 		}
 
 		/* ======== DEBUGGER ======== */

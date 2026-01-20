@@ -13,6 +13,7 @@ import {
 import type { CartridgeInfo } from "./wasm";
 import { setUpDataManagerHandlers } from "./ui/data-manager";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
+import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 
 let currentScale: number | "fit" = 1;
 let cartridgeInfo: CartridgeInfo | null = null;
@@ -45,6 +46,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		dataButtonId: "data-manager-button",
 		exportButtonId: "export-data-button",
 		importId: "import-data-input",
+	});
+
+	setUpAudioChannelHandlers({
+		buttonId: "audio-channels-button",
+		dropdownId: "audio-channels-dropdown",
 	});
 
 	// ========================================
@@ -229,6 +235,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		} else {
 			gameLoop.startAnimationLoop();
 		}
+
+		window.setAudioChannelEnabled(1, state.audioChannelsEnabled[1]);
+		window.setAudioChannelEnabled(2, state.audioChannelsEnabled[2]);
+		window.setAudioChannelEnabled(3, state.audioChannelsEnabled[3]);
+		window.setAudioChannelEnabled(4, state.audioChannelsEnabled[4]);
 	});
 
 	// ===================================

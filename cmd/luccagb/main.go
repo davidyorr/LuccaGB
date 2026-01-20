@@ -25,6 +25,8 @@ func main() {
 	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
 	js.Global().Set("enableTraceLogging", js.FuncOf(enableTraceLogging))
 	js.Global().Set("disableTraceLogging", js.FuncOf(disableTraceLogging))
+	js.Global().Set("setAudioChannelEnabled", js.FuncOf(setAudioChannelEnabled))
+	js.Global().Set("getAudioChannelEnabled", js.FuncOf(getAudioChannelEnabled))
 	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
@@ -225,6 +227,29 @@ func getTraceLogs(this js.Value, args []js.Value) interface{} {
 func resetTraceLogs(this js.Value, args []js.Value) interface{} {
 	logger.GlobalTraceLogger.Reset()
 	return nil
+}
+
+func setAudioChannelEnabled(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return nil
+	}
+
+	channel := args[0].Int()
+	enabled := args[1].Bool()
+
+	gb.SetAudioChannelEnabled(channel, enabled)
+
+	return nil
+}
+
+func getAudioChannelEnabled(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return nil
+	}
+
+	channel := args[0].Int()
+
+	return gb.GetAudioChannelEnabled(channel)
 }
 
 // getDebugInfo returns a snapshot of the emulator's state.

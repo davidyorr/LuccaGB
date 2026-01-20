@@ -113,6 +113,9 @@ type APU struct {
 	ch2 channel
 	ch3 channel
 	ch4 channel
+
+	// state controlled by the UI. 1-indexed to match the channel name.
+	channelsEnabled [5]bool
 }
 
 type channel struct {
@@ -182,6 +185,7 @@ func New() *APU {
 		dacRegisterMask:  0b1111_1000,
 		envelopeRegister: &apu.nr42,
 	}
+	apu.channelsEnabled = [5]bool{false, true, true, true, true}
 
 	apu.ch3.cyclesSinceWaveRamFetch = 255
 
@@ -413,7 +417,7 @@ func (apu *APU) Step() {
 		var leftAccumulator int32 = 0
 		var rightAccumulator int32 = 0
 
-		if ch1.enabled {
+		if ch1.enabled && apu.channelsEnabled[1] {
 			volume := ch1.currentVolume
 			sample := int32(ch1.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
@@ -426,7 +430,7 @@ func (apu *APU) Step() {
 			}
 		}
 
-		if ch2.enabled {
+		if ch2.enabled && apu.channelsEnabled[2] {
 			volume := ch2.currentVolume
 			sample := int32(ch2.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
@@ -439,7 +443,7 @@ func (apu *APU) Step() {
 			}
 		}
 
-		if ch3.enabled {
+		if ch3.enabled && apu.channelsEnabled[3] {
 			shift := ch3OutputLevelMap[ch3.currentVolume]
 			sample := int32(ch3.sampleBuffer >> shift)
 			sample -= (15 >> shift) / 2 // center to [-max/2, +max/2]
@@ -452,7 +456,7 @@ func (apu *APU) Step() {
 			}
 		}
 
-		if ch4.enabled {
+		if ch4.enabled && apu.channelsEnabled[4] {
 			volume := ch4.currentVolume
 			sample := int32(ch4.outputBit) * int32(volume)
 			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
@@ -923,6 +927,20 @@ func (apu *APU) clockEnvelope(ch *channel) {
 // DIV-APU in sync because they are physically the same counter.
 func (apu *APU) OnDivReset() {
 	apu.divApuCounter = 0
+}
+
+func (apu *APU) SetChannelEnabled(channel int, enabled bool) {
+	if channel >= 1 && channel <= 4 {
+		apu.channelsEnabled[channel] = enabled
+	}
+}
+
+func (apu *APU) GetChannelEnabled(channel int) bool {
+	if channel >= 1 && channel <= 4 {
+		return apu.channelsEnabled[channel]
+	}
+
+	return false
 }
 
 // ReadSamples copies up to len(dst) samples into dst.

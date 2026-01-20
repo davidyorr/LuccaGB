@@ -108,6 +108,14 @@ func (gameboy *Gameboy) ReadSamples(dst []int16) int {
 	return gameboy.apu.ReadSamples(dst)
 }
 
+func (gameboy *Gameboy) SetAudioChannelEnabled(channel int, enabled bool) {
+	gameboy.apu.SetChannelEnabled(channel, enabled)
+}
+
+func (gameboy *Gameboy) GetAudioChannelEnabled(channel int) bool {
+	return gameboy.apu.GetChannelEnabled(channel)
+}
+
 // Debug gathers debug information from all components, acting as a single entry
 // point for the frontend to get a snapshot of the machine state.
 func (gb *Gameboy) Debug() map[string]interface{} {
