@@ -546,12 +546,15 @@ func (apu *APU) Read(address uint16) uint8 {
 }
 
 func (apu *APU) Write(address uint16, value uint8) {
+	isPoweredOn := apu.poweredOn()
 	isNR52 := address == 0xFF26
 	isWaveRam := address >= 0xFF30 && address <= 0xFF3F
-	isNR41 := address == 0xFF20
+	// On DMG the length timer bits can still be written to while powered off
+	// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Differences
+	isLengthTimerRegister := address == 0xFF11 || address == 0xFF16 || address == 0xFF1B || address == 0xFF20
 
-	// Only Wave RAM, NR52, and NR41 are writable when APU is powered off
-	if !apu.poweredOn() && !isNR52 && !isWaveRam && !isNR41 {
+	// Only Wave RAM, NR52, and length timer bits are writable when APU is powered off.
+	if !isPoweredOn && !isNR52 && !isWaveRam && !isLengthTimerRegister {
 		return
 	}
 
@@ -578,7 +581,13 @@ func (apu *APU) Write(address uint16, value uint8) {
 
 		apu.nr10 = value
 	case address == 0xFF11:
-		apu.nr11 = value
+		if isPoweredOn {
+			apu.nr11 = value
+		} else {
+			// On DMG we can modify the length timer bits, but must preserve the wave duty bits
+			// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Differences
+			apu.nr11 = value & 0b0011_1111
+		}
 
 		apu.ch1.lengthTimer = uint16(value & 0b0011_1111)
 	case address == 0xFF12:
@@ -613,7 +622,13 @@ func (apu *APU) Write(address uint16, value uint8) {
 			}
 		}
 	case address == 0xFF16:
-		apu.nr21 = value
+		if isPoweredOn {
+			apu.nr21 = value
+		} else {
+			// On DMG we can modify the length timer bits, but must preserve the wave duty bits
+			// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Differences
+			apu.nr21 = value & 0b0011_1111
+		}
 
 		apu.ch2.lengthTimer = uint16(value & 0b0011_1111)
 	case address == 0xFF17:
