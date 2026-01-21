@@ -221,7 +221,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		canvasRenderer.setScale(currentScale);
 	});
 
-	emulatorState.subscribe((state) => {
+	let prevAudioChannelsEnabled = [...emulatorState.audioChannelsEnabled];
+
+	// ==================================
+	// ====== handle state changes ======
+	// ==================================
+	emulatorState.subscribe(async (state) => {
 		if (state.isPaused) {
 			debug.update();
 
@@ -232,14 +237,21 @@ document.addEventListener("DOMContentLoaded", () => {
 			persistCartridgeRam(state.currentRomHash, ram, {
 				name: cartridgeInfo.title,
 			});
+
+			await audioController.pause();
 		} else {
+			await audioController.resume();
 			gameLoop.startAnimationLoop();
 		}
 
-		window.setAudioChannelEnabled(1, state.audioChannelsEnabled[1]);
-		window.setAudioChannelEnabled(2, state.audioChannelsEnabled[2]);
-		window.setAudioChannelEnabled(3, state.audioChannelsEnabled[3]);
-		window.setAudioChannelEnabled(4, state.audioChannelsEnabled[4]);
+		// check if any audio channels were enabled/disabled
+		for (let i = 1; i <= 4; i++) {
+			if (state.audioChannelsEnabled[i] !== prevAudioChannelsEnabled[i]) {
+				window.setAudioChannelEnabled(i, state.audioChannelsEnabled[i]);
+				prevAudioChannelsEnabled[i] = state.audioChannelsEnabled[i];
+				audioController.resetTime();
+			}
+		}
 	});
 
 	// ===================================
@@ -270,6 +282,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const romData = new Uint8Array(arrayBuffer);
+
+	// pause the previous audio context
+	await audioController.pause();
 
 	// Compute the ROM Hash
 	const hashBuffer = await window.crypto.subtle.digest(
@@ -310,6 +325,15 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 		canvas.tabIndex = 0;
 		canvas.focus();
 	}
+
+	// set the initial audio channels state
+	window.setAudioChannelEnabled(1, emulatorState.audioChannelsEnabled[1]);
+	window.setAudioChannelEnabled(2, emulatorState.audioChannelsEnabled[2]);
+	window.setAudioChannelEnabled(3, emulatorState.audioChannelsEnabled[3]);
+	window.setAudioChannelEnabled(4, emulatorState.audioChannelsEnabled[4]);
+
+	// resume the audio context
+	await audioController.resume();
 
 	// Start the animation loop
 	emulatorState.setRomLoaded(true);
