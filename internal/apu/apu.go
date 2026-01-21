@@ -749,10 +749,18 @@ func (apu *APU) Write(address uint16, value uint8) {
 			apu.divApuStep = 7
 		}
 	case address >= 0xFF30 && address <= 0xFF3F:
+		// If the wave channel is enabled, accessing any byte from $FF30-$FF3F
+		// is equivalent to accessing the current byte selected by the waveform
+		// position. Further, on the DMG accesses will only work in this manner
+		// if made within a couple of clocks of the wave channel accessing wave
+		// RAM; if made at any other time, reads return $FF and writes have no
+		// effect.
+		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
 		if apu.ch3.enabled {
-			if apu.ch3.cyclesSinceWaveRamFetch >= 2 {
-				return
+			if apu.ch3.cyclesSinceWaveRamFetch < 2 {
+				apu.waveRam[apu.ch3.sampleIndex>>1] = value
 			}
+			return
 		}
 		apu.waveRam[address-0xFF30] = value
 	}
