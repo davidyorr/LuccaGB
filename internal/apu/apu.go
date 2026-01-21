@@ -329,8 +329,9 @@ func (apu *APU) Step() {
 	// Channel 4 (Noise) is clocked at 262144 Hz, once per 16 dots.
 	// Shift being equal to 14 or 15 stops the channel from being clocked entirely.
 	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff22--nr43-channel-4-frequency--randomness
+	// calculateCh4Period() already handles determining the correct period, so we just decrement here
 	clockShift := (apu.nr43 & 0b1111_0000) >> 4
-	if (apu.internalTimer&0b1111) == 0 && (clockShift != 14 && clockShift != 15) && ch4.enabled {
+	if (clockShift != 14 && clockShift != 15) && ch4.enabled {
 		ch4.periodDivider--
 	}
 
