@@ -26,8 +26,9 @@ var (
 type TestType string
 
 const (
-	TestTypeBlargg  TestType = "blargg"
-	TestTypeMooneye TestType = "mooneye"
+	TestTypeBlargg       TestType = "blargg"
+	TestTypeBlarggMemory TestType = "blargg_memory"
+	TestTypeMooneye      TestType = "mooneye"
 )
 
 func skipCi(t *testing.T, romName string) {
@@ -62,7 +63,7 @@ func TestBlargg__cpu_instrs(t *testing.T) {
 }
 
 func TestBlargg__dmg_sound(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/dmg_sound", 2_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/dmg_sound", 37_423_785, TestTypeBlarggMemory)
 }
 
 func TestBlargg__halt_bug(t *testing.T) {
@@ -78,7 +79,7 @@ func TestBlargg__mem_timing(t *testing.T) {
 }
 
 func TestBlargg__oam_bug(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/oam_bug", 2_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/oam_bug", 2_000_000, TestTypeBlarggMemory)
 }
 
 func TestMooneye__add_sp_e_timing(t *testing.T) {
@@ -522,14 +523,30 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 
 	// track if the test emitted any pass/fail signal
 	testComplete := false
+	reader := NewMemoryReader(gb)
+	var memOutput []byte
+	var testOutput string
 
 	for i := range stepCount {
 		gb.Step()
-		output := string(gb.serial.SerialOutputBuffer())
 
-		passed, failed := checkResult(output, testType)
+		var passed, failed bool
+
+		switch testType {
+		case TestTypeBlargg, TestTypeMooneye:
+			testOutput = string(gb.serial.SerialOutputBuffer())
+			passed, failed = checkResult(testOutput, testType)
+		case TestTypeBlarggMemory:
+			b, success := reader.TryToReadNextByte()
+			if success {
+				memOutput = append(memOutput, b)
+				testOutput = string(memOutput)
+			}
+			passed, failed = checkResult(testOutput, testType)
+		}
+
 		if failed {
-			t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
+			t.Logf("\n=============== OUTPUT ===============\n%s\n======================================\n", testOutput)
 			t.Logf("❌ TEST FAILED after %d steps", i+1)
 			for _, line := range logBuffer.LastN(40) {
 				fmt.Fprint(os.Stdout, line)
@@ -548,7 +565,7 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 
 	if !testComplete {
 		output := string(gb.serial.SerialOutputBuffer())
-		t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
+		t.Logf("\n=============== OUTPUT ===============\n%s\n======================================\n", output)
 		for _, line := range logBuffer.LastN(40) {
 			fmt.Fprint(os.Stdout, line)
 		}
@@ -557,13 +574,38 @@ func loadRomAndRunSteps(t *testing.T, romName string, stepCount int, testType Te
 		t.Fatal("Test timed out (no pass/fail signal detected)")
 	}
 
-	output := string(gb.serial.SerialOutputBuffer())
-	t.Logf("\n============ SERIAL OUTPUT ============\n%s\n=======================================\n", output)
+	t.Logf("\n=============== OUTPUT ===============\n%s\n======================================\n", testOutput)
+}
+
+type MemoryReader struct {
+	gb   *Gameboy
+	addr uint16 // Last address we read up to
+}
+
+func NewMemoryReader(gb *Gameboy) *MemoryReader {
+	return &MemoryReader{
+		gb:   gb,
+		addr: 0xA004,
+	}
+}
+
+func (r *MemoryReader) TryToReadNextByte() (output byte, success bool) {
+	// Read a byte and return early if it's a null terminator
+	b := r.gb.cartridge.Read(r.addr)
+	if b == 0 || b == 0xFF {
+		return output, success
+	}
+
+	success = true
+	output = b
+	r.addr++
+
+	return output, success
 }
 
 func checkResult(output string, testType TestType) (passed bool, failed bool) {
 	switch testType {
-	case TestTypeBlargg:
+	case TestTypeBlargg, TestTypeBlarggMemory:
 		passed = strings.Contains(output, "Passed\n") || strings.Contains(output, "Passed all tests\n")
 		failed = strings.Contains(output, "Failed")
 	case TestTypeMooneye:

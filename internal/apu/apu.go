@@ -85,6 +85,8 @@ type APU struct {
 	// See: https://gbdev.io/pandocs/Audio_details.html#div-apu
 	divApuCounter uint16
 
+	cyclesSinceWaveRamFetch uint16
+
 	// the step counter (0-7) to track which events to fire:
 	//
 	// Event           Rate    Frequency
@@ -144,9 +146,8 @@ type channel struct {
 	sweepNegateModeUsed bool
 
 	// Ch 3
-	sampleIndex             uint8
-	sampleBuffer            uint8
-	cyclesSinceWaveRamFetch uint8
+	sampleIndex  uint8
+	sampleBuffer uint8
 
 	// Ch 4
 	lfsr uint16
@@ -187,7 +188,7 @@ func New() *APU {
 	}
 	apu.channelsEnabled = [5]bool{false, true, true, true, true}
 
-	apu.ch3.cyclesSinceWaveRamFetch = 255
+	apu.cyclesSinceWaveRamFetch = 255
 
 	apu.Reset()
 
@@ -251,10 +252,7 @@ func (apu *APU) Step() {
 	apu.divApuCounter++
 	apu.internalTimer++
 	apu.sampleTimer += TargetSampleRate
-
-	if apu.ch3.cyclesSinceWaveRamFetch < 255 {
-		apu.ch3.cyclesSinceWaveRamFetch++
-	}
+	apu.cyclesSinceWaveRamFetch++
 
 	ch1 := &apu.ch1
 	ch2 := &apu.ch2
@@ -364,7 +362,7 @@ func (apu *APU) Step() {
 
 	// ch 3 overflow check
 	if ch3.periodDivider == 0b1000_0000_0000 {
-		ch3.cyclesSinceWaveRamFetch = 0
+		apu.cyclesSinceWaveRamFetch = 0
 		ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
 
 		// wave RAM is 16 bytes long, we fetch a nibble at a time (half a byte),
@@ -482,7 +480,6 @@ func (apu *APU) Step() {
 		leftSample := int16((float32(leftAccumulator) / 60.0) * 32767.0)
 		rightSample := int16((float32(rightAccumulator) / 60.0) * 32767.0)
 
-		// apu.outputBuffer.Write(mixedSample)
 		apu.outputBuffer.Write(leftSample)
 		apu.outputBuffer.Write(rightSample)
 	}
@@ -541,7 +538,7 @@ func (apu *APU) Read(address uint16) uint8 {
 		// effect.
 		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
 		if apu.ch3.enabled {
-			if apu.ch3.cyclesSinceWaveRamFetch < 2 {
+			if apu.cyclesSinceWaveRamFetch < 2 {
 				return apu.waveRam[apu.ch3.sampleIndex>>1]
 			}
 			return 0xFF
@@ -678,6 +675,26 @@ func (apu *APU) Write(address uint16, value uint8) {
 
 		// Trigger bit is set
 		if (value & 0b1000_0000) != 0 {
+			// Triggering the wave channel on the DMG while it reads a sample
+			// byte will alter the first four bytes of wave RAM.
+			// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+			// Each wave RAM fetch takes 4 cycles, so when cyclesSinceWaveRamFetch == 2
+			// we are in the middle of a fetch. 2 cycles must be when the
+			// actual data is being latched.
+			if apu.ch3.enabled && apu.cyclesSinceWaveRamFetch == 2 {
+				// + 1 to use the sample index that is about to be read, because
+				// we haven't actually read the nibble yet
+				byteIndex := ((apu.ch3.sampleIndex + 1) >> 1) & 0xF
+
+				if byteIndex < 4 {
+					apu.waveRam[0] = apu.waveRam[byteIndex]
+				} else {
+					// Copy the aligned block of 4 bytes to the start of wave RAM
+					srcStart := byteIndex & 0b1100
+					copy(apu.waveRam[0:4], apu.waveRam[srcStart:srcStart+4])
+				}
+			}
+
 			// Delay by 3 extra clocks.
 			// I can't find any docs that mention this, but the Blargg
 			// 09-wave_read_while_on.gb test fails without this delay.
@@ -685,7 +702,6 @@ func (apu *APU) Write(address uint16, value uint8) {
 			apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 6
 
 			apu.ch3.sampleIndex = 0
-			apu.ch3.cyclesSinceWaveRamFetch = 255
 		}
 	case address == 0xFF20:
 		apu.nr41 = (value & 0b0011_1111)
@@ -760,7 +776,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 		// effect.
 		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
 		if apu.ch3.enabled {
-			if apu.ch3.cyclesSinceWaveRamFetch < 2 {
+			if apu.cyclesSinceWaveRamFetch < 2 {
 				apu.waveRam[apu.ch3.sampleIndex>>1] = value
 			}
 			return
