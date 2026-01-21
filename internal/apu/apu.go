@@ -132,10 +132,10 @@ type channel struct {
 	dacRegister      *uint8
 	dacRegisterMask  uint8
 	outputBit        uint8
+	periodDivider    uint16
 
 	// ====== Not Common Fields ======
-	periodDivider uint16
-	wavePosition  uint8
+	wavePosition uint8
 
 	// Ch 1 Sweep Unit
 	sweepTimer          uint16
@@ -314,14 +314,17 @@ func (apu *APU) Step() {
 
 	// Channels 1 & 2 (Pulse Channels) period dividers are clocked at 1048576 Hz, once per four dots
 	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only
-	if (apu.internalTimer & 0b11) == 0 {
+	if (apu.internalTimer&0b11) == 0 && ch1.enabled {
 		ch1.periodDivider++
+	}
+
+	if (apu.internalTimer&0b11) == 0 && ch2.enabled {
 		ch2.periodDivider++
 	}
 
 	// Channel 3 (Wave Channel) period divider is clocked at 2097152 Hz, once per two dots
 	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff1d--nr33-channel-3-period-low-write-only
-	if (apu.internalTimer & 0b1) == 0 {
+	if (apu.internalTimer&0b1) == 0 && ch3.enabled {
 		ch3.periodDivider++
 	}
 
@@ -329,7 +332,7 @@ func (apu *APU) Step() {
 	// Shift being equal to 14 or 15 stops the channel from being clocked entirely.
 	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff22--nr43-channel-4-frequency--randomness
 	clockShift := (apu.nr43 & 0b1111_0000) >> 4
-	if (apu.internalTimer&0b1111) == 0 && (clockShift != 14 && clockShift != 15) {
+	if (apu.internalTimer&0b1111) == 0 && (clockShift != 14 && clockShift != 15) && ch4.enabled {
 		ch4.periodDivider--
 	}
 
