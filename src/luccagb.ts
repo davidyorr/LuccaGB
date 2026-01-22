@@ -15,6 +15,7 @@ import { setUpDataManagerHandlers } from "./ui/data-manager";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 import { setUpAudioVolumeHandlers } from "./ui/audio-volume";
+import { setUpControlsHandlers } from "./ui/controls";
 
 let currentScale: number | "fit" = 1;
 let cartridgeInfo: CartridgeInfo | null = null;
@@ -36,6 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			go.run(wasmModule.instance);
 		},
 	);
+
+	setUpControlsHandlers({
+		panelToggleId: "panel-toggle",
+		controlsPanelId: "controls-panel",
+	});
 
 	setUpDragAndDropHandlers({
 		overlayId: "drag-overlay",

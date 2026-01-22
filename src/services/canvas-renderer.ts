@@ -56,9 +56,8 @@ export class CanvasRenderer {
 		}
 
 		if (scale === "fit") {
-			// Fit to viewport (minus controls height)
 			const maxWidth = window.innerWidth;
-			const maxHeight = window.innerHeight - 56;
+			const maxHeight = window.innerHeight;
 
 			const fitScale = Math.floor(
 				Math.min(maxWidth / this.displayWidth, maxHeight / this.displayHeight),
