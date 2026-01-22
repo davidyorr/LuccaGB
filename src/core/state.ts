@@ -12,6 +12,8 @@ class EmulatorState {
 	/** Read-only */
 	public currentRomHash = "";
 	/** Read-only */
+	public audioVolume = 0.5;
+	/** Read-only */
 	public audioChannelsEnabled = [false, true, true, true, true];
 
 	// Simple event system if you need UI updates
@@ -54,6 +56,11 @@ class EmulatorState {
 
 	public setCurrentRomHash(hash: string) {
 		this.currentRomHash = hash;
+		this.notify();
+	}
+
+	public setAudioVolume(volume: number) {
+		this.audioVolume = volume;
 		this.notify();
 	}
 

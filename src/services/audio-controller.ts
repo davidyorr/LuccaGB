@@ -1,3 +1,5 @@
+import { emulatorState } from "../core/state";
+
 export class AudioController {
 	private audioContext: AudioContext;
 	private nextStartTime = 0;
@@ -47,10 +49,15 @@ export class AudioController {
 			rightChannel[i] = samples[i * 2 + 1] / 32768.0;
 		}
 
+		// adjust volume from UI setting
+		const gainNode = this.audioContext.createGain();
+		gainNode.gain.value = emulatorState.audioVolume;
+		gainNode.connect(this.audioContext.destination);
+
 		// Create a source to play this buffer
 		const source = this.audioContext.createBufferSource();
 		source.buffer = buffer;
-		source.connect(this.audioContext.destination);
+		source.connect(gainNode);
 
 		// Schedule it to play
 		source.start(this.nextStartTime);
