@@ -976,3 +976,19 @@ func (apu *APU) GetChannelEnabled(channel int) bool {
 func (apu *APU) ReadSamples(dst []int16) int {
 	return apu.outputBuffer.Read(dst)
 }
+
+func (apu *APU) Debug() map[string]interface{} {
+	registers := make(map[string]interface{})
+	registers["NR32"] = apu.nr32
+	registers["NR30"] = apu.nr30
+
+	waveRamSlice := make([]interface{}, 16)
+	for i, v := range apu.waveRam {
+		waveRamSlice[i] = v
+	}
+
+	return map[string]interface{}{
+		"registers": registers,
+		"waveRam":   waveRamSlice,
+	}
+}

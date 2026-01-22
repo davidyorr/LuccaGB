@@ -14,6 +14,11 @@ export class Debugger {
 	private flagH: HTMLElement | null;
 	private flagC: HTMLElement | null;
 
+	// APU
+	private waveRamHex: Array<HTMLElement | null> = [];
+	private regNR30: HTMLElement | null;
+	private regNR32: HTMLElement | null;
+
 	constructor() {
 		this.cartridgeTitle = document.getElementById("cartridge-title");
 		this.cartridgeType = document.getElementById("cartridge-cartridge-type");
@@ -29,6 +34,12 @@ export class Debugger {
 		this.flagN = document.getElementById("flag-n");
 		this.flagH = document.getElementById("flag-h");
 		this.flagC = document.getElementById("flag-c");
+		this.regNR30 = document.getElementById("nr30");
+		this.regNR32 = document.getElementById("nr32");
+
+		for (let i = 0; i < 16; i++) {
+			this.waveRamHex.push(document.getElementById(`wave-hex-${i}`));
+		}
 	}
 
 	public update() {
@@ -37,10 +48,16 @@ export class Debugger {
 			return;
 		}
 
-		const { cartridge, cpu } = debugInfo;
+		const { apu, cartridge, cpu } = debugInfo;
 
 		const toHex = (val: number) =>
 			"0x" + val.toString(16).toUpperCase().padStart(4, "0");
+		const toBinary = (val: number) =>
+			"0b" +
+			val
+				.toString(2)
+				.padStart(8, "0")
+				.replace(/(\d{4})(?=\d)/g, "$1_");
 
 		if (this.cartridgeTitle) this.cartridgeTitle.textContent = cartridge.title;
 		if (this.cartridgeType)
@@ -61,5 +78,19 @@ export class Debugger {
 		if (this.flagN) this.flagN.textContent = cpu.flags.N.toString();
 		if (this.flagH) this.flagH.textContent = cpu.flags.H.toString();
 		if (this.flagC) this.flagC.textContent = cpu.flags.C.toString();
+
+		if (this.regNR30) this.regNR30.textContent = toBinary(apu.registers.NR30);
+		if (this.regNR32) this.regNR32.textContent = toBinary(apu.registers.NR32);
+
+		// wave RAM
+		if (apu.waveRam && apu.waveRam.length === 16) {
+			for (let i = 0; i < 16; i++) {
+				const value = apu.waveRam[i];
+
+				if (this.waveRamHex[i]) {
+					this.waveRamHex[i]!.textContent = `0x${toHex(value)}`;
+				}
+			}
+		}
 	}
 }

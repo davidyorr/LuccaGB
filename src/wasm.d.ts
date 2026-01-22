@@ -26,9 +26,18 @@ export interface CartridgeInfo {
 }
 
 interface GameboyDebugInfo {
+	apu: ApuDebugInfo;
 	cartridge: CartridgeDebugInfo;
 	cpu: CpuDebugInfo;
 	// ppu: PpuDebugInfo;
+}
+
+interface ApuDebugInfo {
+	waveRam: number[];
+	registers: {
+		NR30: number;
+		NR32: number;
+	};
 }
 
 interface CartridgeDebugInfo {

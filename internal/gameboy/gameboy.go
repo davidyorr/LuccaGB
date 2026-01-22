@@ -121,6 +121,7 @@ func (gameboy *Gameboy) GetAudioChannelEnabled(channel int) bool {
 func (gb *Gameboy) Debug() map[string]interface{} {
 	debugInfo := make(map[string]interface{})
 
+	debugInfo["apu"] = gb.apu.Debug()
 	debugInfo["cartridge"] = gb.cartridge.Debug()
 	debugInfo["cpu"] = gb.cpu.Debug()
 	// debugInfo["ppu"] = gb.ppu.Debug()
