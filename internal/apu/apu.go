@@ -673,7 +673,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 	case address == 0xFF1C:
 		apu.nr32 = value
 
-		apu.ch3.currentVolume = (value & 0b0110_0000) >> 6
+		apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 5
 	case address == 0xFF1D:
 		apu.nr33 = value
 	case address == 0xFF1E:
@@ -707,7 +707,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 			// 09-wave_read_while_on.gb test fails without this delay.
 			apu.ch3.clockDelay = 3
 			apu.ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
-			apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 6
+			apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 5
 
 			apu.ch3.sampleIndex = 0
 		}
