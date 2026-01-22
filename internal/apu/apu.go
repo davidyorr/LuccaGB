@@ -148,6 +148,7 @@ type channel struct {
 	// Ch 3
 	sampleIndex  uint8
 	sampleBuffer uint8
+	clockDelay   uint8
 
 	// Ch 4
 	lfsr uint16
@@ -323,7 +324,11 @@ func (apu *APU) Step() {
 	// Channel 3 (Wave Channel) period divider is clocked at 2097152 Hz, once per two dots
 	// See: https://gbdev.io/pandocs/Audio_Registers.html#ff1d--nr33-channel-3-period-low-write-only
 	if (apu.internalTimer&0b1) == 0 && ch3.enabled {
-		ch3.periodDivider++
+		if ch3.clockDelay > 0 {
+			ch3.clockDelay--
+		} else {
+			ch3.periodDivider++
+		}
 	}
 
 	// Channel 4 (Noise) is clocked at 262144 Hz, once per 16 dots.
@@ -672,6 +677,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 	case address == 0xFF1D:
 		apu.nr33 = value
 	case address == 0xFF1E:
+		wasEnabled := apu.ch3.enabled
 		apu.writeNRx4(address, value)
 
 		// Trigger bit is set
@@ -682,7 +688,7 @@ func (apu *APU) Write(address uint16, value uint8) {
 			// Each wave RAM fetch takes 4 cycles, so when cyclesSinceWaveRamFetch == 2
 			// we are in the middle of a fetch. 2 cycles must be when the
 			// actual data is being latched.
-			if apu.ch3.enabled && apu.cyclesSinceWaveRamFetch == 2 {
+			if wasEnabled && apu.cyclesSinceWaveRamFetch == 2 {
 				// + 1 to use the sample index that is about to be read, because
 				// we haven't actually read the nibble yet
 				byteIndex := ((apu.ch3.sampleIndex + 1) >> 1) & 0xF
@@ -699,7 +705,8 @@ func (apu *APU) Write(address uint16, value uint8) {
 			// Delay by 3 extra clocks.
 			// I can't find any docs that mention this, but the Blargg
 			// 09-wave_read_while_on.gb test fails without this delay.
-			apu.ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33) - 3
+			apu.ch3.clockDelay = 3
+			apu.ch3.periodDivider = (uint16(apu.nr34&0b111) << 8) | uint16(apu.nr33)
 			apu.ch3.currentVolume = (apu.nr32 & 0b0110_0000) >> 6
 
 			apu.ch3.sampleIndex = 0
