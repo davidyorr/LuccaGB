@@ -1,4 +1,4 @@
-import { emulatorState } from "../core/state";
+import { appState } from "../core/state";
 
 export function setUpAudioChannelHandlers({
 	buttonId,
@@ -33,10 +33,10 @@ export function setUpAudioChannelHandlers({
 			`audio-channel-${i}`,
 		) as HTMLInputElement | null;
 		// set the initial state
-		emulatorState.setAudioChannelEnabled(i, checkbox?.checked ?? true);
+		appState.setAudioChannelEnabled(i, checkbox?.checked ?? true);
 		// handle on change
 		checkbox?.addEventListener("change", (event) => {
-			emulatorState.setAudioChannelEnabled(
+			appState.setAudioChannelEnabled(
 				i,
 				(event.target as HTMLInputElement)?.checked,
 			);

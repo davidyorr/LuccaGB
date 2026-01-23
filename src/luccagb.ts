@@ -1,5 +1,5 @@
 import { GameLoop } from "./core/game-loop";
-import { emulatorState } from "./core/state";
+import { appState } from "./core/state";
 import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
@@ -25,7 +25,7 @@ const canvasRenderer = new CanvasRenderer("canvas");
 const audioController = new AudioController();
 const testRomLibrary = new TestRomLibrary();
 new InputManager({
-	Space: emulatorState.togglePaused,
+	Space: appState.togglePaused,
 });
 const debug = new Debugger();
 
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ====== set up ROM input event listener ======
 	// =============================================
 	fileInput?.addEventListener("change", async (event) => {
-		emulatorState.setFileInputOpen(false);
+		appState.setFileInputOpen(false);
 		const files = (event.target as HTMLInputElement | null)?.files;
 		if (files?.[0]) {
 			const arrayBuffer = await files?.[0].arrayBuffer();
@@ -96,11 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	fileInput?.addEventListener("click", () => {
-		emulatorState.setFileInputOpen(true);
+		appState.setFileInputOpen(true);
 	});
 
 	fileInput?.addEventListener("cancel", () => {
-		emulatorState.setFileInputOpen(false);
+		appState.setFileInputOpen(false);
 	});
 
 	// ==================================================
@@ -108,13 +108,13 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ==================================================
 	document.addEventListener("visibilitychange", () => {
 		if (document.hidden) {
-			emulatorState.setHidden(true);
+			appState.setHidden(true);
 
 			// suspend audio context
 		} else {
-			emulatorState.setHidden(false);
+			appState.setHidden(false);
 
-			if (!emulatorState.isPaused) {
+			if (!appState.isPaused) {
 				gameLoop.startAnimationLoop();
 			}
 
@@ -233,12 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		canvasRenderer.setScale(currentScale);
 	});
 
-	let prevAudioChannelsEnabled = [...emulatorState.audioChannelsEnabled];
+	let prevAudioChannelsEnabled = [...appState.audioChannelsEnabled];
 
 	// ==================================
 	// ====== handle state changes ======
 	// ==================================
-	emulatorState.subscribe(async (state) => {
+	appState.subscribe(async (state) => {
 		if (state.isPaused) {
 			debug.update();
 
@@ -307,7 +307,7 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const hashHex = hashArray
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
-	emulatorState.setCurrentRomHash(hashHex);
+	appState.setCurrentRomHash(hashHex);
 
 	// Load into Go
 	cartridgeInfo = window.loadRom(romData);
@@ -316,7 +316,7 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	// Attempt to load existing RAM
 	if (cartridgeInfo.hasBattery && cartridgeInfo.ramSize > 0) {
 		try {
-			const ram = await loadCartridgeRam(emulatorState.currentRomHash);
+			const ram = await loadCartridgeRam(appState.currentRomHash);
 			if (ram) {
 				// Ensure the loaded RAM size matches what the cartridge expects
 				if (ram.length !== cartridgeInfo.ramSize) {
@@ -339,16 +339,16 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	}
 
 	// set the initial audio channels state
-	window.setAudioChannelEnabled(1, emulatorState.audioChannelsEnabled[1]);
-	window.setAudioChannelEnabled(2, emulatorState.audioChannelsEnabled[2]);
-	window.setAudioChannelEnabled(3, emulatorState.audioChannelsEnabled[3]);
-	window.setAudioChannelEnabled(4, emulatorState.audioChannelsEnabled[4]);
+	window.setAudioChannelEnabled(1, appState.audioChannelsEnabled[1]);
+	window.setAudioChannelEnabled(2, appState.audioChannelsEnabled[2]);
+	window.setAudioChannelEnabled(3, appState.audioChannelsEnabled[3]);
+	window.setAudioChannelEnabled(4, appState.audioChannelsEnabled[4]);
 
 	// resume the audio context
 	await audioController.resume();
 
 	// Start the animation loop
-	emulatorState.setRomLoaded(true);
+	appState.setRomLoaded(true);
 	debug.update();
 	gameLoop.startAnimationLoop();
 }

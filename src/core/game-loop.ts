@@ -1,6 +1,6 @@
 import type { AudioController } from "../services/audio-controller";
 import type { CanvasRenderer } from "../services/canvas-renderer";
-import { emulatorState } from "./state";
+import { appState } from "./state";
 
 // Decouple emulation (~59.7275 Hz) from display refresh rate:
 // emulator produces frames, browser polls via requestAnimationFrame
@@ -20,7 +20,7 @@ export class GameLoop {
 	}
 
 	public startAnimationLoop() {
-		if (!emulatorState.isRomLoaded) {
+		if (!appState.isRomLoaded) {
 			return;
 		}
 		cancelAnimationFrame(this.animationFrameId!);
@@ -30,11 +30,7 @@ export class GameLoop {
 
 	// timestamp is the end time of the previous frame's rendering
 	private handleAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
-		if (
-			emulatorState.isPaused ||
-			emulatorState.isHidden ||
-			emulatorState.isFileInputOpen
-		) {
+		if (appState.isPaused || appState.isHidden || appState.isFileInputOpen) {
 			return;
 		}
 

@@ -1,4 +1,4 @@
-import { emulatorState } from "../core/state";
+import { appState } from "../core/state";
 
 export class AudioController {
 	private audioContext: AudioContext;
@@ -51,7 +51,7 @@ export class AudioController {
 
 		// adjust volume from UI setting
 		const gainNode = this.audioContext.createGain();
-		gainNode.gain.value = emulatorState.audioVolume;
+		gainNode.gain.value = appState.audioVolume;
 		gainNode.connect(this.audioContext.destination);
 
 		// Create a source to play this buffer

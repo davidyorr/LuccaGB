@@ -1,4 +1,4 @@
-import { emulatorState } from "../core/state";
+import { appState } from "../core/state";
 
 export function setUpAudioVolumeHandlers({
 	volumeSliderId,
@@ -21,7 +21,7 @@ export function setUpAudioVolumeHandlers({
 	const setVolume = (volume: number) => {
 		if (Number.isInteger(volume)) {
 			volumeValue.textContent = `${volume}%`;
-			emulatorState.setAudioVolume(volume / 100);
+			appState.setAudioVolume(volume / 100);
 		}
 	};
 

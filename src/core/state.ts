@@ -1,12 +1,12 @@
-type StateListener = (state: EmulatorState) => void;
+type StateListener = (state: AppState) => void;
 
-class EmulatorState {
+class AppState {
+	// =========================================
+	// GAME STATE
+	// =========================================
+
 	/** Read-only */
 	public isPaused = false;
-	/** Read-only */
-	public isHidden = false;
-	/** Read-only */
-	public isFileInputOpen = false;
 	/** Read-only */
 	public isRomLoaded = false;
 	/** Read-only */
@@ -16,8 +16,23 @@ class EmulatorState {
 	/** Read-only */
 	public audioChannelsEnabled = [false, true, true, true, true];
 
-	// Simple event system if you need UI updates
+	// =========================================
+	// UI STATE
+	// =========================================
+
+	/** Read-only */
+	public isFileInputOpen = false;
+	/** Read-only */
+	public isHidden = false;
+	/** Read-only */
+	public isControlsOpen = false;
+
+	// Event system
 	private listeners: Set<StateListener> = new Set();
+
+	// =========================================
+	// GAME STATE
+	// =========================================
 
 	public setPaused(paused: boolean) {
 		this.isPaused = paused;
@@ -25,32 +40,21 @@ class EmulatorState {
 	}
 
 	public togglePaused = () => {
-		if (!emulatorState.isRomLoaded) {
+		if (!appState.isRomLoaded) {
 			return;
 		}
 		this.setPaused(!this.isPaused);
 	};
 
-	public setHidden(hidden: boolean) {
-		this.isHidden = hidden;
-		this.notify();
-	}
-
-	public setFileInputOpen(isOpen: boolean) {
-		this.isFileInputOpen = isOpen;
-
-		// Force pause when input is open
-		if (isOpen) {
-			this.setPaused(true);
-		}
-		this.notify();
-	}
-
 	public setRomLoaded(loaded: boolean) {
 		this.isRomLoaded = loaded;
 
-		// Force resume after ROM is loaded
-		this.setPaused(false);
+		// When game starts, clear the UI
+		if (loaded) {
+			this.setPaused(false);
+			this.setFileInputOpen(false);
+			this.setControlsOpen(false);
+		}
 		this.notify();
 	}
 
@@ -71,6 +75,30 @@ class EmulatorState {
 		this.notify();
 	}
 
+	// =========================================
+	// UI STATE
+	// =========================================
+
+	public setHidden(hidden: boolean) {
+		this.isHidden = hidden;
+		this.notify();
+	}
+
+	public setFileInputOpen(isOpen: boolean) {
+		this.isFileInputOpen = isOpen;
+
+		// Force pause when input is open
+		if (isOpen) {
+			this.setPaused(true);
+		}
+		this.notify();
+	}
+
+	public setControlsOpen(isOpen: boolean) {
+		this.isControlsOpen = isOpen;
+		this.notify();
+	}
+
 	// Allow UI components to subscribe to changes
 	public subscribe(listener: StateListener) {
 		this.listeners.add(listener);
@@ -83,4 +111,4 @@ class EmulatorState {
 }
 
 // Export a single instance
-export const emulatorState = new EmulatorState();
+export const appState = new AppState();
