@@ -63,6 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	setUpAudioChannelHandlers({
 		buttonId: "audio-channels-button",
 		dropdownId: "audio-channels-dropdown",
+		audioController: audioController,
 	});
 
 	// ========================================
@@ -233,8 +234,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		canvasRenderer.setScale(currentScale);
 	});
 
-	let prevAudioChannelsEnabled = [...appState.audioChannelsEnabled];
-
 	// ==================================
 	// ====== handle state changes ======
 	// ==================================
@@ -254,15 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		} else {
 			await audioController.resume();
 			gameLoop.startAnimationLoop();
-		}
-
-		// check if any audio channels were enabled/disabled
-		for (let i = 1; i <= 4; i++) {
-			if (state.audioChannelsEnabled[i] !== prevAudioChannelsEnabled[i]) {
-				window.setAudioChannelEnabled(i, state.audioChannelsEnabled[i]);
-				prevAudioChannelsEnabled[i] = state.audioChannelsEnabled[i];
-				audioController.resetTime();
-			}
 		}
 	});
 

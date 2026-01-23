@@ -1,11 +1,14 @@
 import { appState } from "../core/state";
+import type { AudioController } from "../services/audio-controller";
 
 export function setUpAudioChannelHandlers({
 	buttonId,
 	dropdownId,
+	audioController,
 }: {
 	buttonId: string;
 	dropdownId: string;
+	audioController: AudioController;
 }) {
 	const button = document.getElementById(buttonId);
 	const dropdown = document.getElementById(dropdownId);
@@ -42,4 +45,18 @@ export function setUpAudioChannelHandlers({
 			);
 		});
 	}
+
+	let prevAudioChannelsEnabled = [...appState.audioChannelsEnabled];
+
+	// Handle app state changes
+	appState.subscribe(async (state) => {
+		// check if any audio channels were enabled/disabled
+		for (let i = 1; i <= 4; i++) {
+			if (state.audioChannelsEnabled[i] !== prevAudioChannelsEnabled[i]) {
+				window.setAudioChannelEnabled(i, state.audioChannelsEnabled[i]);
+				prevAudioChannelsEnabled[i] = state.audioChannelsEnabled[i];
+				audioController.resetTime();
+			}
+		}
+	});
 }
