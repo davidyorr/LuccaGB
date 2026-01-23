@@ -18,20 +18,18 @@ export function setUpAudioVolumeHandlers({
 		return;
 	}
 
-	const setVolume = (volume: number) => {
+	// Handle volume changes
+	volumeSlider.addEventListener("input", (event) => {
+		const volume = Number.parseInt((event.target as HTMLInputElement).value);
 		if (Number.isInteger(volume)) {
 			volumeValue.textContent = `${volume}%`;
 			appState.setAudioVolume(volume / 100);
 		}
-	};
+	});
 
-	// Set initial state
-	const volume = Number.parseInt(volumeSlider.value);
-	setVolume(volume);
-
-	// Handle volume changes
-	volumeSlider.addEventListener("input", (event) => {
-		const volume = Number.parseInt((event.target as HTMLInputElement).value);
-		setVolume(volume);
+	appState.subscribe((state) => {
+		const volume = state.audioVolume * 100;
+		volumeSlider.value = volume.toString();
+		volumeValue.textContent = `${volume}%`;
 	});
 }

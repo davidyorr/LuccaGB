@@ -35,8 +35,13 @@ export function setUpAudioChannelHandlers({
 		const checkbox = document.getElementById(
 			`audio-channel-${i}`,
 		) as HTMLInputElement | null;
+		if (checkbox === null) {
+			return;
+		}
+
 		// set the initial state
-		appState.setAudioChannelEnabled(i, checkbox?.checked ?? true);
+		checkbox.checked = appState.audioChannelsEnabled[i];
+
 		// handle on change
 		checkbox?.addEventListener("change", (event) => {
 			appState.setAudioChannelEnabled(

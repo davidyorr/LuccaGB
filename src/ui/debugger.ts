@@ -69,7 +69,7 @@ export class Debugger {
 			return;
 		}
 
-		const debugInfo = window.getDebugInfo();
+		const debugInfo = window.getDebugInfo?.();
 		if (!debugInfo) {
 			return;
 		}

@@ -1,6 +1,19 @@
+import { appState } from "../core/state";
+
 const DB_NAME = "LuccaGB-Database";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "cartridgeRam";
+
+const SETTINGS_STORE = "appSettings";
+const SETTINGS_KEY = "settings";
+
+export type AppSettings = {
+	audioVolume: number;
+	audioChannelsEnabled: boolean[];
+	isDebuggerOpen: boolean;
+	scale: number | "fit";
+	updatedAt: number;
+};
 
 type SaveData = {
 	romHash: string;
@@ -44,10 +57,15 @@ export function openDatabase(): Promise<IDBDatabase> {
 
 		request.onupgradeneeded = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
-			// Create store if missing
+			// Create stores if missing
 			if (!db.objectStoreNames.contains(STORE_NAME)) {
 				db.createObjectStore(STORE_NAME, {
 					keyPath: "romHash",
+				});
+			}
+			if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
+				db.createObjectStore(SETTINGS_STORE, {
+					keyPath: "key",
 				});
 			}
 		};
@@ -153,6 +171,46 @@ export async function persistCartridgeRam(
 	});
 }
 
+export async function loadAppSettings(): Promise<AppSettings | null> {
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction([SETTINGS_STORE], "readonly");
+		const store = tx.objectStore(SETTINGS_STORE);
+		const req = store.get(SETTINGS_KEY);
+
+		req.onsuccess = () => {
+			resolve(req.result?.value ?? null);
+		};
+
+		req.onerror = () => {
+			reject(req.error);
+		};
+	});
+}
+
+export async function saveAppSettings(settings: AppSettings): Promise<void> {
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction([SETTINGS_STORE], "readwrite");
+		const store = tx.objectStore(SETTINGS_STORE);
+
+		store.put({
+			key: SETTINGS_KEY,
+			value: settings,
+		});
+
+		tx.oncomplete = () => {
+			resolve();
+		};
+
+		tx.onerror = () => {
+			reject(tx.error);
+		};
+	});
+}
+
 export async function importData(jsonContent: string): Promise<ImportStats> {
 	let backup: any;
 	try {
@@ -167,7 +225,7 @@ export async function importData(jsonContent: string): Promise<ImportStats> {
 
 	const db = await openDatabase();
 
-	return new Promise((resolve, reject) => {
+	return new Promise(async (resolve, reject) => {
 		const transaction = db.transaction([STORE_NAME], "readwrite");
 		const store = transaction.objectStore(STORE_NAME);
 
@@ -249,6 +307,17 @@ export async function importData(jsonContent: string): Promise<ImportStats> {
 				stats.errors++;
 			}
 		}
+
+		if (backup.settings) {
+			const settings = backup.settings as AppSettings;
+
+			await saveAppSettings({
+				...settings,
+				updatedAt: Date.now(),
+			});
+
+			appState.initializeAppSettings();
+		}
 	});
 }
 
@@ -268,6 +337,8 @@ export async function exportData(): Promise<void> {
 		};
 	});
 
+	const settings = await loadAppSettings();
+
 	// Transform SaveData (Uint8Array) -> Backup format (Base64)
 	const backup: BackupFile = {
 		version: 1,
@@ -282,7 +353,7 @@ export async function exportData(): Promise<void> {
 				save.ram instanceof Uint8Array ? save.ram : new Uint8Array(save.ram),
 			),
 		})),
-		settings: {}, // TODO: Add settings export logic here later
+		settings: settings ?? undefined,
 	};
 
 	// Create a blob and trigger download

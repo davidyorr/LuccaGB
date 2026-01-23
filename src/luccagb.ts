@@ -4,7 +4,11 @@ import { AudioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
 import { TestRomLibrary } from "./services/test-rom-library";
-import { loadCartridgeRam, persistCartridgeRam } from "./services/storage";
+import {
+	loadCartridgeRam,
+	persistCartridgeRam,
+	saveAppSettings,
+} from "./services/storage";
 import { Debugger } from "./ui/debugger";
 import {
 	downloadTraceLogs as downloadTraceLog,
@@ -16,6 +20,7 @@ import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 import { setUpAudioVolumeHandlers } from "./ui/audio-volume";
 import { setUpControlsHandlers } from "./ui/controls";
+import { debounce } from "./utils/debounce";
 
 let cartridgeInfo: CartridgeInfo | null = null;
 
@@ -30,12 +35,22 @@ const debug = new Debugger();
 
 const gameLoop = new GameLoop(audioController, canvasRenderer);
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
 		(wasmModule) => {
 			go.run(wasmModule.instance);
 		},
 	);
+
+	await appState.initializeAppSettings();
+
+	const debouncedSave = debounce((state: typeof appState) => {
+		saveAppSettings(state.getSettingsSnapshot());
+	}, 333);
+
+	appState.subscribe((state) => {
+		debouncedSave(state);
+	});
 
 	setUpControlsHandlers({
 		panelToggleId: "panel-toggle",

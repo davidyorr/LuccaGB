@@ -1,3 +1,5 @@
+import { loadAppSettings } from "../services/storage";
+
 type StateListener = (state: AppState) => void;
 
 class AppState {
@@ -121,6 +123,31 @@ class AppState {
 
 	private notify() {
 		this.listeners.forEach((l) => l(this));
+	}
+
+	public getSettingsSnapshot() {
+		return {
+			audioVolume: this.audioVolume,
+			audioChannelsEnabled: [...this.audioChannelsEnabled],
+			isDebuggerOpen: this.isDebuggerOpen,
+			scale: this.scale,
+			updatedAt: Date.now(),
+		};
+	}
+
+	public async initializeAppSettings() {
+		const settings = await loadAppSettings();
+
+		if (!settings) {
+			return;
+		}
+
+		this.audioVolume = settings.audioVolume;
+		this.audioChannelsEnabled = settings.audioChannelsEnabled;
+		this.isDebuggerOpen = settings.isDebuggerOpen;
+		this.scale = settings.scale;
+
+		this.notify();
 	}
 }
 
