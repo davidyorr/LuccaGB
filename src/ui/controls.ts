@@ -3,16 +3,29 @@ import { appState } from "../core/state";
 export function setUpControlsHandlers({
 	panelToggleId,
 	controlsPanelId,
+	debugCheckboxId,
 }: {
 	panelToggleId: string;
 	controlsPanelId: string;
+	debugCheckboxId: string;
 }) {
 	const panelToggle = document.getElementById(panelToggleId);
 	const controlsPanel = document.getElementById(controlsPanelId);
+	const debugCheckbox = document.getElementById(
+		debugCheckboxId,
+	) as HTMLInputElement | null;
 
-	if (panelToggle === null || controlsPanel === null) {
+	if (
+		panelToggle === null ||
+		controlsPanel === null ||
+		debugCheckbox === null
+	) {
 		return;
 	}
+
+	// =========================================================
+	// SIDE PANEL
+	// =========================================================
 
 	// Toggle the panel on click
 	panelToggle.addEventListener("click", () => {
@@ -33,6 +46,22 @@ export function setUpControlsHandlers({
 			controlsPanel.classList.add("open");
 		} else {
 			controlsPanel.classList.remove("open");
+		}
+	});
+
+	// =========================================================
+	// DEBUG CHECKBOX
+	// =========================================================
+
+	// Debug checkbox
+	debugCheckbox.addEventListener("change", () => {
+		appState.setDebuggerOpen(debugCheckbox.checked);
+	});
+
+	// Handle app state changes
+	appState.subscribe((state) => {
+		if (debugCheckbox.checked !== state.isDebuggerOpen) {
+			debugCheckbox.checked = state.isDebuggerOpen;
 		}
 	});
 }

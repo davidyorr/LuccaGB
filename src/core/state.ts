@@ -26,6 +26,8 @@ class AppState {
 	public isHidden = false;
 	/** Read-only */
 	public isControlsOpen = false;
+	/** Read-only */
+	public isDebuggerOpen = false;
 
 	// Event system
 	private listeners: Set<StateListener> = new Set();
@@ -96,6 +98,11 @@ class AppState {
 
 	public setControlsOpen(isOpen: boolean) {
 		this.isControlsOpen = isOpen;
+		this.notify();
+	}
+
+	public setDebuggerOpen(isOpen: boolean) {
+		this.isDebuggerOpen = isOpen;
 		this.notify();
 	}
 

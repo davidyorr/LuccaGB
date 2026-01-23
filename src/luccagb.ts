@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	setUpControlsHandlers({
 		panelToggleId: "panel-toggle",
 		controlsPanelId: "controls-panel",
+		debugCheckboxId: "debug-checkbox",
 	});
 
 	setUpDragAndDropHandlers({
@@ -239,8 +240,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ==================================
 	appState.subscribe(async (state) => {
 		if (state.isPaused) {
-			debug.update();
-
 			if (!cartridgeInfo?.hasBattery || cartridgeInfo?.ramSize === 0) {
 				return;
 			}
@@ -255,31 +254,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			gameLoop.startAnimationLoop();
 		}
 	});
-
-	// ===================================
-	// ====== set up debug checkbox ======
-	// ===================================
-	const debugCheckbox = document.getElementById(
-		"debug-checkbox",
-	) as HTMLInputElement | null;
-	const debugPanel = document.getElementById("debug-panel");
-
-	function syncDebugVisibility() {
-		if (!debugPanel || !debugCheckbox) {
-			return;
-		}
-		debugPanel.style.display = debugCheckbox.checked ? "block" : "none";
-	}
-
-	debugCheckbox?.addEventListener("change", () => {
-		if (!debugPanel) {
-			return;
-		}
-		syncDebugVisibility();
-		debug.update();
-	});
-
-	syncDebugVisibility();
 });
 
 async function handleRomLoad(arrayBuffer: ArrayBuffer) {

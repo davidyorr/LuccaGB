@@ -1,4 +1,8 @@
+import { appState } from "../core/state";
+
 export class Debugger {
+	private debugPanel: HTMLElement | null;
+
 	private cartridgeTitle: HTMLElement | null;
 	private cartridgeType: HTMLElement | null;
 	private romSize: HTMLElement | null;
@@ -20,6 +24,7 @@ export class Debugger {
 	private regNR32: HTMLElement | null;
 
 	constructor() {
+		this.debugPanel = document.getElementById("debug-panel");
 		this.cartridgeTitle = document.getElementById("cartridge-title");
 		this.cartridgeType = document.getElementById("cartridge-cartridge-type");
 		this.romSize = document.getElementById("cartridge-rom-size-code");
@@ -40,9 +45,30 @@ export class Debugger {
 		for (let i = 0; i < 16; i++) {
 			this.waveRamHex.push(document.getElementById(`wave-hex-${i}`));
 		}
+
+		// Handle state changes
+		appState.subscribe((state) => {
+			this.handleVisibility(state.isDebuggerOpen);
+
+			if (state.isDebuggerOpen) {
+				this.update();
+			}
+		});
+	}
+
+	private handleVisibility(isOpen: boolean) {
+		if (!this.debugPanel) {
+			return;
+		}
+
+		this.debugPanel.style.display = isOpen ? "block" : "none";
 	}
 
 	public update() {
+		if (!appState.isDebuggerOpen) {
+			return;
+		}
+
 		const debugInfo = window.getDebugInfo();
 		if (!debugInfo) {
 			return;
