@@ -17,7 +17,6 @@ import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 import { setUpAudioVolumeHandlers } from "./ui/audio-volume";
 import { setUpControlsHandlers } from "./ui/controls";
 
-let currentScale: number | "fit" = 1;
 let cartridgeInfo: CartridgeInfo | null = null;
 
 const go = new Go();
@@ -42,6 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		panelToggleId: "panel-toggle",
 		controlsPanelId: "controls-panel",
 		debugCheckboxId: "debug-checkbox",
+		scaleSelectId: "scale-select",
+		canvasRenderer: canvasRenderer,
 	});
 
 	setUpDragAndDropHandlers({
@@ -208,32 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			traceLogLabel.style.display = "none";
 		}
 	}
-
-	// ====================================
-	// ====== set up display scaling ======
-	// ====================================
-	const scaleSelect = document.getElementById(
-		"scale-select",
-	) as HTMLSelectElement | null;
-	currentScale = Number.parseInt(scaleSelect!.value) ?? 1;
-
-	scaleSelect?.addEventListener("change", () => {
-		const value = scaleSelect.value;
-
-		if (value === "fit") {
-			currentScale = "fit";
-		} else {
-			currentScale = parseInt(value, 10);
-		}
-
-		canvasRenderer.setScale(currentScale);
-	});
-
-	// apply default scale on load
-	canvasRenderer.setScale(currentScale);
-	window.addEventListener("resize", () => {
-		canvasRenderer.setScale(currentScale);
-	});
 
 	// ==================================
 	// ====== handle state changes ======

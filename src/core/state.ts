@@ -28,6 +28,8 @@ class AppState {
 	public isControlsOpen = false;
 	/** Read-only */
 	public isDebuggerOpen = false;
+	/** Read-only */
+	public scale: number | "fit" = 3;
 
 	// Event system
 	private listeners: Set<StateListener> = new Set();
@@ -103,6 +105,11 @@ class AppState {
 
 	public setDebuggerOpen(isOpen: boolean) {
 		this.isDebuggerOpen = isOpen;
+		this.notify();
+	}
+
+	public setScale(scale: number | "fit") {
+		this.scale = scale;
 		this.notify();
 	}
 
