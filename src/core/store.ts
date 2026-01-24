@@ -16,6 +16,7 @@ type State = {
 	currentRomHash: string;
 	cartridgeInfo: CartridgeInfo | null;
 	settings: {
+		/** The value that gets passed to the gain node between `[0, 1.0]` */
 		audioVolume: number;
 		audioChannelsEnabled: boolean[];
 		isDebuggerOpen: boolean;
@@ -153,10 +154,6 @@ export const store = createRoot(() => {
 			...snapshot,
 			updatedAt: Date.now(),
 		});
-	});
-
-	createEffect(function syncAudioVolume() {
-		audioController.setVolume(state.settings.audioVolume);
 	});
 
 	createEffect(function syncAudioPauseState() {

@@ -31,17 +31,7 @@
 						<option value="4">4×</option>
 						<option value="fit">Fit</option>
 					</select>
-					<div class="volume-control">
-						<label for="volume-slider">Volume:</label>
-						<input
-							type="range"
-							id="volume-slider"
-							min="0"
-							max="100"
-							value="50"
-						/>
-						<span id="volume-value">50%</span>
-					</div>
+					<div id="solid-volume-control" class="volume-control"></div>
 					<div class="dropdown-container">
 						<button id="audio-channels-button" type="button">
 							Audio Channels ▼
@@ -296,7 +286,7 @@
 				</form>
 			</dialog>
 		</div>
-		<script type="module" src="/src/luccagb.ts"></script>
+		<script type="module" src="/src/luccagb.tsx"></script>
 	</body>
 	<style>
 		:root {
