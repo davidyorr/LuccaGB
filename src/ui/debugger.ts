@@ -1,4 +1,4 @@
-import { appState } from "../core/state";
+import { appState } from "../core/store";
 
 export class Debugger {
 	private debugPanel: HTMLElement | null;

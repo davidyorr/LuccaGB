@@ -1,14 +1,9 @@
-import { GameLoop } from "./core/game-loop";
-import { appState } from "./core/state";
+import { gameLoop } from "./core/game-loop";
+import { store } from "./core/store";
 import { audioController } from "./services/audio-controller";
-import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
 import { TestRomLibrary } from "./services/test-rom-library";
-import {
-	loadCartridgeRam,
-	persistCartridgeRam,
-	saveAppSettings,
-} from "./services/storage";
+import { loadCartridgeRam } from "./services/storage";
 import { Debugger } from "./ui/debugger";
 import {
 	downloadTraceLogs as downloadTraceLog,
@@ -20,19 +15,16 @@ import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 import { setUpAudioVolumeHandlers } from "./ui/audio-volume";
 import { setUpControlsHandlers } from "./ui/controls";
-import { debounce } from "./utils/debounce";
 
 let cartridgeInfo: CartridgeInfo | null = null;
 
 const go = new Go();
-const canvasRenderer = new CanvasRenderer("canvas");
+const canvasRenderer = gameLoop.renderer();
 const testRomLibrary = new TestRomLibrary();
 new InputManager({
-	Space: appState.togglePaused,
+	Space: store.legacyAppState.togglePaused,
 });
 const debug = new Debugger();
-
-const gameLoop = new GameLoop(canvasRenderer);
 
 document.addEventListener("DOMContentLoaded", async () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
@@ -41,22 +33,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 		},
 	);
 
-	await appState.initializeAppSettings();
-
-	const debouncedSave = debounce((state: typeof appState) => {
-		saveAppSettings(state.getSettingsSnapshot());
-	}, 333);
-
-	appState.subscribe((state) => {
-		debouncedSave(state);
-	});
+	await store.legacyAppState.initializeAppSettings();
 
 	setUpControlsHandlers({
 		panelToggleId: "panel-toggle",
 		controlsPanelId: "controls-panel",
 		debugCheckboxId: "debug-checkbox",
 		scaleSelectId: "scale-select",
-		canvasRenderer: canvasRenderer,
 	});
 
 	setUpDragAndDropHandlers({
@@ -79,7 +62,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 	setUpAudioChannelHandlers({
 		buttonId: "audio-channels-button",
 		dropdownId: "audio-channels-dropdown",
-		audioController: audioController,
 	});
 
 	// ========================================
@@ -96,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// ====== set up ROM input event listener ======
 	// =============================================
 	fileInput?.addEventListener("change", async (event) => {
-		appState.setFileInputOpen(false);
+		store.actions.setFileInputOpen(false);
 		const files = (event.target as HTMLInputElement | null)?.files;
 		if (files?.[0]) {
 			const arrayBuffer = await files?.[0].arrayBuffer();
@@ -113,11 +95,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 	});
 
 	fileInput?.addEventListener("click", () => {
-		appState.setFileInputOpen(true);
+		store.actions.setFileInputOpen(true);
 	});
 
 	fileInput?.addEventListener("cancel", () => {
-		appState.setFileInputOpen(false);
+		store.actions.setFileInputOpen(false);
 	});
 
 	// ==================================================
@@ -125,14 +107,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// ==================================================
 	document.addEventListener("visibilitychange", () => {
 		if (document.hidden) {
-			appState.setHidden(true);
+			store.actions.setHidden(true);
 
 			// suspend audio context
 		} else {
-			appState.setHidden(false);
+			store.actions.setHidden(false);
 
-			if (!appState.isPaused) {
-				gameLoop.startAnimationLoop();
+			if (!store.state.isPaused) {
+				gameLoop.start();
 			}
 
 			// resume audio context
@@ -223,26 +205,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 			traceLogLabel.style.display = "none";
 		}
 	}
-
-	// ==================================
-	// ====== handle state changes ======
-	// ==================================
-	appState.subscribe(async (state) => {
-		if (state.isPaused) {
-			if (!cartridgeInfo?.hasBattery || cartridgeInfo?.ramSize === 0) {
-				return;
-			}
-			const ram = window.getCartridgeRam();
-			persistCartridgeRam(state.currentRomHash, ram, {
-				name: cartridgeInfo.title,
-			});
-
-			await audioController.pause();
-		} else {
-			await audioController.resume();
-			gameLoop.startAnimationLoop();
-		}
-	});
 });
 
 async function handleRomLoad(arrayBuffer: ArrayBuffer) {
@@ -260,16 +222,17 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const hashHex = hashArray
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
-	appState.setCurrentRomHash(hashHex);
+	store.actions.setCurrentRomHash(hashHex);
 
 	// Load into Go
 	cartridgeInfo = window.loadRom(romData);
+	store.actions.setCartridgeInfo(cartridgeInfo);
 	console.log("Cartridge Info:", cartridgeInfo);
 
 	// Attempt to load existing RAM
 	if (cartridgeInfo.hasBattery && cartridgeInfo.ramSize > 0) {
 		try {
-			const ram = await loadCartridgeRam(appState.currentRomHash);
+			const ram = await loadCartridgeRam(store.legacyAppState.currentRomHash);
 			if (ram) {
 				// Ensure the loaded RAM size matches what the cartridge expects
 				if (ram.length !== cartridgeInfo.ramSize) {
@@ -292,16 +255,28 @@ async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	}
 
 	// set the initial audio channels state
-	window.setAudioChannelEnabled(1, appState.audioChannelsEnabled[1]);
-	window.setAudioChannelEnabled(2, appState.audioChannelsEnabled[2]);
-	window.setAudioChannelEnabled(3, appState.audioChannelsEnabled[3]);
-	window.setAudioChannelEnabled(4, appState.audioChannelsEnabled[4]);
+	window.setAudioChannelEnabled(
+		1,
+		store.state.settings.audioChannelsEnabled[1],
+	);
+	window.setAudioChannelEnabled(
+		2,
+		store.state.settings.audioChannelsEnabled[2],
+	);
+	window.setAudioChannelEnabled(
+		3,
+		store.state.settings.audioChannelsEnabled[3],
+	);
+	window.setAudioChannelEnabled(
+		4,
+		store.state.settings.audioChannelsEnabled[4],
+	);
 
 	// resume the audio context
 	await audioController.resume();
 
 	// Start the animation loop
-	appState.setRomLoaded(true);
+	store.actions.setRomLoaded(true);
 	debug.update();
-	gameLoop.startAnimationLoop();
+	gameLoop.start();
 }

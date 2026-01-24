@@ -1,4 +1,4 @@
-import { appState } from "../core/state";
+import { appState } from "../core/store";
 import { audioController } from "../services/audio-controller";
 
 export function setUpAudioChannelHandlers({
@@ -42,7 +42,7 @@ export function setUpAudioChannelHandlers({
 
 		// handle on change
 		checkbox?.addEventListener("change", (event) => {
-			appState.setAudioChannelEnabled(
+			appState.setAudioChannelsEnabled(
 				i,
 				(event.target as HTMLInputElement)?.checked,
 			);

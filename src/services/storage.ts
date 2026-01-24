@@ -1,4 +1,4 @@
-import { appState } from "../core/state";
+import { appState } from "../core/store";
 
 const DB_NAME = "LuccaGB-Database";
 const DB_VERSION = 2;

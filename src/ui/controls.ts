@@ -1,18 +1,16 @@
-import { appState } from "../core/state";
-import type { CanvasRenderer } from "../services/canvas-renderer";
+import { gameLoop } from "../core/game-loop";
+import { appState } from "../core/store";
 
 export function setUpControlsHandlers({
 	panelToggleId,
 	controlsPanelId,
 	debugCheckboxId,
 	scaleSelectId,
-	canvasRenderer,
 }: {
 	panelToggleId: string;
 	controlsPanelId: string;
 	debugCheckboxId: string;
 	scaleSelectId: string;
-	canvasRenderer: CanvasRenderer;
 }) {
 	const panelToggle = document.getElementById(panelToggleId);
 	const controlsPanel = document.getElementById(controlsPanelId);
@@ -61,6 +59,8 @@ export function setUpControlsHandlers({
 	// =========================================================
 	// DISPLAY SCALING
 	// =========================================================
+
+	const canvasRenderer = gameLoop.renderer();
 
 	// initial sync
 	canvasRenderer.setScale(appState.scale);

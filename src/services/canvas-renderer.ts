@@ -5,8 +5,8 @@ export class CanvasRenderer {
 	private displayWidth = 160;
 	private displayHeight = 144;
 
-	constructor(canvasId: string) {
-		const visibleCanvas = document.getElementById(canvasId);
+	constructor() {
+		const visibleCanvas = document.getElementById("canvas");
 		if (!(visibleCanvas instanceof HTMLCanvasElement)) {
 			throw new Error("invalid canvas id");
 		}
