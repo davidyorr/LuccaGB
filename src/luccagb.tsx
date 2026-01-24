@@ -12,10 +12,10 @@ import {
 import type { CartridgeInfo } from "./wasm";
 import { setUpDataManagerHandlers } from "./ui/data-manager";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
-import { setUpAudioChannelHandlers } from "./ui/audio-channels";
 import { setUpControlsHandlers } from "./ui/controls";
 import { render } from "solid-js/web";
 import { VolumeControl } from "./ui/VolumeControl";
+import { AudioChannels } from "./ui/AudioChannels";
 
 let cartridgeInfo: CartridgeInfo | null = null;
 
@@ -40,6 +40,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (solidVolumeControl) {
 		render(() => <VolumeControl />, solidVolumeControl);
 	}
+	const solidAudioChannels = document.getElementById("solid-audio-channels");
+	if (solidAudioChannels) {
+		render(() => <AudioChannels />, solidAudioChannels);
+	}
 
 	setUpControlsHandlers({
 		panelToggleId: "panel-toggle",
@@ -58,11 +62,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 		dataButtonId: "data-manager-button",
 		exportButtonId: "export-data-button",
 		importId: "import-data-input",
-	});
-
-	setUpAudioChannelHandlers({
-		buttonId: "audio-channels-button",
-		dropdownId: "audio-channels-dropdown",
 	});
 
 	// ========================================
