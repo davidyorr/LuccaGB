@@ -1,14 +1,12 @@
 import { appState } from "../core/state";
-import type { AudioController } from "../services/audio-controller";
+import { audioController } from "../services/audio-controller";
 
 export function setUpAudioChannelHandlers({
 	buttonId,
 	dropdownId,
-	audioController,
 }: {
 	buttonId: string;
 	dropdownId: string;
-	audioController: AudioController;
 }) {
 	const button = document.getElementById(buttonId);
 	const dropdown = document.getElementById(dropdownId);

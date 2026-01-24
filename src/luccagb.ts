@@ -1,6 +1,6 @@
 import { GameLoop } from "./core/game-loop";
 import { appState } from "./core/state";
-import { AudioController } from "./services/audio-controller";
+import { audioController } from "./services/audio-controller";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { InputManager } from "./services/input-manager";
 import { TestRomLibrary } from "./services/test-rom-library";
@@ -26,14 +26,13 @@ let cartridgeInfo: CartridgeInfo | null = null;
 
 const go = new Go();
 const canvasRenderer = new CanvasRenderer("canvas");
-const audioController = new AudioController();
 const testRomLibrary = new TestRomLibrary();
 new InputManager({
 	Space: appState.togglePaused,
 });
 const debug = new Debugger();
 
-const gameLoop = new GameLoop(audioController, canvasRenderer);
+const gameLoop = new GameLoop(canvasRenderer);
 
 document.addEventListener("DOMContentLoaded", async () => {
 	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(

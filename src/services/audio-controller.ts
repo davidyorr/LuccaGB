@@ -1,7 +1,6 @@
-import { appState } from "../core/state";
-
-export class AudioController {
+class AudioController {
 	private audioContext: AudioContext;
+	private gainNode: GainNode;
 	private nextStartTime = 0;
 	// Max allowed latency in seconds.
 	private readonly MAX_LATENCY_TIME = 0.1;
@@ -12,6 +11,18 @@ export class AudioController {
 		const AudioContext =
 			window.AudioContext || (window as any).webkitAudioContext;
 		this.audioContext = new AudioContext();
+
+		this.gainNode = this.audioContext.createGain();
+		this.gainNode.connect(this.audioContext.destination);
+		this.gainNode.gain.value = 0.5;
+	}
+
+	public setVolume(volume: number) {
+		this.gainNode.gain.setTargetAtTime(
+			volume,
+			this.audioContext.currentTime,
+			0.02,
+		);
 	}
 
 	public scheduleAudioSamples(samples: number[] | null) {
@@ -49,15 +60,10 @@ export class AudioController {
 			rightChannel[i] = samples[i * 2 + 1] / 32768.0;
 		}
 
-		// adjust volume from UI setting
-		const gainNode = this.audioContext.createGain();
-		gainNode.gain.value = appState.audioVolume;
-		gainNode.connect(this.audioContext.destination);
-
 		// Create a source to play this buffer
 		const source = this.audioContext.createBufferSource();
 		source.buffer = buffer;
-		source.connect(gainNode);
+		source.connect(this.gainNode);
 
 		// Schedule it to play
 		source.start(this.nextStartTime);
@@ -83,3 +89,5 @@ export class AudioController {
 		this.nextStartTime = this.audioContext.currentTime + this.LOOKAHEAD_TIME;
 	}
 }
+
+export const audioController = new AudioController();

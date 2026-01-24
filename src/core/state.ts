@@ -1,3 +1,4 @@
+import { audioController } from "../services/audio-controller";
 import { loadAppSettings } from "../services/storage";
 
 type StateListener = (state: AppState) => void;
@@ -71,6 +72,8 @@ class AppState {
 
 	public setAudioVolume(volume: number) {
 		this.audioVolume = volume;
+		// TODO: remove this
+		audioController.setVolume(volume);
 		this.notify();
 	}
 
@@ -143,6 +146,8 @@ class AppState {
 		}
 
 		this.audioVolume = settings.audioVolume;
+		// TODO: remove this
+		audioController.setVolume(settings.audioVolume);
 		this.audioChannelsEnabled = settings.audioChannelsEnabled;
 		this.isDebuggerOpen = settings.isDebuggerOpen;
 		this.scale = settings.scale;

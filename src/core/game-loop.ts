@@ -1,4 +1,4 @@
-import type { AudioController } from "../services/audio-controller";
+import { audioController } from "../services/audio-controller";
 import type { CanvasRenderer } from "../services/canvas-renderer";
 import { appState } from "./state";
 
@@ -11,11 +11,9 @@ export class GameLoop {
 	// 4,194,304 T-cycles per second
 	private readonly SYSTEM_CLOCK_FREQUENCY = 4.194304 * 1_000_000;
 
-	private audio: AudioController;
 	private renderer: CanvasRenderer;
 
-	constructor(audio: AudioController, renderer: CanvasRenderer) {
-		this.audio = audio;
+	constructor(renderer: CanvasRenderer) {
 		this.renderer = renderer;
 	}
 
@@ -60,7 +58,7 @@ export class GameLoop {
 
 		// play audio
 		const samples = window.pollAudioBuffer();
-		this.audio.scheduleAudioSamples(samples);
+		audioController.scheduleAudioSamples(samples);
 
 		this.animationFrameId = requestAnimationFrame(this.handleAnimationFrame);
 	};

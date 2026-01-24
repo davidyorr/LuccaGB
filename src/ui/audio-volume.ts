@@ -28,7 +28,7 @@ export function setUpAudioVolumeHandlers({
 	});
 
 	appState.subscribe((state) => {
-		const volume = state.audioVolume * 100;
+		const volume = Math.round(state.audioVolume * 100);
 		volumeSlider.value = volume.toString();
 		volumeValue.textContent = `${volume}%`;
 	});
