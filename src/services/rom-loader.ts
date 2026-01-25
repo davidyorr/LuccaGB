@@ -1,11 +1,10 @@
 import { store } from "../core/store";
-import { Debugger } from "../ui/debugger";
+import { updateDebugger } from "../ui/Debugger";
 import type { CartridgeInfo } from "../wasm";
 import { audioController } from "./audio-controller";
 import { loadCartridgeRam } from "./storage";
 
 let cartridgeInfo: CartridgeInfo | null = null;
-const debug = new Debugger();
 
 export async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	const romData = new Uint8Array(arrayBuffer);
@@ -77,5 +76,5 @@ export async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 
 	// Start the animation loop
 	store.actions.setRomLoaded(true);
-	debug.update();
+	updateDebugger();
 }

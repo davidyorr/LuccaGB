@@ -25,7 +25,7 @@ export interface CartridgeInfo {
 	hasBattery: boolean;
 }
 
-interface GameboyDebugInfo {
+export interface GameboyDebugInfo {
 	apu: ApuDebugInfo;
 	cartridge: CartridgeDebugInfo;
 	cpu: CpuDebugInfo;

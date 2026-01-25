@@ -22,10 +22,7 @@
 					<div id="solid-volume-control" class="volume-control"></div>
 					<div id="solid-audio-channels" class="dropdown-container"></div>
 					<div id="trace-logger"></div>
-					<label>
-						<input type="checkbox" id="debug-checkbox" />
-						Show Debugger
-					</label>
+					<div id="debug-toggle"></div>
 				</div>
 			</div>
 
@@ -33,186 +30,7 @@
 				<canvas id="canvas" width="160" height="144"></canvas>
 			</div>
 
-			<div id="debug-panel" style="display: none">
-				<table class="debug-table">
-					<tr>
-						<td>Title</td>
-						<td id="cartridge-title">N/A</td>
-					</tr>
-					<tr>
-						<td>Cartridge Type</td>
-						<td id="cartridge-cartridge-type">N/A</td>
-					</tr>
-					<tr>
-						<td>ROM Size Code</td>
-						<td id="cartridge-rom-size-code">N/A</td>
-					</tr>
-					<tr>
-						<td>RAM Size Code</td>
-						<td id="cartridge-ram-size-code">N/A</td>
-					</tr>
-				</table>
-
-				<h2>CPU State</h2>
-				<table class="debug-table">
-					<thead>
-						<tr>
-							<th>Register</th>
-							<th>Value (Hex)</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>AF</td>
-							<td id="reg-af">0x0000</td>
-						</tr>
-						<tr>
-							<td>BC</td>
-							<td id="reg-bc">0x0000</td>
-						</tr>
-						<tr>
-							<td>DE</td>
-							<td id="reg-de">0x0000</td>
-						</tr>
-						<tr>
-							<td>HL</td>
-							<td id="reg-hl">0x0000</td>
-						</tr>
-						<tr>
-							<td>SP</td>
-							<td id="reg-sp">0x0000</td>
-						</tr>
-						<tr>
-							<td>PC</td>
-							<td id="reg-pc">0x0000</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<h3>Flags (F Register)</h3>
-				<table class="debug-table">
-					<thead>
-						<tr>
-							<th>Flag</th>
-							<th>Value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>Z (Zero)</td>
-							<td id="flag-z">0</td>
-						</tr>
-						<tr>
-							<td>N (Subtraction)</td>
-							<td id="flag-n">0</td>
-						</tr>
-						<tr>
-							<td>H (Half Carry)</td>
-							<td id="flag-h">0</td>
-						</tr>
-						<tr>
-							<td>C (Carry)</td>
-							<td id="flag-c">0</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<h2>APU</h2>
-				<h3>Registers</h3>
-				<table class="debug-table">
-					<thead>
-						<tr>
-							<th>Register</th>
-							<th>Value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>NR30</td>
-							<td id="nr30">0</td>
-						</tr>
-						<tr>
-							<td>NR32</td>
-							<td id="nr32">0</td>
-						</tr>
-					</tbody>
-				</table>
-				<h3>Wave RAM</h3>
-				<table class="debug-table">
-					<thead>
-						<tr>
-							<th>Address</th>
-							<th>Value (Hex)</th>
-						</tr>
-					</thead>
-					<tbody id="wave-ram-body">
-						<tr>
-							<td id="wave-addr-0">0xFF30</td>
-							<td id="wave-hex-0"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-1">0xFF31</td>
-							<td id="wave-hex-1"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-2">0xFF32</td>
-							<td id="wave-hex-2"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-3">0xFF33</td>
-							<td id="wave-hex-3"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-4">0xFF34</td>
-							<td id="wave-hex-4"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-5">0xFF35</td>
-							<td id="wave-hex-5"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-6">0xFF36</td>
-							<td id="wave-hex-6"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-7">0xFF37</td>
-							<td id="wave-hex-7"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-8">0xFF38</td>
-							<td id="wave-hex-8"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-9">0xFF39</td>
-							<td id="wave-hex-9"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-10">0xFF3A</td>
-							<td id="wave-hex-10"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-11">0xFF3B</td>
-							<td id="wave-hex-11"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-12">0xFF3C</td>
-							<td id="wave-hex-12"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-13">0xFF3D</td>
-							<td id="wave-hex-13"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-14">0xFF3E</td>
-							<td id="wave-hex-14"></td>
-						</tr>
-						<tr>
-							<td id="wave-addr-15">0xFF3F</td>
-							<td id="wave-hex-15"></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<div id="debug-container"></div>
 		</div>
 		<script type="module" src="/src/luccagb.tsx"></script>
 	</body>
@@ -453,7 +271,7 @@
 		}
 
 		/* ======== DEBUGGER ======== */
-		#debug-panel {
+		.debug-panel {
 			font-family: monospace;
 			background-color: #000;
 			color: #00ff00;

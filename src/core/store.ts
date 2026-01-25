@@ -9,6 +9,7 @@ import { audioController } from "../services/audio-controller";
 import { debounce } from "../utils/debounce";
 import type { CartridgeInfo } from "../wasm";
 import { gameLoop } from "./game-loop";
+import { updateDebugger } from "../ui/Debugger";
 
 type State = {
 	isPaused: boolean;
@@ -141,6 +142,17 @@ export const store = createRoot(() => {
 					persistCartridgeRam(state.currentRomHash, ram, {
 						name: state.cartridgeInfo.title,
 					});
+				}
+			},
+		),
+	);
+
+	createEffect(
+		on(
+			() => state.isPaused,
+			function updateDebuggerOnPause(paused) {
+				if (paused) {
+					updateDebugger();
 				}
 			},
 		),

@@ -12,6 +12,7 @@ import { handleRomLoad } from "./services/rom-loader";
 import { TraceLogger } from "./ui/TraceLogger";
 import { RomFileInput } from "./ui/RomFileInput";
 import { ViewportScale } from "./ui/ViewportScale";
+import { Debugger, DebuggerToggle } from "./ui/Debugger";
 
 const go = new Go();
 const canvasRenderer = gameLoop.renderer();
@@ -57,6 +58,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const traceLogger = document.getElementById("trace-logger");
 	if (traceLogger) {
 		render(() => <TraceLogger />, traceLogger);
+	}
+	const debugToggle = document.getElementById("debug-toggle");
+	if (debugToggle) {
+		render(() => <DebuggerToggle />, debugToggle);
+	}
+	const debugContainer = document.getElementById("debug-container");
+	if (debugContainer) {
+		render(() => <Debugger />, debugContainer);
 	}
 
 	setUpControlsHandlers({
