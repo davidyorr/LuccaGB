@@ -19,9 +19,7 @@
 					</select>
 					<label for="rom-input">Load ROM:</label>
 					<input id="rom-input" type="file" name="rom-input" accept=".gb" />
-					<div class="control-group">
-						<button id="data-manager-button">Manage Data</button>
-					</div>
+					<div id="data-manager" class="control-group"></div>
 					<button id="screenshot-button">Screenshot</button>
 					<label for="scale-select">Scale:</label>
 					<select id="scale-select">
@@ -231,38 +229,6 @@
 					</tbody>
 				</table>
 			</div>
-
-			<dialog id="data-modal">
-				<form method="dialog">
-					<h2>Data Management</h2>
-
-					<div class="data-section">
-						<h3>Export</h3>
-						<p>Download all saves and settings to a JSON file.</p>
-						<button type="button" id="export-data-button">
-							Download Backup
-						</button>
-					</div>
-
-					<hr />
-
-					<div class="data-section">
-						<h3>Import</h3>
-						<p>
-							Restore from a JSON file. <br /><small
-								><em
-									>Note: Newer saves in the file will overwrite local data.</em
-								></small
-							>
-						</p>
-						<input type="file" id="import-data-input" accept=".json" />
-					</div>
-
-					<div class="dialog-footer">
-						<button value="close">Close</button>
-					</div>
-				</form>
-			</dialog>
 		</div>
 		<script type="module" src="/src/luccagb.tsx"></script>
 	</body>

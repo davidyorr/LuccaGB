@@ -10,12 +10,12 @@ import {
 	parseTraceLogs,
 } from "./utils/trace-logger";
 import type { CartridgeInfo } from "./wasm";
-import { setUpDataManagerHandlers } from "./ui/data-manager";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { setUpControlsHandlers } from "./ui/controls";
 import { render } from "solid-js/web";
 import { VolumeControl } from "./ui/VolumeControl";
 import { AudioChannels } from "./ui/AudioChannels";
+import { DataManager } from "./ui/DataManager";
 
 let cartridgeInfo: CartridgeInfo | null = null;
 
@@ -44,6 +44,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (solidAudioChannels) {
 		render(() => <AudioChannels />, solidAudioChannels);
 	}
+	const dataManager = document.getElementById("data-manager");
+	if (dataManager) {
+		render(() => <DataManager />, dataManager);
+	}
 
 	setUpControlsHandlers({
 		panelToggleId: "panel-toggle",
@@ -55,13 +59,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 	setUpDragAndDropHandlers({
 		overlayId: "drag-overlay",
 		onRomLoaded: handleRomLoad,
-	});
-
-	setUpDataManagerHandlers({
-		dataModalId: "data-modal",
-		dataButtonId: "data-manager-button",
-		exportButtonId: "export-data-button",
-		importId: "import-data-input",
 	});
 
 	// ========================================
@@ -108,16 +105,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	document.addEventListener("visibilitychange", () => {
 		if (document.hidden) {
 			store.actions.setHidden(true);
-
-			// suspend audio context
 		} else {
 			store.actions.setHidden(false);
-
-			if (!store.state.isPaused) {
-				gameLoop.start();
-			}
-
-			// resume audio context
 		}
 	});
 
