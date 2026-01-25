@@ -14,9 +14,7 @@
 			<button id="panel-toggle" class="panel-toggle">☰</button>
 			<div id="controls-panel" class="controls-panel">
 				<div id="controls">
-					<select id="rom-select">
-						<option value="">-- Select a ROM --</option>
-					</select>
+					<div id="test-roms"></div>
 					<label for="rom-input">Load ROM:</label>
 					<input id="rom-input" type="file" name="rom-input" accept=".gb" />
 					<div id="data-manager" class="control-group"></div>
@@ -349,6 +347,10 @@
 			display: flex;
 			flex-direction: column;
 			gap: 8px;
+		}
+
+		#rom-select {
+			width: 100%;
 		}
 
 		/* ======== DRAG & DROP OVERLAY ======== */
