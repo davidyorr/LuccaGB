@@ -18,14 +18,7 @@
 					<div id="rom-file-input"></div>
 					<div id="data-manager" class="control-group"></div>
 					<button id="screenshot-button">Screenshot</button>
-					<label for="scale-select">Scale:</label>
-					<select id="scale-select">
-						<option value="1">1×</option>
-						<option value="2">2×</option>
-						<option value="3" selected>3×</option>
-						<option value="4">4×</option>
-						<option value="fit">Fit</option>
-					</select>
+					<div id="viewport-scale-container"></div>
 					<div id="solid-volume-control" class="volume-control"></div>
 					<div id="solid-audio-channels" class="dropdown-container"></div>
 					<div id="trace-logger"></div>
@@ -352,6 +345,14 @@
 
 		#rom-select {
 			width: 100%;
+		}
+
+		#viewport-scale-container > * {
+			width: 100%;
+		}
+
+		#scale-select {
+			margin-top: 8px;
 		}
 
 		#download-trace-log-button {

@@ -11,6 +11,7 @@ import { TestRoms } from "./ui/TestRoms";
 import { handleRomLoad } from "./services/rom-loader";
 import { TraceLogger } from "./ui/TraceLogger";
 import { RomFileInput } from "./ui/RomFileInput";
+import { ViewportScale } from "./ui/ViewportScale";
 
 const go = new Go();
 const canvasRenderer = gameLoop.renderer();
@@ -39,6 +40,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (solidAudioChannels) {
 		render(() => <AudioChannels />, solidAudioChannels);
 	}
+	const viewportScaleContainer = document.getElementById(
+		"viewport-scale-container",
+	);
+	if (viewportScaleContainer) {
+		render(() => <ViewportScale />, viewportScaleContainer);
+	}
 	const dataManager = document.getElementById("data-manager");
 	if (dataManager) {
 		render(() => <DataManager />, dataManager);
@@ -56,7 +63,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 		panelToggleId: "panel-toggle",
 		controlsPanelId: "controls-panel",
 		debugCheckboxId: "debug-checkbox",
-		scaleSelectId: "scale-select",
 	});
 
 	setUpDragAndDropHandlers({
