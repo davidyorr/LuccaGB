@@ -29,13 +29,7 @@
 					</select>
 					<div id="solid-volume-control" class="volume-control"></div>
 					<div id="solid-audio-channels" class="dropdown-container"></div>
-					<label id="trace-log-toggle-container">
-						<input type="checkbox" id="trace-log-checkbox" />
-						Trace Log
-					</label>
-					<button id="download-trace-log-button" style="display: none">
-						Download trace log
-					</button>
+					<div id="trace-logger"></div>
 					<label>
 						<input type="checkbox" id="debug-checkbox" />
 						Show Debugger
@@ -351,6 +345,11 @@
 
 		#rom-select {
 			width: 100%;
+		}
+
+		#download-trace-log-button {
+			width: 100%;
+			margin-top: 8px;
 		}
 
 		/* ======== DRAG & DROP OVERLAY ======== */

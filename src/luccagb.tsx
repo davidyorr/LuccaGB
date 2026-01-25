@@ -1,10 +1,6 @@
 import { gameLoop } from "./core/game-loop";
 import { store } from "./core/store";
 import { InputManager } from "./services/input-manager";
-import {
-	downloadTraceLogs as downloadTraceLog,
-	parseTraceLogs,
-} from "./utils/trace-logger";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { setUpControlsHandlers } from "./ui/controls";
 import { render } from "solid-js/web";
@@ -13,6 +9,7 @@ import { AudioChannels } from "./ui/AudioChannels";
 import { DataManager } from "./ui/DataManager";
 import { TestRoms } from "./ui/TestRoms";
 import { handleRomLoad } from "./services/rom-loader";
+import { TraceLogger } from "./ui/TraceLogger";
 
 const go = new Go();
 const canvasRenderer = gameLoop.renderer();
@@ -44,6 +41,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const testRoms = document.getElementById("test-roms");
 	if (testRoms) {
 		render(() => <TestRoms />, testRoms);
+	}
+	const traceLogger = document.getElementById("trace-logger");
+	if (traceLogger) {
+		render(() => <TraceLogger />, traceLogger);
 	}
 
 	setUpControlsHandlers({
@@ -115,53 +116,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 		?.addEventListener("click", () => {
 			canvasRenderer.takeScreenshot();
 		});
-
-	// ==================================
-	// ====== set up download logs ======
-	// ==================================
-	const downloadTraceLogButton = document.getElementById(
-		"download-trace-log-button",
-	);
-	const traceLogCheckbox = document.getElementById(
-		"trace-log-checkbox",
-	) as HTMLInputElement | null;
-	const traceLogLabel = document.getElementById("trace-log-toggle-container");
-
-	traceLogCheckbox?.addEventListener("change", (event) => {
-		const isEnabled = (event.target as HTMLInputElement).checked;
-
-		if (isEnabled) {
-			window.enableTraceLogging();
-			if (downloadTraceLogButton) {
-				downloadTraceLogButton.style.display = "inline-block";
-			}
-		} else {
-			window.disableTraceLogging();
-			if (downloadTraceLogButton) {
-				downloadTraceLogButton.style.display = "none";
-			}
-		}
-	});
-
-	downloadTraceLogButton?.addEventListener("click", () => {
-		const buffer = window.getTraceLogs();
-
-		if (!buffer || buffer.length === 0) {
-			alert("No logs available.");
-			return;
-		}
-
-		const text = parseTraceLogs(buffer);
-		downloadTraceLog(text);
-	});
-
-	// Hide the button and checkbox in production
-	if (import.meta.env.PROD) {
-		if (downloadTraceLogButton) {
-			downloadTraceLogButton.style.display = "none";
-		}
-		if (traceLogLabel) {
-			traceLogLabel.style.display = "none";
-		}
-	}
 });
