@@ -10,6 +10,7 @@ import { DataManager } from "./ui/DataManager";
 import { TestRoms } from "./ui/TestRoms";
 import { handleRomLoad } from "./services/rom-loader";
 import { TraceLogger } from "./ui/TraceLogger";
+import { RomFileInput } from "./ui/RomFileInput";
 
 const go = new Go();
 const canvasRenderer = gameLoop.renderer();
@@ -26,6 +27,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	await store.legacyAppState.initializeAppSettings();
 
+	const romFileInput = document.getElementById("rom-file-input");
+	if (romFileInput) {
+		render(() => <RomFileInput />, romFileInput);
+	}
 	const solidVolumeControl = document.getElementById("solid-volume-control");
 	if (solidVolumeControl) {
 		render(() => <VolumeControl />, solidVolumeControl);
@@ -57,44 +62,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 	setUpDragAndDropHandlers({
 		overlayId: "drag-overlay",
 		onRomLoaded: handleRomLoad,
-	});
-
-	// ========================================
-	// ====== force clear the file input ======
-	// ========================================
-	const fileInput = document.getElementById(
-		"rom-input",
-	) as HTMLInputElement | null;
-	if (fileInput) {
-		fileInput.value = "";
-	}
-
-	// =============================================
-	// ====== set up ROM input event listener ======
-	// =============================================
-	fileInput?.addEventListener("change", async (event) => {
-		store.actions.setFileInputOpen(false);
-		const files = (event.target as HTMLInputElement | null)?.files;
-		if (files?.[0]) {
-			const arrayBuffer = await files?.[0].arrayBuffer();
-			await handleRomLoad(arrayBuffer);
-		}
-
-		// reset the dropdown to the default so it doesn't look like two things are selected
-		const romSelect = document.getElementById(
-			"rom-select",
-		) as HTMLSelectElement | null;
-		if (romSelect) {
-			romSelect.value = "";
-		}
-	});
-
-	fileInput?.addEventListener("click", () => {
-		store.actions.setFileInputOpen(true);
-	});
-
-	fileInput?.addEventListener("cancel", () => {
-		store.actions.setFileInputOpen(false);
 	});
 
 	// ==================================================

@@ -15,8 +15,7 @@
 			<div id="controls-panel" class="controls-panel">
 				<div id="controls">
 					<div id="test-roms"></div>
-					<label for="rom-input">Load ROM:</label>
-					<input id="rom-input" type="file" name="rom-input" accept=".gb" />
+					<div id="rom-file-input"></div>
 					<div id="data-manager" class="control-group"></div>
 					<button id="screenshot-button">Screenshot</button>
 					<label for="scale-select">Scale:</label>
@@ -341,6 +340,14 @@
 			display: flex;
 			flex-direction: column;
 			gap: 8px;
+		}
+
+		#rom-file-input > * {
+			width: 100%;
+		}
+
+		#rom-input {
+			margin-top: 8px;
 		}
 
 		#rom-select {
