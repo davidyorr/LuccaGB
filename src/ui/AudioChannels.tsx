@@ -12,9 +12,14 @@ export const AudioChannels: Component = () => {
 
 	onMount(() => {
 		const handleClickOutside = (event: MouseEvent) => {
+			const target = event.target as Node;
+
+			// If click is NOT inside dropdown AND NOT inside button, close the dropdown
 			if (
-				!dropdownElement.contains(event.target as Node) &&
-				event.target !== buttonElement
+				dropdownElement &&
+				!dropdownElement.contains(target) &&
+				buttonElement &&
+				!buttonElement.contains(target)
 			) {
 				dropdownElement.classList.remove("show");
 			}
@@ -36,7 +41,7 @@ export const AudioChannels: Component = () => {
 	];
 
 	return (
-		<>
+		<div class="dropdown-container">
 			<button
 				id="audio-channels-button"
 				type="button"
@@ -66,6 +71,6 @@ export const AudioChannels: Component = () => {
 					)}
 				</For>
 			</div>
-		</>
+		</div>
 	);
 };

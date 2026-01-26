@@ -1,0 +1,70 @@
+import { type Component, onCleanup, onMount } from "solid-js";
+import { appState } from "../core/store";
+import { TestRoms } from "./TestRoms";
+import { RomFileInput } from "./RomFileInput";
+import { DataManager } from "./DataManager";
+import { ScreenshotButton } from "./ScreenshotButton";
+import { ViewportScale } from "./ViewportScale";
+import { VolumeControl } from "./VolumeControl";
+import { AudioChannels } from "./AudioChannels";
+import { TraceLogger } from "./TraceLogger";
+import { DebuggerToggle } from "./Debugger";
+
+export const Controls: Component = () => {
+	let panelRef: HTMLDivElement | undefined;
+	let toggleRef: HTMLButtonElement | undefined;
+
+	onMount(() => {
+		const handleOutsideClick = (event: MouseEvent) => {
+			const target = event.target as Node;
+
+			// If the panel is open, and the click is NOT inside the panel
+			// and NOT on the toggle button, close the panel
+			if (
+				appState.isControlsOpen &&
+				panelRef &&
+				!panelRef.contains(target) &&
+				toggleRef &&
+				!toggleRef.contains(target)
+			) {
+				appState.setControlsOpen(false);
+			}
+		};
+
+		document.addEventListener("click", handleOutsideClick);
+
+		onCleanup(() => {});
+	});
+
+	return (
+		<>
+			<button
+				ref={toggleRef}
+				id="panel-toggle"
+				class="panel-toggle"
+				onClick={() => appState.setControlsOpen(!appState.isControlsOpen)}
+			>
+				☰
+			</button>
+
+			<div
+				ref={panelRef}
+				id="controls-panel"
+				class="controls-panel"
+				classList={{ open: appState.isControlsOpen }}
+			>
+				<div id="controls">
+					<TestRoms />
+					<RomFileInput />
+					<DataManager />
+					<ScreenshotButton />
+					<ViewportScale />
+					<VolumeControl />
+					<AudioChannels />
+					<TraceLogger />
+					<DebuggerToggle />
+				</div>
+			</div>
+		</>
+	);
+};
