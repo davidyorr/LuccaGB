@@ -8,13 +8,12 @@
 	</head>
 	<body>
 		<div id="app">
-			<div id="drag-overlay" style="display: none">
-				Drop ROM file (.gb) to load
-			</div>
+			<div id="drag-container"></div>
 			<div id="controls-root"></div>
 
 			<div id="canvas-container">
 				<canvas id="canvas" width="160" height="144"></canvas>
+				<div id="audio-hint"></div>
 			</div>
 
 			<div id="debug-container"></div>
@@ -286,6 +285,32 @@
 			border: 0;
 			border-top: 1px solid #555;
 			margin: 15px 0;
+		}
+
+		/* ======== AUDIO HINT ======== */
+		.audio-hint {
+			margin-top: 8px;
+			text-align: center;
+			font-size: 12px;
+			letter-spacing: 0.02em;
+
+			color: #9a9a9a;
+			opacity: 0.85;
+
+			user-select: none;
+			pointer-events: none;
+			animation: fadeIn 200ms ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(-2px);
+			}
+			to {
+				opacity: 0.85;
+				transform: translateY(0);
+			}
 		}
 
 		@media screen and (max-width: 767px) {

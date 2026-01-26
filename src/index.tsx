@@ -1,10 +1,10 @@
 import { store } from "./core/store";
 import { InputManager } from "./services/input-manager";
-import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
 import { render } from "solid-js/web";
-import { handleRomLoad } from "./services/rom-loader";
 import { Debugger } from "./ui/Debugger";
 import { Controls } from "./ui/Controls";
+import { DragAndDropOverlay } from "./ui/DragAndDropOverlay";
+import { AudioHint } from "./ui/AudioHint";
 
 const go = new Go();
 new InputManager({
@@ -29,11 +29,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (debugContainer) {
 		render(() => <Debugger />, debugContainer);
 	}
-
-	setUpDragAndDropHandlers({
-		overlayId: "drag-overlay",
-		onRomLoaded: handleRomLoad,
-	});
+	const dragContainer = document.getElementById("drag-container");
+	if (dragContainer) {
+		render(() => <DragAndDropOverlay />, dragContainer);
+	}
+	const audioHint = document.getElementById("audio-hint");
+	if (audioHint) {
+		render(() => <AudioHint />, audioHint);
+	}
 
 	// ==================================================
 	// ====== set up tab visibility event listener ======

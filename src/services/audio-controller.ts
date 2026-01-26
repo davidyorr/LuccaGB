@@ -1,3 +1,5 @@
+import { createSignal } from "solid-js";
+
 class AudioController {
 	private audioContext: AudioContext;
 	private gainNode: GainNode;
@@ -7,6 +9,9 @@ class AudioController {
 	// The amount of time to schedule ahead when resetting.
 	private readonly LOOKAHEAD_TIME = 0.06;
 
+	private unlockedState = false;
+	private _unlocked: () => boolean;
+
 	constructor() {
 		const AudioContext =
 			window.AudioContext || (window as any).webkitAudioContext;
@@ -15,6 +20,57 @@ class AudioController {
 		this.gainNode = this.audioContext.createGain();
 		this.gainNode.connect(this.audioContext.destination);
 		this.gainNode.gain.value = 0.5;
+
+		const [unlocked, setUnlocked] = createSignal(this.unlockedState);
+		this._unlocked = unlocked;
+
+		const events = [
+			"click",
+			"touchstart",
+			"touchend",
+			"keydown",
+			"mousedown",
+			"mouseup",
+			"pointerdown",
+			"pointerup",
+		];
+
+		const attemptToUnlockAudio = () => {
+			// Create a silent audio buffer
+			const buffer = this.audioContext.createBuffer(1, 1, 22050);
+			const source = this.audioContext.createBufferSource();
+			source.buffer = buffer;
+			source.connect(this.audioContext.destination);
+			source.start(0);
+
+			// Check state after a short delay
+			const MAX_ATTEMPTS = 10;
+			const INTERVAL_DELAY = 10;
+			let attempts = 0;
+
+			const intervalId = setInterval(() => {
+				attempts++;
+
+				if (this.audioContext.state === "running") {
+					setUnlocked(true);
+					events.forEach((event) => {
+						window.removeEventListener(event, attemptToUnlockAudio);
+					});
+					clearInterval(intervalId);
+				} else if (attempts >= MAX_ATTEMPTS) {
+					clearInterval(intervalId);
+					console.log("Audio unlock timeout after 100ms");
+				}
+			}, INTERVAL_DELAY);
+		};
+
+		events.forEach((event) => {
+			window.addEventListener(event, attemptToUnlockAudio);
+		});
+	}
+
+	get unlocked() {
+		return this._unlocked();
 	}
 
 	public setVolume(volume: number) {
@@ -35,6 +91,10 @@ class AudioController {
 		// too much audio queued up. Drop this chunk to let the visual/audio sync up.
 		const currentTime = this.audioContext.currentTime;
 		if (this.nextStartTime > currentTime + this.MAX_LATENCY_TIME) {
+			return;
+		}
+
+		if (this.audioContext.state !== "running") {
 			return;
 		}
 
@@ -81,7 +141,9 @@ class AudioController {
 	public async resume() {
 		this.nextStartTime = 0;
 		if (this.audioContext.state === "suspended") {
-			return this.audioContext.resume();
+			// purposefully not awaiting because if there have been no user
+			// gestures, this Promise never resolves
+			void this.audioContext.resume();
 		}
 	}
 

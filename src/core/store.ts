@@ -169,10 +169,12 @@ export const store = createRoot(() => {
 	});
 
 	createEffect(function syncAudioPauseState() {
-		if (state.isPaused || state.ui.isHidden) {
-			audioController.pause();
-		} else {
-			audioController.resume();
+		if (state.isRomLoaded) {
+			if (state.isPaused || state.ui.isHidden) {
+				audioController.pause();
+			} else {
+				audioController.resume();
+			}
 		}
 	});
 
