@@ -1,4 +1,3 @@
-import { gameLoop } from "./core/game-loop";
 import { store } from "./core/store";
 import { InputManager } from "./services/input-manager";
 import { setUpDragAndDropHandlers } from "./ui/drag-and-drop";
@@ -13,9 +12,9 @@ import { TraceLogger } from "./ui/TraceLogger";
 import { RomFileInput } from "./ui/RomFileInput";
 import { ViewportScale } from "./ui/ViewportScale";
 import { Debugger, DebuggerToggle } from "./ui/Debugger";
+import { ScreenshotButton } from "./ui/ScreenshotButton";
 
 const go = new Go();
-const canvasRenderer = gameLoop.renderer();
 new InputManager({
 	Space: store.legacyAppState.togglePaused,
 });
@@ -40,6 +39,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const solidAudioChannels = document.getElementById("solid-audio-channels");
 	if (solidAudioChannels) {
 		render(() => <AudioChannels />, solidAudioChannels);
+	}
+	const screenshotButton = document.getElementById(
+		"screenshot-button-container",
+	);
+	if (screenshotButton) {
+		render(() => <ScreenshotButton />, screenshotButton);
 	}
 	const viewportScaleContainer = document.getElementById(
 		"viewport-scale-container",
@@ -89,13 +94,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 			store.actions.setHidden(false);
 		}
 	});
-
-	// ======================================
-	// ====== set up screenshot button ======
-	// ======================================
-	document
-		.getElementById("screenshot-button")
-		?.addEventListener("click", () => {
-			canvasRenderer.takeScreenshot();
-		});
 });
