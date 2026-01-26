@@ -1,4 +1,4 @@
-import { appState } from "../core/store";
+import { store as globalStore, type State } from "../core/store";
 
 const DB_NAME = "LuccaGB-Database";
 const DB_VERSION = 2;
@@ -6,14 +6,6 @@ const STORE_NAME = "cartridgeRam";
 
 const SETTINGS_STORE = "appSettings";
 const SETTINGS_KEY = "settings";
-
-export type AppSettings = {
-	audioVolume: number;
-	audioChannelsEnabled: boolean[];
-	isDebuggerOpen: boolean;
-	scale: number | "fit";
-	updatedAt: number;
-};
 
 type SaveData = {
 	romHash: string;
@@ -171,7 +163,7 @@ export async function persistCartridgeRam(
 	});
 }
 
-export async function loadAppSettings(): Promise<AppSettings | null> {
+export async function loadAppSettings(): Promise<State["settings"] | null> {
 	const db = await openDatabase();
 
 	return new Promise((resolve, reject) => {
@@ -189,7 +181,9 @@ export async function loadAppSettings(): Promise<AppSettings | null> {
 	});
 }
 
-export async function saveAppSettings(settings: AppSettings): Promise<void> {
+export async function saveAppSettings(
+	settings: State["settings"],
+): Promise<void> {
 	const db = await openDatabase();
 
 	return new Promise((resolve, reject) => {
@@ -309,14 +303,14 @@ export async function importData(jsonContent: string): Promise<ImportStats> {
 		}
 
 		if (backup.settings) {
-			const settings = backup.settings as AppSettings;
+			const settings = backup.settings as State["settings"];
 
 			await saveAppSettings({
 				...settings,
 				updatedAt: Date.now(),
 			});
 
-			appState.initializeAppSettings();
+			globalStore.actions.initializeAppSettings();
 		}
 	});
 }

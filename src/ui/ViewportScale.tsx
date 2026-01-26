@@ -1,17 +1,15 @@
 import { createEffect, onCleanup, onMount } from "solid-js";
-import { appState } from "../core/store";
 import { gameLoop } from "../core/game-loop";
+import { store } from "../core/store";
 
 export const ViewportScale = () => {
-	const canvasRenderer = gameLoop.renderer();
-
 	createEffect(function syncOnGlobalStateChange() {
-		canvasRenderer.setScale(appState.scale);
+		gameLoop.renderer()?.setScale(store.state.settings.scale);
 	});
 
 	onMount(function handleWindowResize() {
 		const handleResize = () => {
-			canvasRenderer.setScale(appState.scale);
+			gameLoop.renderer()?.setScale(store.state.settings.scale);
 		};
 
 		window.addEventListener("resize", handleResize);
@@ -22,13 +20,17 @@ export const ViewportScale = () => {
 		const target = e.currentTarget as HTMLSelectElement;
 		const value = target.value;
 		const newScale = value === "fit" ? "fit" : parseInt(value, 10);
-		appState.setScale(newScale);
+		store.actions.setScale(newScale);
 	};
 
 	return (
 		<>
 			<label for="scale-select">Scale:</label>
-			<select id="scale-select" value={appState.scale} onChange={handleChange}>
+			<select
+				id="scale-select"
+				value={store.state.settings.scale}
+				onChange={handleChange}
+			>
 				<option value="1">1×</option>
 				<option value="2">2×</option>
 				<option value="3">3×</option>

@@ -1,5 +1,4 @@
 import { type Component, onCleanup, onMount } from "solid-js";
-import { appState } from "../core/store";
 import { TestRoms } from "./TestRoms";
 import { RomFileInput } from "./RomFileInput";
 import { DataManager } from "./DataManager";
@@ -9,6 +8,7 @@ import { VolumeControl } from "./VolumeControl";
 import { AudioChannels } from "./AudioChannels";
 import { TraceLogger } from "./TraceLogger";
 import { DebuggerToggle } from "./Debugger";
+import { store } from "../core/store";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
@@ -21,13 +21,13 @@ export const Controls: Component = () => {
 			// If the panel is open, and the click is NOT inside the panel
 			// and NOT on the toggle button, close the panel
 			if (
-				appState.isControlsOpen &&
+				store.state.ui.isControlsOpen &&
 				panelRef &&
 				!panelRef.contains(target) &&
 				toggleRef &&
 				!toggleRef.contains(target)
 			) {
-				appState.setControlsOpen(false);
+				store.actions.setControlsOpen(false);
 			}
 		};
 
@@ -42,7 +42,9 @@ export const Controls: Component = () => {
 				ref={toggleRef}
 				id="panel-toggle"
 				class="panel-toggle"
-				onClick={() => appState.setControlsOpen(!appState.isControlsOpen)}
+				onClick={() =>
+					store.actions.setControlsOpen(!store.state.ui.isControlsOpen)
+				}
 			>
 				☰
 			</button>
@@ -51,7 +53,7 @@ export const Controls: Component = () => {
 				ref={panelRef}
 				id="controls-panel"
 				class="controls-panel"
-				classList={{ open: appState.isControlsOpen }}
+				classList={{ open: store.state.ui.isControlsOpen }}
 			>
 				<div id="controls">
 					<TestRoms />

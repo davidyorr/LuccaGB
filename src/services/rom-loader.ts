@@ -31,7 +31,7 @@ export async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	// Attempt to load existing RAM
 	if (cartridgeInfo.hasBattery && cartridgeInfo.ramSize > 0) {
 		try {
-			const ram = await loadCartridgeRam(store.legacyAppState.currentRomHash);
+			const ram = await loadCartridgeRam(store.state.currentRomHash);
 			if (ram) {
 				// Ensure the loaded RAM size matches what the cartridge expects
 				if (ram.length !== cartridgeInfo.ramSize) {

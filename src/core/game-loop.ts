@@ -10,9 +10,9 @@ class GameLoop {
 	// 4,194,304 T-cycles per second
 	private readonly SYSTEM_CLOCK_FREQUENCY = 4.194304 * 1_000_000;
 
-	private _renderer: CanvasRenderer;
+	private _renderer: CanvasRenderer | null = null;
 
-	constructor(renderer: CanvasRenderer) {
+	public attachRenderer(renderer: CanvasRenderer) {
 		this._renderer = renderer;
 	}
 
@@ -61,7 +61,7 @@ class GameLoop {
 		// render video
 		const frame = window.pollFrame();
 		if (frame) {
-			this._renderer.drawFrame(frame);
+			this._renderer!.drawFrame(frame);
 		}
 
 		// play audio
@@ -72,4 +72,4 @@ class GameLoop {
 	};
 }
 
-export const gameLoop = new GameLoop(new CanvasRenderer());
+export const gameLoop = new GameLoop();
