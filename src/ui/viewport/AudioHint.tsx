@@ -1,6 +1,6 @@
 import { Show, type Component } from "solid-js";
-import { store } from "../core/store";
-import { audioController } from "../services/audio-controller";
+import { store } from "../../core/store";
+import { audioController } from "../../services/audio-controller";
 
 export const AudioHint: Component = () => {
 	return (

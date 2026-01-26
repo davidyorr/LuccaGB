@@ -5,6 +5,7 @@ import { Debugger } from "./ui/Debugger";
 import { DragAndDropOverlay } from "./ui/DragAndDropOverlay";
 import { gameLoop } from "./core/game-loop";
 import { CanvasRenderer } from "./services/canvas-renderer";
+import { Viewport } from "./ui/viewport/Viewport";
 
 export const App: Component = () => {
 	onMount(() => {
@@ -28,13 +29,9 @@ export const App: Component = () => {
 
 			<Controls />
 
-			<div id="canvas-container">
-				<canvas id="canvas" width="160" height="144" />
-			</div>
+			<Viewport />
 
-			<div id="debug-container">
-				<Debugger />
-			</div>
+			<Debugger />
 		</>
 	);
 };
