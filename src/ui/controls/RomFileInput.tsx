@@ -1,6 +1,6 @@
 import type { Component } from "solid-js";
-import { store } from "../core/store";
-import { handleRomLoad } from "../services/rom-loader";
+import { store } from "../../core/store";
+import { handleRomLoad } from "../../services/rom-loader";
 
 export const RomFileInput: Component = () => {
 	let fileInputRef: HTMLInputElement | undefined;

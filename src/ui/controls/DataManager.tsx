@@ -1,6 +1,10 @@
 import type { Component } from "solid-js";
 import { Portal } from "solid-js/web";
-import { exportData, importData, type ImportStats } from "../services/storage";
+import {
+	exportData,
+	importData,
+	type ImportStats,
+} from "../../services/storage";
 
 export const DataManager: Component = () => {
 	let dataModalElement!: HTMLDialogElement | undefined;

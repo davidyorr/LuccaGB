@@ -1,6 +1,6 @@
 import type { Component } from "solid-js";
-import { gameLoop } from "../core/game-loop";
-import { store } from "../core/store";
+import { gameLoop } from "../../core/game-loop";
+import { store } from "../../core/store";
 
 export const ScreenshotButton: Component = () => {
 	const handleClick = () => {

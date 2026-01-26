@@ -2,7 +2,7 @@ import { createSignal, Show } from "solid-js";
 import {
 	downloadTraceLogs as downloadTraceLog,
 	parseTraceLogs,
-} from "../utils/trace-logger";
+} from "../../utils/trace-logger";
 
 export const TraceLogger = () => {
 	// Hide in production

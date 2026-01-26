@@ -1,6 +1,6 @@
 import { onMount, onCleanup, type Component } from "solid-js";
 import { store } from "./core/store";
-import { Controls } from "./ui/Controls";
+import { Controls } from "./ui/controls/Controls";
 import { Debugger } from "./ui/Debugger";
 import { DragAndDropOverlay } from "./ui/DragAndDropOverlay";
 import { gameLoop } from "./core/game-loop";

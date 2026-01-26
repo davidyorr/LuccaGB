@@ -5,7 +5,7 @@ import {
 	onMount,
 	type Component,
 } from "solid-js";
-import { handleRomLoad } from "../services/rom-loader";
+import { handleRomLoad } from "../../services/rom-loader";
 
 type RomFile = {
 	path: string;
@@ -19,7 +19,7 @@ export const TestRoms: Component = () => {
 	let romSelectElement!: HTMLSelectElement | undefined;
 
 	onMount(async () => {
-		const modules = import.meta.glob<string>("../../roms/**/*.gb", {
+		const modules = import.meta.glob<string>("../../../roms/**/*.gb", {
 			query: "?url",
 			import: "default",
 		});
@@ -30,7 +30,7 @@ export const TestRoms: Component = () => {
 		for (const path of sortedPaths) {
 			options[path] = {
 				path: path,
-				displayName: path.replace("../../roms/", ""),
+				displayName: path.replace("../../../roms/", ""),
 				getUrl: modules[path],
 			};
 		}

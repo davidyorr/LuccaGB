@@ -1,6 +1,6 @@
 import type { Component } from "solid-js";
-import { store } from "../core/store";
-import { audioController } from "../services/audio-controller";
+import { store } from "../../core/store";
+import { audioController } from "../../services/audio-controller";
 
 export const VolumeControl: Component = () => {
 	const displayVolume = () =>

@@ -1,5 +1,5 @@
 import { For, onCleanup, onMount, type Component } from "solid-js";
-import { store } from "../core/store";
+import { store } from "../../core/store";
 
 export const AudioChannels: Component = () => {
 	let dropdownElement!: HTMLDivElement;

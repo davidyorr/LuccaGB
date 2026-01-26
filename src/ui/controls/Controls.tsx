@@ -7,8 +7,8 @@ import { ViewportScale } from "./ViewportScale";
 import { VolumeControl } from "./VolumeControl";
 import { AudioChannels } from "./AudioChannels";
 import { TraceLogger } from "./TraceLogger";
-import { DebuggerToggle } from "./Debugger";
-import { store } from "../core/store";
+import { DebuggerToggle } from "../Debugger";
+import { store } from "../../core/store";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
