@@ -1,3 +1,5 @@
+import styles from "./App.module.css";
+
 import { onMount, onCleanup, type Component } from "solid-js";
 import { store } from "./core/store";
 import { Controls } from "./ui/controls/Controls";
@@ -24,7 +26,7 @@ export const App: Component = () => {
 	});
 
 	return (
-		<>
+		<div class={styles.app}>
 			<DragAndDropOverlay />
 
 			<Controls />
@@ -32,6 +34,6 @@ export const App: Component = () => {
 			<Viewport />
 
 			<Debugger />
-		</>
+		</div>
 	);
 };

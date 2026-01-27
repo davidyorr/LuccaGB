@@ -37,10 +37,9 @@ export const TraceLogger = () => {
 
 	return (
 		<>
-			<label id="trace-log-toggle-container">
+			<label>
 				<input
 					type="checkbox"
-					id="trace-log-checkbox"
 					onChange={handleInputToggle}
 					checked={isLogging()}
 				/>
@@ -48,9 +47,7 @@ export const TraceLogger = () => {
 			</label>
 
 			<Show when={isLogging()}>
-				<button id="download-trace-log-button" onClick={handleDownloadClick}>
-					Download trace log
-				</button>
+				<button onClick={handleDownloadClick}>Download trace log</button>
 			</Show>
 		</>
 	);

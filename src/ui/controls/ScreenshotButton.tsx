@@ -5,16 +5,12 @@ import { store } from "../../core/store";
 export const ScreenshotButton: Component = () => {
 	const handleClick = () => {
 		if (store.state.isRomLoaded) {
-			gameLoop.renderer().takeScreenshot();
+			gameLoop.renderer()?.takeScreenshot();
 		}
 	};
 
 	return (
-		<button
-			id="screenshot-button"
-			onClick={handleClick}
-			style={{ width: "100%" }}
-		>
+		<button onClick={handleClick} style={{ width: "100%" }}>
 			Screenshot
 		</button>
 	);

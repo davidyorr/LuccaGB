@@ -1,3 +1,5 @@
+import styles from "./DataManager.module.css";
+
 import type { Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import {
@@ -55,30 +57,24 @@ export const DataManager: Component = () => {
 
 	return (
 		<>
-			<button id="data-manager-button" onClick={handleManageDataClick}>
-				Manage Data
-			</button>
+			<button onClick={handleManageDataClick}>Manage Data</button>
 
 			<Portal>
-				<dialog id="data-modal" ref={dataModalElement}>
+				<dialog class={styles.modal} ref={dataModalElement}>
 					<form method="dialog">
 						<h2>Data Management</h2>
 
-						<div class="data-section">
+						<div class={styles.dataSection}>
 							<h3>Export</h3>
 							<p>Download all saves and settings to a JSON file.</p>
-							<button
-								type="button"
-								id="export-data-button"
-								onClick={handleExportClick}
-							>
+							<button type="button" onClick={handleExportClick}>
 								Download Backup
 							</button>
 						</div>
 
-						<hr />
+						<hr class={styles.divider} />
 
-						<div class="data-section">
+						<div class={styles.dataSection}>
 							<h3>Import</h3>
 							<p>
 								Restore from a JSON file. <br />
@@ -88,15 +84,10 @@ export const DataManager: Component = () => {
 									</em>
 								</small>
 							</p>
-							<input
-								type="file"
-								id="import-data-input"
-								accept=".json"
-								onChange={handleInputChange}
-							/>
+							<input type="file" accept=".json" onChange={handleInputChange} />
 						</div>
 
-						<div class="dialog-footer">
+						<div class={styles.dialogFooter}>
 							<button value="close" onClick={handleCloseClick}>
 								Close
 							</button>

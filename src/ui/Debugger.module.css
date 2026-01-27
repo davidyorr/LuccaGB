@@ -1,0 +1,33 @@
+.debugPanel {
+	--debug-table-content-padding: 0.5em;
+
+	font-family: monospace;
+	background-color: #000;
+	color: #00ff00;
+	padding: 24px;
+	border-radius: 5px;
+	width: fit-content;
+	max-height: calc(100vh - 80px);
+	overflow: auto;
+
+	h2 {
+		margin-top: 0;
+	}
+}
+
+.debugTable {
+	border-collapse: collapse;
+	margin-bottom: 1em;
+
+	th,
+	td {
+		border: 1px solid #ccc;
+		padding: var(--debug-table-content-padding);
+		text-align: left;
+	}
+}
+
+.cartridgeTitle {
+	width: calc(2 * var(--debug-table-content-padding) + 15ch);
+	white-space: nowrap;
+}

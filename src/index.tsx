@@ -1,3 +1,5 @@
+import "./global.css";
+
 import { store } from "./core/store";
 import { InputManager } from "./services/input-manager";
 import { render } from "solid-js/web";

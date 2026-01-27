@@ -1,0 +1,8 @@
+.volumeSlider {
+	width: 100%;
+	cursor: pointer;
+}
+
+.volumeValue {
+	text-align: right;
+}

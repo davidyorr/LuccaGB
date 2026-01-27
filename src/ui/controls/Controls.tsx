@@ -1,3 +1,5 @@
+import styles from "./Controls.module.css";
+
 import { type Component, onCleanup, onMount } from "solid-js";
 import { TestRoms } from "./TestRoms";
 import { RomFileInput } from "./RomFileInput";
@@ -40,8 +42,7 @@ export const Controls: Component = () => {
 		<>
 			<button
 				ref={toggleRef}
-				id="panel-toggle"
-				class="panel-toggle"
+				class={styles.panelToggle}
 				onClick={() =>
 					store.actions.setControlsOpen(!store.state.ui.isControlsOpen)
 				}
@@ -51,11 +52,10 @@ export const Controls: Component = () => {
 
 			<div
 				ref={panelRef}
-				id="controls-panel"
-				class="controls-panel"
-				classList={{ open: store.state.ui.isControlsOpen }}
+				class={styles.controlsPanel}
+				classList={{ [styles.open]: store.state.ui.isControlsOpen }}
 			>
-				<div id="controls">
+				<div class={styles.controls}>
 					<TestRoms />
 					<RomFileInput />
 					<DataManager />

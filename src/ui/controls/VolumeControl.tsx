@@ -1,3 +1,5 @@
+import styles from "./VolumeControl.module.css";
+
 import type { Component } from "solid-js";
 import { store } from "../../core/store";
 import { audioController } from "../../services/audio-controller";
@@ -12,6 +14,7 @@ export const VolumeControl: Component = () => {
 			<input
 				type="range"
 				id="volume-slider"
+				class={styles.volumeSlider}
 				min="0"
 				max="100"
 				value={displayVolume()}
@@ -24,7 +27,7 @@ export const VolumeControl: Component = () => {
 					}
 				}}
 			/>
-			<span id="volume-value">{displayVolume()}%</span>
+			<span class={styles.volumeValue}>{displayVolume()}%</span>
 		</>
 	);
 };

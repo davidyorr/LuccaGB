@@ -1,3 +1,5 @@
+import styles from "./DragAndDropOverlay.module.css";
+
 import { createSignal, onCleanup, onMount, type Component } from "solid-js";
 import { handleRomLoad } from "../services/rom-loader";
 
@@ -59,7 +61,7 @@ export const DragAndDropOverlay: Component = () => {
 
 	return (
 		<div
-			id="drag-overlay"
+			class={styles.dragOverlay}
 			style={{ display: isVisible() ? "flex" : "none" }}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}

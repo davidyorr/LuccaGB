@@ -1,9 +1,19 @@
-import { For, onCleanup, onMount, type Component } from "solid-js";
+import styles from "./AudioChannels.module.css";
+
+import {
+	createSignal,
+	For,
+	onCleanup,
+	onMount,
+	type Component,
+} from "solid-js";
 import { store } from "../../core/store";
 
 export const AudioChannels: Component = () => {
 	let dropdownElement!: HTMLDivElement;
 	let buttonElement!: HTMLButtonElement;
+
+	const [dropdownOpen, setDropdownOpen] = createSignal(false);
 
 	const handleChange = (channel: number, checked: boolean) => {
 		store.actions.setAudioChannelsEnabled(channel, checked);
@@ -21,7 +31,7 @@ export const AudioChannels: Component = () => {
 				buttonElement &&
 				!buttonElement.contains(target)
 			) {
-				dropdownElement.classList.remove("show");
+				setDropdownOpen(false);
 			}
 		};
 
@@ -41,28 +51,28 @@ export const AudioChannels: Component = () => {
 	];
 
 	return (
-		<div class="dropdown-container">
+		<div class={styles.dropdownContainer}>
 			<button
-				id="audio-channels-button"
+				class={styles.audioChannelsButton}
 				type="button"
 				ref={buttonElement}
-				onClick={() => {
-					dropdownElement.classList.toggle("show");
-				}}
+				onClick={() => setDropdownOpen(true)}
 			>
 				Audio Channels ▼
 			</button>
 			<div
-				id="audio-channels-dropdown"
-				class="dropdown-panel"
+				classList={{
+					[styles.dropdownPanel]: true,
+					[styles.open]: dropdownOpen(),
+				}}
 				ref={dropdownElement}
 			>
 				<For each={[1, 2, 3, 4]}>
 					{(i) => (
-						<label class="channel-label">
+						<label class={styles.channelLabel}>
 							<input
 								type="checkbox"
-								id={`audio-channel-${i}`}
+								class={styles.channelLabelInput}
 								checked={store.state.settings.audioChannelsEnabled[i]}
 								onChange={(event) => handleChange(i, event.target.checked)}
 							/>

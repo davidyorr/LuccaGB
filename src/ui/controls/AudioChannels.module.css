@@ -1,0 +1,55 @@
+.dropdownContainer {
+	position: relative;
+}
+
+.audioChannelsButton {
+	width: 100%;
+	background-color: #2a2a2a;
+	color: #e0e0e0;
+	border: 1px solid #555;
+	padding: 8px 12px;
+	cursor: pointer;
+	border-radius: 4px;
+	text-align: left;
+
+	&:hover {
+		background-color: #333;
+	}
+}
+
+.dropdownPanel {
+	display: none;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	margin-top: 4px;
+	background-color: #2a2a2a;
+	border: 1px solid #555;
+	border-radius: 4px;
+	padding: 8px;
+	width: 100%;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+	z-index: 1000;
+
+	&.open {
+		display: block;
+	}
+}
+
+.channelLabel {
+	display: flex;
+	align-items: center;
+	padding: 6px 8px;
+	cursor: pointer;
+	user-select: none;
+	border-radius: 3px;
+
+	&:hover {
+		background-color: #333;
+	}
+}
+
+.channelLabelInput {
+	margin-right: 8px;
+	cursor: pointer;
+}

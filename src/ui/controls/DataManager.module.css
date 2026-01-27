@@ -1,0 +1,28 @@
+.modal {
+	background: #333;
+	color: #e0e0e0;
+	border: 1px solid #555;
+	border-radius: 8px;
+	padding: 20px;
+	max-width: 400px;
+	font-family: system-ui, monospace;
+
+	&::backdrop {
+		background: rgba(0, 0, 0, 0.7);
+	}
+}
+
+.dataSection {
+	margin-bottom: 20px;
+}
+
+.dialogFooter {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.divider {
+	border: 0;
+	border-top: 1px solid #555;
+	margin: 15px 0;
+}

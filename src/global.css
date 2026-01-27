@@ -1,0 +1,17 @@
+html {
+	box-sizing: border-box;
+}
+*,
+*:before,
+*:after {
+	box-sizing: inherit;
+}
+body {
+	min-height: 100vh;
+	margin: 0;
+	overflow: hidden;
+	background-color: #202020;
+	color: #e0e0e0;
+	font-size: 14px;
+	font-family: system-ui, monospace;
+}

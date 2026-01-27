@@ -80,7 +80,7 @@ export const TestRoms: Component = () => {
 
 	return (
 		<>
-			<select id="rom-select" ref={romSelectElement} onChange={handleRomChange}>
+			<select ref={romSelectElement} onChange={handleRomChange}>
 				<option value="">-- Load a Test ROM --</option>
 				<For each={Object.values(roms())}>
 					{(rom) => <option value={rom.path}>{rom.displayName}</option>}
