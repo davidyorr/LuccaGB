@@ -4,8 +4,7 @@ import { store } from "./core/store";
 import { InputManager } from "./services/input-manager";
 import { render } from "solid-js/web";
 import { App } from "./App";
-
-const go = new Go();
+import { initWasm } from "./core/wasm";
 
 new InputManager({
 	Space: store.actions.togglePaused,
@@ -20,10 +19,4 @@ if (root) {
 	console.error("root element not found");
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-	WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
-		(wasmModule) => {
-			go.run(wasmModule.instance);
-		},
-	);
-});
+document.addEventListener("DOMContentLoaded", initWasm);

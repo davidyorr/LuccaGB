@@ -29,7 +29,6 @@ export interface GameboyDebugInfo {
 	apu: ApuDebugInfo;
 	cartridge: CartridgeDebugInfo;
 	cpu: CpuDebugInfo;
-	// ppu: PpuDebugInfo;
 }
 
 interface ApuDebugInfo {
@@ -64,4 +63,11 @@ interface CpuDebugInfo {
 	};
 }
 
-export {};
+export async function initWasm() {
+	const go = new Go();
+	const wasmModule = await WebAssembly.instantiateStreaming(
+		fetch("main.wasm"),
+		go.importObject,
+	);
+	go.run(wasmModule.instance);
+}
