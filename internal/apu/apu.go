@@ -87,6 +87,10 @@ type APU struct {
 
 	cyclesSinceWaveRamFetch uint16
 
+	// High-pass filter capacitors
+	capacitorLeft  float64
+	capacitorRight float64
+
 	// the step counter (0-7) to track which events to fire:
 	//
 	// Event           Rate    Frequency
@@ -239,6 +243,9 @@ var ch3OutputLevelMap = [4]uint8{
 
 const CpuClockSpeed = 4_194_304
 const TargetSampleRate = 48_000
+
+// 0.999958^(4194304/rate)
+const ChargeFactor = 0.996337
 
 // See: https://gbdev.io/pandocs/Audio.html#length-timer
 const MaxLengthTimer_Ch1Ch2Ch4 = uint16(64)
@@ -425,9 +432,7 @@ func (apu *APU) Step() {
 		var rightAccumulator int32 = 0
 
 		if ch1.enabled && apu.channelsEnabled[1] {
-			volume := ch1.currentVolume
-			sample := int32(ch1.outputBit) * int32(volume)
-			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			sample := int32(ch1.outputBit) * int32(ch1.currentVolume)
 
 			if apu.nr51&0b0001_0000 != 0 {
 				leftAccumulator += sample
@@ -438,9 +443,7 @@ func (apu *APU) Step() {
 		}
 
 		if ch2.enabled && apu.channelsEnabled[2] {
-			volume := ch2.currentVolume
-			sample := int32(ch2.outputBit) * int32(volume)
-			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			sample := int32(ch2.outputBit) * int32(ch2.currentVolume)
 
 			if apu.nr51&0b0010_0000 != 0 {
 				leftAccumulator += sample
@@ -453,7 +456,6 @@ func (apu *APU) Step() {
 		if ch3.enabled && apu.channelsEnabled[3] {
 			shift := ch3OutputLevelMap[ch3.currentVolume]
 			sample := int32(ch3.sampleBuffer >> shift)
-			sample -= (15 >> shift) / 2 // center to [-max/2, +max/2]
 
 			if apu.nr51&0b0100_0000 != 0 {
 				leftAccumulator += sample
@@ -464,9 +466,7 @@ func (apu *APU) Step() {
 		}
 
 		if ch4.enabled && apu.channelsEnabled[4] {
-			volume := ch4.currentVolume
-			sample := int32(ch4.outputBit) * int32(volume)
-			sample -= int32(volume) / 2 // center to [-volume/2, +volume/2]
+			sample := int32(ch4.outputBit) * int32(ch4.currentVolume)
 
 			if apu.nr51&0b1000_0000 != 0 {
 				leftAccumulator += sample
@@ -476,18 +476,52 @@ func (apu *APU) Step() {
 			}
 		}
 
-		// "The digital value produced by the generator, which ranges between $0 and $F (0 and 15)"
-		// See: https://gbdev.io/pandocs/Audio_details.html#audio-details
+		// Apply high-pass filter
+		// See: https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+		dacsEnabled := ((*ch1.dacRegister & ch1.dacRegisterMask) != 0) ||
+			((*ch2.dacRegister & ch2.dacRegisterMask) != 0) ||
+			((*ch3.dacRegister & ch3.dacRegisterMask) != 0) ||
+			((*ch4.dacRegister & ch4.dacRegisterMask) != 0)
 
-		// Normalize the result
-		// We have 4 channels, each capable of outputting 0-15.
-		// The max accumulator = 15 * 4 = 60.
-		// So we want to map the range [0, 60] to [-32768, 32767] (for int16).
-		leftSample := int16((float32(leftAccumulator) / 60.0) * 32767.0)
-		rightSample := int16((float32(rightAccumulator) / 60.0) * 32767.0)
+		inLeft := float64(leftAccumulator)
+		inRight := float64(rightAccumulator)
 
-		apu.outputBuffer.Write(leftSample)
-		apu.outputBuffer.Write(rightSample)
+		outLeft := 0.0
+		outRight := 0.0
+
+		if dacsEnabled {
+			outLeft = inLeft - apu.capacitorLeft
+			apu.capacitorLeft = inLeft - (outLeft * ChargeFactor)
+
+			outRight = inRight - apu.capacitorRight
+			apu.capacitorRight = inRight - (outRight * ChargeFactor)
+		}
+
+		const maxAmplitude = 30.0 // 4 channels * 15 max volume, centered (÷ 2)
+
+		// Normalization:
+		// Input range: [0, 60]
+		// Filtered range: [-30, 30] (approx)
+		// We divide by 30 to normalize to [-1.0, 1.0],
+		// then multiply by the max int16 value to get [-32768, 32767]
+		leftSample := (outLeft / maxAmplitude) * 32767.0
+		rightSample := (outRight / maxAmplitude) * 32767.0
+
+		// Clipping
+		if leftSample > 32767 {
+			leftSample = 32767
+		} else if leftSample < -32768 {
+			leftSample = -32768
+		}
+
+		if rightSample > 32767 {
+			rightSample = 32767
+		} else if rightSample < -32768 {
+			rightSample = -32768
+		}
+
+		apu.outputBuffer.Write(int16(leftSample))
+		apu.outputBuffer.Write(int16(rightSample))
 	}
 }
 
