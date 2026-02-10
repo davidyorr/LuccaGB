@@ -128,3 +128,37 @@ func (gb *Gameboy) Debug() map[string]interface{} {
 
 	return debugInfo
 }
+
+func (gb *Gameboy) IsSafeToSerialize() bool {
+	return gb.cpu.IsSafeToSerialize()
+}
+
+func (gb *Gameboy) SerializeState(buf []byte) []byte {
+	offset := 0
+
+	offset += gb.cpu.Serialize(buf[offset:])
+	offset += gb.apu.Serialize(buf[offset:])
+	offset += gb.ppu.Serialize(buf[offset:])
+	offset += gb.mmu.Serialize(buf[offset:])
+	offset += gb.dma.Serialize(buf[offset:])
+	offset += gb.timer.Serialize(buf[offset:])
+	offset += gb.serial.Serialize(buf[offset:])
+	offset += gb.cartridge.Serialize(buf[offset:])
+	offset += gb.joypad.Serialize(buf[offset:])
+
+	return buf[:offset]
+}
+
+func (gb *Gameboy) DeserializeState(data []byte) {
+	offset := 0
+
+	offset += gb.cpu.Deserialize(data[offset:])
+	offset += gb.apu.Deserialize(data[offset:])
+	offset += gb.ppu.Deserialize(data[offset:])
+	offset += gb.mmu.Deserialize(data[offset:])
+	offset += gb.dma.Deserialize(data[offset:])
+	offset += gb.timer.Deserialize(data[offset:])
+	offset += gb.serial.Deserialize(data[offset:])
+	offset += gb.cartridge.Deserialize(data[offset:])
+	offset += gb.joypad.Deserialize(data[offset:])
+}

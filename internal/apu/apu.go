@@ -1,5 +1,10 @@
 package apu
 
+import (
+	"encoding/binary"
+	"math"
+)
+
 type APU struct {
 	// ======================================
 	// ====== Global Control Registers ======
@@ -1032,4 +1037,312 @@ func (apu *APU) Debug() map[string]interface{} {
 		"registers": registers,
 		"waveRam":   waveRamSlice,
 	}
+}
+
+func (channel *channel) Serialize(buf []byte) int {
+	offset := 0
+
+	binary.LittleEndian.PutUint16(buf[offset:], channel.lengthTimer)
+	offset += 2
+
+	if channel.enabled {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if channel.envelopeEnabled {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	buf[offset] = channel.currentVolume
+	offset++
+	buf[offset] = channel.envelopeTimer
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], channel.maxLength)
+	offset += 2
+
+	buf[offset] = channel.nr52BitMask
+	offset++
+	buf[offset] = channel.dacRegisterMask
+	offset++
+	buf[offset] = channel.outputBit
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], channel.periodDivider)
+	offset += 2
+
+	buf[offset] = channel.wavePosition
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], channel.sweepTimer)
+	offset += 2
+	if channel.sweepEnabled {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	binary.LittleEndian.PutUint16(buf[offset:], channel.sweepShadowRegister)
+	offset += 2
+	if channel.sweepNegateModeUsed {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	// Ch3
+	buf[offset] = channel.sampleIndex
+	offset++
+	buf[offset] = channel.sampleBuffer
+	offset++
+	buf[offset] = channel.clockDelay
+	offset++
+
+	// Ch4
+	binary.LittleEndian.PutUint16(buf[offset:], channel.lfsr)
+	offset += 2
+
+	return offset
+}
+
+func (channel *channel) Deserialize(buf []byte) int {
+	offset := 0
+
+	channel.lengthTimer = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	channel.enabled = buf[offset] == 1
+	offset++
+	channel.envelopeEnabled = buf[offset] == 1
+	offset++
+
+	channel.currentVolume = buf[offset]
+	offset++
+	channel.envelopeTimer = buf[offset]
+	offset++
+
+	channel.maxLength = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	channel.nr52BitMask = buf[offset]
+	offset++
+	channel.dacRegisterMask = buf[offset]
+	offset++
+	channel.outputBit = buf[offset]
+	offset++
+
+	channel.periodDivider = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	channel.wavePosition = buf[offset]
+	offset++
+
+	channel.sweepTimer = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+	channel.sweepEnabled = buf[offset] == 1
+	offset++
+	channel.sweepShadowRegister = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+	channel.sweepNegateModeUsed = buf[offset] == 1
+	offset++
+
+	channel.sampleIndex = buf[offset]
+	offset++
+	channel.sampleBuffer = buf[offset]
+	offset++
+	channel.clockDelay = buf[offset]
+	offset++
+
+	channel.lfsr = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	return offset
+}
+
+func (apu *APU) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = apu.nr52
+	offset++
+	buf[offset] = apu.nr51
+	offset++
+	buf[offset] = apu.nr50
+	offset++
+
+	// CH1
+	buf[offset] = apu.nr10
+	offset++
+	buf[offset] = apu.nr11
+	offset++
+	buf[offset] = apu.nr12
+	offset++
+	buf[offset] = apu.nr13
+	offset++
+	buf[offset] = apu.nr14
+	offset++
+
+	// CH2
+	buf[offset] = apu.nr21
+	offset++
+	buf[offset] = apu.nr22
+	offset++
+	buf[offset] = apu.nr23
+	offset++
+	buf[offset] = apu.nr24
+	offset++
+
+	// CH3
+	buf[offset] = apu.nr30
+	offset++
+	buf[offset] = apu.nr31
+	offset++
+	buf[offset] = apu.nr32
+	offset++
+	buf[offset] = apu.nr33
+	offset++
+	buf[offset] = apu.nr34
+	offset++
+	copy(buf[offset:offset+16], apu.waveRam[:16])
+	offset += 16
+
+	// CH4
+	buf[offset] = apu.nr41
+	offset++
+	buf[offset] = apu.nr42
+	offset++
+	buf[offset] = apu.nr43
+	offset++
+	buf[offset] = apu.nr44
+	offset++
+
+	buf[offset] = apu.internalTimer
+	offset++
+
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(apu.sampleTimer))
+	offset += 8
+
+	binary.LittleEndian.PutUint16(buf[offset:], apu.divApuCounter)
+	offset += 2
+	binary.LittleEndian.PutUint16(buf[offset:], apu.cyclesSinceWaveRamFetch)
+	offset += 2
+
+	binary.LittleEndian.PutUint64(buf[offset:], math.Float64bits(apu.capacitorLeft))
+	offset += 8
+	binary.LittleEndian.PutUint64(buf[offset:], math.Float64bits(apu.capacitorRight))
+	offset += 8
+
+	buf[offset] = apu.divApuStep
+	offset++
+
+	offset += apu.ch1.Serialize(buf[offset:])
+	offset += apu.ch2.Serialize(buf[offset:])
+	offset += apu.ch3.Serialize(buf[offset:])
+	offset += apu.ch4.Serialize(buf[offset:])
+
+	for i := range len(apu.channelsEnabled) {
+		if apu.channelsEnabled[i] {
+			buf[offset] = 1
+		} else {
+			buf[offset] = 0
+		}
+		offset++
+	}
+
+	return offset
+}
+
+func (apu *APU) Deserialize(buf []byte) int {
+	offset := 0
+
+	apu.nr52 = buf[offset]
+	offset++
+	apu.nr51 = buf[offset]
+	offset++
+	apu.nr50 = buf[offset]
+	offset++
+
+	// CH1
+	apu.nr10 = buf[offset]
+	offset++
+	apu.nr11 = buf[offset]
+	offset++
+	apu.nr12 = buf[offset]
+	offset++
+	apu.nr13 = buf[offset]
+	offset++
+	apu.nr14 = buf[offset]
+	offset++
+
+	// CH2
+	apu.nr21 = buf[offset]
+	offset++
+	apu.nr22 = buf[offset]
+	offset++
+	apu.nr23 = buf[offset]
+	offset++
+	apu.nr24 = buf[offset]
+	offset++
+
+	// CH3
+	apu.nr30 = buf[offset]
+	offset++
+	apu.nr31 = buf[offset]
+	offset++
+	apu.nr32 = buf[offset]
+	offset++
+	apu.nr33 = buf[offset]
+	offset++
+	apu.nr34 = buf[offset]
+	offset++
+	copy(apu.waveRam[:], buf[offset:offset+16])
+	offset += 16
+
+	// CH4
+	apu.nr41 = buf[offset]
+	offset++
+	apu.nr42 = buf[offset]
+	offset++
+	apu.nr43 = buf[offset]
+	offset++
+	apu.nr44 = buf[offset]
+	offset++
+
+	apu.internalTimer = buf[offset]
+	offset++
+
+	apu.sampleTimer = int(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+
+	apu.divApuCounter = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+	apu.cyclesSinceWaveRamFetch = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	apu.capacitorLeft = math.Float64frombits(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+	apu.capacitorRight = math.Float64frombits(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+
+	apu.divApuStep = buf[offset]
+	offset++
+
+	offset += apu.ch1.Deserialize(buf[offset:])
+	offset += apu.ch2.Deserialize(buf[offset:])
+	offset += apu.ch3.Deserialize(buf[offset:])
+	offset += apu.ch4.Deserialize(buf[offset:])
+
+	for i := range len(apu.channelsEnabled) {
+		apu.channelsEnabled[i] = buf[offset] == 1
+		offset++
+	}
+
+	apu.outputBuffer.Reset()
+
+	return offset
 }

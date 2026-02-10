@@ -1,6 +1,7 @@
 package ppu
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/debug"
@@ -382,4 +383,112 @@ func (ppu *PPU) oamIsAccessible() bool {
 
 func (ppu *PPU) FrameBuffer() [144][160]uint8 {
 	return ppu.frameBuffer
+}
+
+func (ppu *PPU) Serialize(buf []byte) int {
+	offset := 0
+
+	n := copy(buf[offset:], ppu.videoRam[:])
+	offset += n
+
+	n = copy(buf[offset:], ppu.oam[:])
+	offset += n
+
+	buf[offset] = ppu.lcdc
+	offset++
+	buf[offset] = ppu.ly
+	offset++
+	buf[offset] = ppu.lyc
+	offset++
+	buf[offset] = ppu.stat
+	offset++
+	buf[offset] = ppu.scy
+	offset++
+	buf[offset] = ppu.scx
+	offset++
+	buf[offset] = ppu.wy
+	offset++
+	buf[offset] = ppu.wx
+	offset++
+	buf[offset] = ppu.bgp
+	offset++
+	buf[offset] = ppu.obp0
+	offset++
+	buf[offset] = ppu.obp1
+	offset++
+
+	buf[offset] = uint8(ppu.mode)
+	offset++
+
+	if ppu.previousStatInterruptLineState {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], ppu.dot)
+	offset += 2
+
+	offset += ppu.pixelFetcher.Serialize(buf[offset:])
+
+	offset += ppu.spriteBuffer.Serialize(buf[offset:])
+
+	for i := range 144 {
+		n = copy(buf[offset:], ppu.frameBuffer[i][:])
+		offset += n
+	}
+
+	return offset
+}
+
+func (ppu *PPU) Deserialize(buf []byte) int {
+	offset := 0
+
+	n := copy(ppu.videoRam[:], buf[offset:])
+	offset += n
+
+	n = copy(ppu.oam[:], buf[offset:])
+	offset += n
+
+	ppu.lcdc = buf[offset]
+	offset++
+	ppu.ly = buf[offset]
+	offset++
+	ppu.lyc = buf[offset]
+	offset++
+	ppu.stat = buf[offset]
+	offset++
+	ppu.scy = buf[offset]
+	offset++
+	ppu.scx = buf[offset]
+	offset++
+	ppu.wy = buf[offset]
+	offset++
+	ppu.wx = buf[offset]
+	offset++
+	ppu.bgp = buf[offset]
+	offset++
+	ppu.obp0 = buf[offset]
+	offset++
+	ppu.obp1 = buf[offset]
+	offset++
+
+	ppu.mode = Mode(buf[offset])
+	offset++
+	ppu.previousStatInterruptLineState = buf[offset] == 1
+	offset++
+
+	ppu.dot = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	offset += ppu.pixelFetcher.Deserialize(buf[offset:])
+	offset += ppu.spriteBuffer.Deserialize(buf[offset:])
+
+	for i := range 144 {
+		n = copy(ppu.frameBuffer[i][:], buf[offset:])
+		offset += n
+	}
+
+	return offset
 }

@@ -1,5 +1,7 @@
 package timer
 
+import "encoding/binary"
+
 type Timer struct {
 	// 0xFF05 timer counter
 	tima uint8
@@ -153,4 +155,60 @@ func (timer *Timer) incrementTima() {
 	if timer.tima == 0 {
 		timer.timaReloadDelay = 4
 	}
+}
+
+func (timer *Timer) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = timer.tima
+	offset++
+	buf[offset] = timer.tma
+	offset++
+	buf[offset] = timer.tac
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], timer.counter)
+	offset += 2
+
+	if timer.previousTimerBitState {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if timer.timaReloading {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	buf[offset] = timer.timaReloadDelay
+	offset++
+
+	return offset
+}
+
+func (timer *Timer) Deserialize(buf []byte) int {
+	offset := 0
+
+	timer.tima = buf[offset]
+	offset++
+	timer.tma = buf[offset]
+	offset++
+	timer.tac = buf[offset]
+	offset++
+
+	timer.counter = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	timer.previousTimerBitState = buf[offset] == 1
+	offset++
+	timer.timaReloading = buf[offset] == 1
+	offset++
+
+	timer.timaReloadDelay = buf[offset]
+	offset++
+
+	return offset
 }

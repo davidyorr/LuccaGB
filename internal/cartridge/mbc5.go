@@ -134,3 +134,33 @@ func (mbc *Mbc5) Write(address uint16, value uint8) {
 		mbc.cartridge.ram[actualAddress] = value
 	}
 }
+
+func (mbc *Mbc5) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = mbc.ramg
+	offset++
+	buf[offset] = mbc.romb0
+	offset++
+	buf[offset] = mbc.romb1
+	offset++
+	buf[offset] = mbc.ramb
+	offset++
+
+	return offset
+}
+
+func (mbc *Mbc5) Deserialize(buf []byte) int {
+	offset := 0
+
+	mbc.ramg = buf[offset]
+	offset++
+	mbc.romb0 = buf[offset]
+	offset++
+	mbc.romb1 = buf[offset]
+	offset++
+	mbc.ramb = buf[offset]
+	offset++
+
+	return offset
+}

@@ -64,3 +64,9 @@ func (b *AudioBuffer) Read(dst []int16) int {
 
 	return toRead
 }
+
+func (b *AudioBuffer) Reset() {
+	b.head = 0
+	b.tail = 0
+	b.size = 0
+}

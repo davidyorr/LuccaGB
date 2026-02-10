@@ -3,6 +3,8 @@ package cartridge
 type MBC interface {
 	Read(address uint16) uint8
 	Write(address uint16, value uint8)
+	Serialize(buf []byte) int
+	Deserialize(buf []byte) int
 }
 
 var addressMaskSizes = map[uint8]uint32{

@@ -2,6 +2,7 @@ package cartridge
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/logger"
@@ -145,4 +146,64 @@ func (cartridge *Cartridge) Debug() map[string]interface{} {
 		"romSizeCode":   cartridge.romSizeCode,
 		"ramSizeCode":   cartridge.ramSizeCode,
 	}
+}
+
+func (cart *Cartridge) Serialize(buf []byte) int {
+	offset := 0
+
+	ramLen := uint32(len(cart.ram))
+	binary.LittleEndian.PutUint32(buf[offset:], ramLen)
+	offset += 4
+
+	if ramLen > 0 {
+		n := copy(buf[offset:], cart.ram)
+		offset += n
+	}
+
+	if cart.hasBattery {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	// Skip Title, CartType, RomSize, RamSize because they are
+	// read-only properties of the ROM file itself.
+
+	if cart.mbc != nil {
+		offset += cart.mbc.Serialize(buf[offset:])
+	}
+
+	return offset
+}
+
+func (cart *Cartridge) Deserialize(buf []byte) int {
+	offset := 0
+
+	savedRamLen := int(binary.LittleEndian.Uint32(buf[offset:]))
+	offset += 4
+
+	if len(cart.ram) != savedRamLen {
+		if savedRamLen > 0 {
+			if cap(cart.ram) < savedRamLen {
+				cart.ram = make([]uint8, savedRamLen)
+			} else {
+				cart.ram = cart.ram[:savedRamLen]
+			}
+		}
+	}
+
+	if savedRamLen > 0 {
+		n := copy(cart.ram, buf[offset:])
+		offset += n
+	}
+
+	cart.hasBattery = buf[offset] == 1
+	offset++
+
+	if cart.mbc != nil {
+		offset += cart.mbc.Deserialize(buf[offset:])
+	}
+
+	return offset
 }

@@ -1,6 +1,6 @@
 import { store } from "../core/store";
 import { updateDebugger } from "../ui/Debugger";
-import type { CartridgeInfo } from "../wasm";
+import type { CartridgeInfo } from "../core/wasm";
 import { audioController } from "./audio-controller";
 import { loadCartridgeRam } from "./storage";
 

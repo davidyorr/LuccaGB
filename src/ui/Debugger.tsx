@@ -2,7 +2,7 @@ import styles from "./Debugger.module.css";
 
 import { createSignal, Show, For, type Component } from "solid-js";
 import { store } from "../core/store";
-import type { GameboyDebugInfo } from "../wasm";
+import type { GameboyDebugInfo } from "../core/wasm";
 
 export const Debugger: Component = () => {
 	const toHex = (val: number | undefined) =>

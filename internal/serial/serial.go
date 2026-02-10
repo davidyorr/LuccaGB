@@ -1,6 +1,7 @@
 package serial
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/logger"
@@ -90,4 +91,65 @@ func (serial *Serial) Write(address uint16, value uint8) {
 
 func (serial *Serial) SerialOutputBuffer() []uint8 {
 	return serial.serialOutputBuffer
+}
+
+func (serial *Serial) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = serial.sb
+	offset++
+	buf[offset] = serial.sc
+	offset++
+
+	length := uint32(len(serial.serialOutputBuffer))
+	binary.LittleEndian.PutUint32(buf[offset:], length)
+	offset += 4
+
+	n := copy(buf[offset:], serial.serialOutputBuffer)
+	offset += n
+
+	if serial.transferInProgress {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	binary.LittleEndian.PutUint16(buf[offset:], serial.transferCyclesRemaining)
+	offset += 2
+
+	return offset
+}
+
+func (serial *Serial) Deserialize(buf []byte) int {
+	offset := 0
+
+	serial.sb = buf[offset]
+	offset++
+	serial.sc = buf[offset]
+	offset++
+
+	length := int(binary.LittleEndian.Uint32(buf[offset:]))
+	offset += 4
+
+	if cap(serial.serialOutputBuffer) < int(length) {
+		serial.serialOutputBuffer = make([]uint8, length)
+	} else {
+		serial.serialOutputBuffer = serial.serialOutputBuffer[:length]
+	}
+
+	if length > 0 {
+		n := copy(serial.serialOutputBuffer, buf[offset:])
+		offset += n
+	}
+
+	if offset < len(buf) {
+		serial.transferInProgress = buf[offset] == 1
+		offset++
+	}
+	if offset+2 < len(buf) {
+		serial.transferCyclesRemaining = binary.LittleEndian.Uint16(buf[offset:])
+		offset += 2
+	}
+
+	return offset
 }

@@ -145,3 +145,43 @@ func (mmu *MMU) InterruptEnable() uint8 {
 func (mmu *MMU) InterruptFlag() uint8 {
 	return mmu.ifRegister | 0b1110_0000
 }
+
+func (mmu *MMU) Serialize(buf []byte) int {
+	offset := 0
+
+	n := copy(buf[offset:], mmu.workingRam[:])
+	offset += n
+
+	n = copy(buf[offset:], mmu.highRam[:])
+	offset += n
+
+	n = copy(buf[offset:], mmu.ioRegisters[:])
+	offset += n
+
+	buf[offset] = mmu.ieRegister
+	offset++
+	buf[offset] = mmu.ifRegister
+	offset++
+
+	return offset
+}
+
+func (mmu *MMU) Deserialize(buf []byte) int {
+	offset := 0
+
+	n := copy(mmu.workingRam[:], buf[offset:])
+	offset += n
+
+	n = copy(mmu.highRam[:], buf[offset:])
+	offset += n
+
+	n = copy(mmu.ioRegisters[:], buf[offset:])
+	offset += n
+
+	mmu.ieRegister = buf[offset]
+	offset++
+	mmu.ifRegister = buf[offset]
+	offset++
+
+	return offset
+}

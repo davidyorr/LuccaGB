@@ -1,5 +1,7 @@
 package ppu
 
+import "encoding/binary"
+
 const MaxSpriteBufferSize = 10
 
 type SpriteBuffer struct {
@@ -25,4 +27,28 @@ func (b *SpriteBuffer) Remove(i int) {
 
 	copy(b.data[i:], b.data[i+1:b.size])
 	b.size--
+}
+
+func (b *SpriteBuffer) Serialize(buf []byte) int {
+	offset := 0
+
+	n := copy(buf[offset:], b.data[:])
+	offset += n
+
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(b.size))
+	offset += 8
+
+	return offset
+}
+
+func (b *SpriteBuffer) Deserialize(buf []byte) int {
+	offset := 0
+
+	n := copy(b.data[:], buf[offset:])
+	offset += n
+
+	b.size = int(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+
+	return offset
 }

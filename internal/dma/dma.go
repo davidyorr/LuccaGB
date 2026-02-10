@@ -1,6 +1,7 @@
 package dma
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/debug"
@@ -182,4 +183,65 @@ func (dma *DMA) SetDmaRegister(value uint8) {
 
 func (dma *DMA) DmaRegister() uint8 {
 	return dma.dmaRegister
+}
+
+func (dma *DMA) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = dma.dmaRegister
+	offset++
+
+	buf[offset] = uint8(dma.state)
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], dma.sourceAddress)
+	offset += 2
+
+	buf[offset] = dma.progress
+	offset++
+	buf[offset] = dma.tCycleCounter
+	offset++
+	buf[offset] = dma.currentTransferByte
+	offset++
+	buf[offset] = dma.requestedSourceAddress
+	offset++
+	buf[offset] = dma.startingSourceAddress
+	offset++
+
+	if dma.wasRestarted {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+
+	return offset
+}
+
+func (dma *DMA) Deserialize(buf []byte) int {
+	offset := 0
+
+	dma.dmaRegister = buf[offset]
+	offset++
+	dma.state = TransferState(buf[offset])
+	offset++
+
+	dma.sourceAddress = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	dma.progress = buf[offset]
+	offset++
+	dma.tCycleCounter = buf[offset]
+	offset++
+	dma.currentTransferByte = buf[offset]
+	offset++
+	dma.requestedSourceAddress = buf[offset]
+	offset++
+	dma.startingSourceAddress = buf[offset]
+	offset++
+
+	dma.wasRestarted = buf[offset] == 1
+	offset++
+
+	return offset
 }

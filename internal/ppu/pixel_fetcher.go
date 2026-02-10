@@ -1,5 +1,7 @@
 package ppu
 
+import "encoding/binary"
+
 type PixelFetcher struct {
 	ppu                        *PPU
 	state                      FetcherState
@@ -392,4 +394,112 @@ func (fetcher *PixelFetcher) attemptToPushPixel() {
 
 	fetcher.ppu.frameBuffer[fetcher.ppu.ly][fetcher.currentX] = color
 	fetcher.currentX++
+}
+
+func (fetcher *PixelFetcher) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = uint8(fetcher.state)
+	offset++
+	binary.LittleEndian.PutUint16(buf[offset:], fetcher.counter)
+	offset += 2
+
+	buf[offset] = fetcher.fetchedTileNumber
+	offset++
+	buf[offset] = fetcher.fetchedTileDataLow
+	offset++
+	buf[offset] = fetcher.fetchedTileDataHigh
+	offset++
+	buf[offset] = fetcher.xPositionCounter
+	offset++
+	buf[offset] = fetcher.pixelsToDiscard
+	offset++
+	buf[offset] = fetcher.backgroundScrollingPenalty
+	offset++
+
+	if fetcher.isFetchingWindow {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	buf[offset] = fetcher.currentX
+	offset++
+	buf[offset] = fetcher.windowLineCounter
+	offset++
+	if fetcher.isFirstFetchOfScanline {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if fetcher.scanlineHadWindowPixels {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if fetcher.wyEqualedLyDuringFrame {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if fetcher.isFetchingSprite {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	buf[offset] = fetcher.spriteIndex
+	offset++
+
+	offset += fetcher.backgroundFifo.Serialize(buf[offset:])
+	offset += fetcher.spriteFifo.Serialize(buf[offset:])
+
+	return offset
+}
+
+func (fetcher *PixelFetcher) Deserialize(buf []byte) int {
+	offset := 0
+
+	fetcher.state = FetcherState(buf[offset])
+	offset++
+	fetcher.counter = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	fetcher.fetchedTileNumber = buf[offset]
+	offset++
+	fetcher.fetchedTileDataLow = buf[offset]
+	offset++
+	fetcher.fetchedTileDataHigh = buf[offset]
+	offset++
+	fetcher.xPositionCounter = buf[offset]
+	offset++
+	fetcher.pixelsToDiscard = buf[offset]
+	offset++
+	fetcher.backgroundScrollingPenalty = buf[offset]
+	offset++
+
+	fetcher.isFetchingWindow = buf[offset] == 1
+	offset++
+	fetcher.currentX = buf[offset]
+	offset++
+	fetcher.windowLineCounter = buf[offset]
+	offset++
+	fetcher.isFirstFetchOfScanline = buf[offset] == 1
+	offset++
+	fetcher.scanlineHadWindowPixels = buf[offset] == 1
+	offset++
+	fetcher.wyEqualedLyDuringFrame = buf[offset] == 1
+	offset++
+	fetcher.isFetchingSprite = buf[offset] == 1
+	offset++
+	fetcher.spriteIndex = buf[offset]
+	offset++
+
+	offset += fetcher.backgroundFifo.Deserialize(buf[offset:])
+	offset += fetcher.spriteFifo.Deserialize(buf[offset:])
+
+	return offset
 }

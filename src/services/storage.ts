@@ -1,11 +1,11 @@
 import { store as globalStore, type State } from "../core/store";
 
 const DB_NAME = "LuccaGB-Database";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = "cartridgeRam";
-
 const SETTINGS_STORE = "appSettings";
 const SETTINGS_KEY = "settings";
+const SAVE_STATE_STORE = "saveStates";
 
 type SaveData = {
 	romHash: string;
@@ -14,6 +14,18 @@ type SaveData = {
 	meta?: {
 		name?: string;
 		playTime?: number;
+	};
+};
+
+type SaveStateData = {
+	id: string; // romHash + slot number, e.g., "abc123-slot1"
+	romHash: string;
+	slot: number;
+	state: Uint8Array;
+	createdAt: number;
+	meta?: {
+		name?: string;
+		screenshot?: string; // base64 screenshot
 	};
 };
 
@@ -49,6 +61,7 @@ export function openDatabase(): Promise<IDBDatabase> {
 
 		request.onupgradeneeded = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
+
 			// Create stores if missing
 			if (!db.objectStoreNames.contains(STORE_NAME)) {
 				db.createObjectStore(STORE_NAME, {
@@ -59,6 +72,13 @@ export function openDatabase(): Promise<IDBDatabase> {
 				db.createObjectStore(SETTINGS_STORE, {
 					keyPath: "key",
 				});
+			}
+			if (!db.objectStoreNames.contains(SAVE_STATE_STORE)) {
+				const saveStateStore = db.createObjectStore(SAVE_STATE_STORE, {
+					keyPath: "id",
+				});
+				// Index by romHash to query all save states for a specific ROM
+				saveStateStore.createIndex("romHash", "romHash", { unique: false });
 			}
 		};
 
@@ -160,6 +180,141 @@ export async function persistCartridgeRam(
 		};
 
 		store.put(saveData);
+	});
+}
+
+export async function persistSaveState(
+	romHash: string,
+	slot: number,
+	stateData: Uint8Array,
+	meta?: SaveStateData["meta"],
+): Promise<void> {
+	if (romHash === "") {
+		throw new Error("No ROM hash provided");
+	}
+
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const saveState: SaveStateData = {
+			id: `${romHash}-slot${slot}`,
+			romHash: romHash,
+			slot: slot,
+			state: stateData,
+			createdAt: Date.now(),
+			meta: meta,
+		};
+
+		const transaction = db.transaction([SAVE_STATE_STORE], "readwrite");
+		const store = transaction.objectStore(SAVE_STATE_STORE);
+
+		transaction.oncomplete = () => {
+			console.log(
+				`Save state saved to slot ${slot} (${stateData.length} bytes)`,
+			);
+			resolve();
+		};
+
+		transaction.onerror = () => {
+			console.error("Save state failed", transaction.error);
+			reject(transaction.error);
+		};
+
+		store.put(saveState);
+	});
+}
+
+export async function getSaveState(
+	romHash: string,
+	slot: number,
+): Promise<Uint8Array | null> {
+	if (romHash === "") {
+		console.error("No ROM hash provided");
+		return null;
+	}
+
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction([SAVE_STATE_STORE], "readonly");
+		const store = transaction.objectStore(SAVE_STATE_STORE);
+		const request = store.get(`${romHash}-slot${slot}`);
+
+		request.onsuccess = () => {
+			const result = request.result as SaveStateData | undefined;
+
+			if (result) {
+				console.log(
+					`Save state loaded from slot ${slot} (${new Date(result.createdAt).toLocaleString()})`,
+				);
+
+				resolve(
+					result.state instanceof Uint8Array
+						? result.state
+						: new Uint8Array(result.state),
+				);
+			} else {
+				console.log(`No save state found in slot ${slot}`);
+				resolve(null);
+			}
+		};
+
+		request.onerror = () => {
+			console.error("getSaveStateFromStorage() failed");
+			reject(new Error("getSaveStateFromStorage() failed"));
+		};
+	});
+}
+
+export async function getAllSaveStates(
+	romHash: string,
+): Promise<SaveStateData[]> {
+	if (romHash === "") {
+		return [];
+	}
+
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction([SAVE_STATE_STORE], "readonly");
+		const store = transaction.objectStore(SAVE_STATE_STORE);
+		const index = store.index("romHash");
+		const request = index.getAll(romHash);
+
+		request.onsuccess = () => {
+			resolve(request.result as SaveStateData[]);
+		};
+
+		request.onerror = () => {
+			reject(request.error);
+		};
+	});
+}
+
+export async function deleteSaveState(
+	romHash: string,
+	slot: number,
+): Promise<void> {
+	if (romHash === "") {
+		return;
+	}
+
+	const db = await openDatabase();
+
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction([SAVE_STATE_STORE], "readwrite");
+		const store = transaction.objectStore(SAVE_STATE_STORE);
+
+		transaction.oncomplete = () => {
+			console.log(`Save state deleted from slot ${slot}`);
+			resolve();
+		};
+
+		transaction.onerror = () => {
+			reject(transaction.error);
+		};
+
+		store.delete(`${romHash}-slot${slot}`);
 	});
 }
 

@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/bus"
@@ -429,6 +430,9 @@ func (cpu *CPU) InterruptMasterEnable() bool {
 func (cpu *CPU) ScheduleIme() {
 	cpu.imeScheduled = true
 }
+func (cpu *CPU) PC() uint16 {
+	return cpu.pc
+}
 
 // Debug gathers the current state of the CPU into a structured map.
 func (cpu *CPU) Debug() map[string]interface{} {
@@ -455,4 +459,176 @@ func (cpu *CPU) Debug() map[string]interface{} {
 		"registers16": registers16,
 		"flags":       flags,
 	}
+}
+
+// IsSafeToSerialize returns true if the CPU is in a state where it is safe
+// to create a snapshot (not mid-instruction, not mid-ISR).
+// I don't think we should have to do this, but I was running into issues
+// when loading a state where the CPU was mid-instruction, so there must be
+// some bugs causing that.
+func (cpu *CPU) IsSafeToSerialize() bool {
+	if cpu.instruction != nil || cpu.isServicingInterrupt {
+		return false
+	}
+
+	return true
+}
+
+func (cpu *CPU) Serialize(buf []byte) int {
+	offset := 0
+
+	binary.LittleEndian.PutUint16(buf[offset:], cpu.pc)
+	offset += 2
+	binary.LittleEndian.PutUint16(buf[offset:], cpu.sp)
+	offset += 2
+
+	buf[offset] = cpu.a
+	offset++
+	buf[offset] = cpu.f
+	offset++
+	buf[offset] = cpu.b
+	offset++
+	buf[offset] = cpu.c
+	offset++
+	buf[offset] = cpu.d
+	offset++
+	buf[offset] = cpu.e
+	offset++
+	buf[offset] = cpu.h
+	offset++
+	buf[offset] = cpu.l
+	offset++
+
+	if cpu.ime {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if cpu.imeScheduled {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if cpu.halted {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if cpu.haltBugActive {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	if cpu.isServicingInterrupt {
+		buf[offset] = 1
+	} else {
+		buf[offset] = 0
+	}
+	offset++
+	buf[offset] = cpu.interruptServiceRoutineStep
+	offset++
+
+	buf[offset] = cpu.opcode
+	offset++
+	if cpu.instruction == nil {
+		buf[offset] = 0
+	} else {
+		buf[offset] = cpu.mCycle
+	}
+	offset++
+
+	buf[offset] = cpu.cbOpcodeValue
+	offset++
+
+	binary.LittleEndian.PutUint16(buf[offset:], cpu.immediateValue)
+	offset += 2
+
+	buf[offset] = cpu.mdr
+	offset++
+	binary.LittleEndian.PutUint16(buf[offset:], cpu.interruptToService)
+	offset += 2
+
+	buf[offset] = uint8(cpu.interruptTypeToClear)
+	offset++
+	buf[offset] = cpu.tCycleCounter
+	offset++
+
+	return offset
+}
+
+func (cpu *CPU) Deserialize(buf []byte) int {
+	offset := 0
+
+	cpu.pc = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+	cpu.sp = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	cpu.a = buf[offset]
+	offset++
+	cpu.f = buf[offset]
+	offset++
+	cpu.b = buf[offset]
+	offset++
+	cpu.c = buf[offset]
+	offset++
+	cpu.d = buf[offset]
+	offset++
+	cpu.e = buf[offset]
+	offset++
+	cpu.h = buf[offset]
+	offset++
+	cpu.l = buf[offset]
+	offset++
+
+	cpu.ime = buf[offset] == 1
+	offset++
+	cpu.imeScheduled = buf[offset] == 1
+	offset++
+	cpu.halted = buf[offset] == 1
+	offset++
+	cpu.haltBugActive = buf[offset] == 1
+	offset++
+	cpu.isServicingInterrupt = buf[offset] == 1
+	offset++
+	cpu.interruptServiceRoutineStep = buf[offset]
+	offset++
+
+	cpu.opcode = buf[offset]
+	offset++
+	cpu.mCycle = buf[offset]
+	offset++
+	cpu.cbOpcodeValue = buf[offset]
+	offset++
+
+	if cpu.mCycle > 0 {
+		cpu.instruction = &instructions[cpu.opcode]
+	} else {
+		cpu.instruction = nil
+	}
+
+	if cpu.opcode == 0xCB && cpu.instruction != nil {
+		cpu.cbOpcode = &cpu.cbOpcodeValue
+	} else {
+		cpu.cbOpcode = nil
+	}
+
+	cpu.immediateValue = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	cpu.mdr = buf[offset]
+	offset++
+	cpu.interruptToService = binary.LittleEndian.Uint16(buf[offset:])
+	offset += 2
+
+	cpu.interruptTypeToClear = interrupt.Interrupt(buf[offset])
+	offset++
+	cpu.tCycleCounter = buf[offset]
+	offset++
+
+	return offset
 }

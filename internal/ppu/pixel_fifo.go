@@ -1,5 +1,7 @@
 package ppu
 
+import "encoding/binary"
+
 const fifoSize = 8
 const bufferMask = fifoSize - 1
 
@@ -52,4 +54,48 @@ func (f *PixelFifo) Peek(i int) *FIFO {
 
 	index := (f.head + i) & bufferMask
 	return &f.buffer[index]
+}
+
+func (f *PixelFifo) Serialize(buf []byte) int {
+	offset := 0
+
+	for i := range len(f.buffer) {
+		buf[offset] = f.buffer[i].colorId
+		offset++
+		buf[offset] = f.buffer[i].palette
+		offset++
+		buf[offset] = f.buffer[i].backgroundPriority
+		offset++
+	}
+
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(f.head))
+	offset += 8
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(f.tail))
+	offset += 8
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(f.size))
+	offset += 8
+
+	return offset
+}
+
+func (f *PixelFifo) Deserialize(buf []byte) int {
+	offset := 0
+
+	for i := range len(f.buffer) {
+		f.buffer[i].colorId = buf[offset]
+		offset++
+		f.buffer[i].palette = buf[offset]
+		offset++
+		f.buffer[i].backgroundPriority = buf[offset]
+		offset++
+	}
+
+	f.head = int(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+	f.tail = int(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+	f.size = int(binary.LittleEndian.Uint64(buf[offset:]))
+	offset += 8
+
+	return offset
 }

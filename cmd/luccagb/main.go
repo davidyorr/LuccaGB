@@ -28,6 +28,8 @@ func main() {
 	js.Global().Set("setAudioChannelEnabled", js.FuncOf(setAudioChannelEnabled))
 	js.Global().Set("getAudioChannelEnabled", js.FuncOf(getAudioChannelEnabled))
 	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
+	js.Global().Set("getSerializedState", js.FuncOf(getSerializedState))
+	js.Global().Set("loadSerializedState", js.FuncOf(loadSerializedState))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
 	jsImageData = js.Global().Get("Uint8Array").New(len(goImageData))
@@ -250,6 +252,38 @@ func getAudioChannelEnabled(this js.Value, args []js.Value) interface{} {
 	channel := args[0].Int()
 
 	return gb.GetAudioChannelEnabled(channel)
+}
+
+func getSerializedState(this js.Value, args []js.Value) interface{} {
+	// Fast-forward to a safe boundary.
+	safetyLimit := 20
+	for !gb.IsSafeToSerialize() && safetyLimit > 0 {
+		// fmt.Println("waiting for safe state... safetyLimit=", safetyLimit, gb.IsSafeToSave())
+		gb.Step()
+		safetyLimit--
+	}
+
+	const BufferSize = 256 * 1024 // 256KB
+	buf := make([]byte, BufferSize)
+
+	stateData := gb.SerializeState(buf)
+
+	jsArray := js.Global().Get("Uint8Array").New(len(stateData))
+	js.CopyBytesToJS(jsArray, stateData)
+
+	return jsArray
+}
+
+func loadSerializedState(this js.Value, args []js.Value) interface{} {
+	jsData := args[0]
+	dataLength := jsData.Get("length").Int()
+
+	stateData := make([]byte, dataLength)
+	js.CopyBytesToGo(stateData, jsData)
+
+	gb.DeserializeState(stateData)
+
+	return nil
 }
 
 // getDebugInfo returns a snapshot of the emulator's state.

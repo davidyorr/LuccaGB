@@ -7,7 +7,7 @@ import {
 } from "../services/storage";
 import { audioController } from "../services/audio-controller";
 import { debounce } from "../utils/debounce";
-import type { CartridgeInfo } from "../wasm";
+import type { CartridgeInfo } from "../core/wasm";
 import { gameLoop } from "./game-loop";
 import { updateDebugger } from "../ui/Debugger";
 

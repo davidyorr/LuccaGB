@@ -11,6 +11,7 @@ import { AudioChannels } from "./AudioChannels";
 import { TraceLogger } from "./TraceLogger";
 import { DebuggerToggle } from "../Debugger";
 import { store } from "../../core/store";
+import { SaveStateControls } from "./SaveStateControls";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
@@ -65,6 +66,7 @@ export const Controls: Component = () => {
 					<AudioChannels />
 					<TraceLogger />
 					<DebuggerToggle />
+					<SaveStateControls />
 				</div>
 			</div>
 		</>

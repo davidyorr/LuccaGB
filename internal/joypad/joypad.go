@@ -155,3 +155,29 @@ func (joypad *Joypad) checkInterrupt(oldState, newState uint8) {
 func (input JoypadInput) isDpad() bool {
 	return input == JoypadInputDown || input == JoypadInputUp || input == JoypadInputLeft || input == JoypadInputRight
 }
+
+func (joypad *Joypad) Serialize(buf []byte) int {
+	offset := 0
+
+	buf[offset] = joypad.p1Register
+	offset++
+	buf[offset] = joypad.buttons
+	offset++
+	buf[offset] = joypad.dpad
+	offset++
+
+	return offset
+}
+
+func (joypad *Joypad) Deserialize(buf []byte) int {
+	offset := 0
+
+	joypad.p1Register = buf[offset]
+	offset++
+	joypad.buttons = buf[offset]
+	offset++
+	joypad.dpad = buf[offset]
+	offset++
+
+	return offset
+}
