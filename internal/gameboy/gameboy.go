@@ -92,6 +92,45 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 	return 4, frameReady, nil
 }
 
+// StepFrames runs the emulator until exactly n frames are generated.
+// It ignores real-time syncing and runs as fast as the CPU allows.
+func (gameboy *Gameboy) StepFrames(frames int) {
+	framesSeen := 0
+	for {
+		_, frameReady, _ := gameboy.Step()
+		if frameReady {
+			framesSeen++
+			if framesSeen == frames {
+				break
+			}
+		}
+	}
+}
+
+// SetJoypadState sets the entire controller state in one go.
+func (gameboy *Gameboy) SetJoypadState(state uint8) {
+	mask := state
+
+	// Helper to update button state based on bitmask
+	setButton := func(input joypad.JoypadInput, pressed bool) {
+		if pressed {
+			gameboy.PressJoypadInput(input)
+		} else {
+			gameboy.ReleaseJoypadInput(input)
+		}
+	}
+
+	// Bit 0: Right, 1: Left, 2: Up, 3: Down, 4: A, 5: B, 6: Select, 7: Start
+	setButton(joypad.JoypadInputRight, (mask&0b0000_0001) != 0)
+	setButton(joypad.JoypadInputLeft, (mask&0b0000_0010) != 0)
+	setButton(joypad.JoypadInputUp, (mask&0b0000_0100) != 0)
+	setButton(joypad.JoypadInputDown, (mask&0b0000_1000) != 0)
+	setButton(joypad.JoypadInputA, (mask&0b0001_0000) != 0)
+	setButton(joypad.JoypadInputB, (mask&0b0010_0000) != 0)
+	setButton(joypad.JoypadInputSelect, (mask&0b0100_0000) != 0)
+	setButton(joypad.JoypadInputStart, (mask&0b1000_0000) != 0)
+}
+
 func (gameboy *Gameboy) PressJoypadInput(input joypad.JoypadInput) {
 	gameboy.joypad.Press(input)
 }
@@ -104,6 +143,10 @@ func (gameboy *Gameboy) FrameBuffer() [144][160]uint8 {
 	return gameboy.ppu.FrameBuffer()
 }
 
+func (gameboy *Gameboy) FrameBufferDownsampled() [72][80]uint8 {
+	return gameboy.ppu.FrameBufferDownsampled()
+}
+
 func (gameboy *Gameboy) ReadSamples(dst []int16) int {
 	return gameboy.apu.ReadSamples(dst)
 }
@@ -114,6 +157,10 @@ func (gameboy *Gameboy) SetAudioChannelEnabled(channel int, enabled bool) {
 
 func (gameboy *Gameboy) GetAudioChannelEnabled(channel int) bool {
 	return gameboy.apu.GetChannelEnabled(channel)
+}
+
+func (gameboy *Gameboy) ReadMemory(address uint16) uint8 {
+	return gameboy.bus.DirectRead(address)
 }
 
 // Debug gathers debug information from all components, acting as a single entry

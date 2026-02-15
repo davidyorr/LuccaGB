@@ -385,6 +385,29 @@ func (ppu *PPU) FrameBuffer() [144][160]uint8 {
 	return ppu.frameBuffer
 }
 
+// Average Pooling (Box Sampling)
+func (ppu *PPU) FrameBufferDownsampled() [72][80]uint8 {
+	var dst [72][80]uint8
+	i := 0
+
+	for y := 0; y < 72; y++ {
+		for x := 0; x < 80; x++ {
+
+			// Cast to uint16 to prevent overflow before division
+			sum :=
+				uint16(ppu.frameBuffer[y*2][x*2]) +
+					uint16(ppu.frameBuffer[y*2+1][x*2]) +
+					uint16(ppu.frameBuffer[y*2][x*2+1]) +
+					uint16(ppu.frameBuffer[y*2+1][x*2+1])
+
+			dst[y][x] = uint8(sum / 4)
+			i++
+		}
+	}
+
+	return dst
+}
+
 func (ppu *PPU) Serialize(buf []byte) int {
 	offset := 0
 
