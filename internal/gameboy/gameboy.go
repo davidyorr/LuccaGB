@@ -23,6 +23,7 @@ type Gameboy struct {
 	dma       *dma.DMA
 	timer     *timer.Timer
 	serial    *serial.Serial
+	bus       *bus.Bus
 	cartridge *cartridge.Cartridge
 	joypad    *joypad.Joypad
 }
@@ -53,6 +54,7 @@ func New() *Gameboy {
 		dma:       dma,
 		timer:     timer,
 		serial:    serial,
+		bus:       bus,
 		cartridge: cartridge,
 		joypad:    joypad,
 	}
