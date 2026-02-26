@@ -51,9 +51,38 @@ func GetFrame() *C.uint8_t {
 	return (*C.uint8_t)(unsafe.Pointer(&frameCache[0]))
 }
 
+var nativeFrameCache [144 * 160]uint8
+
+//export GetFrameNative
+func GetFrameNative() *C.uint8_t {
+	frame := gb.FrameBuffer()
+	i := 0
+	for y := 0; y < 144; y++ {
+		for x := 0; x < 160; x++ {
+			nativeFrameCache[i] = frame[y][x]
+			i++
+		}
+	}
+	return (*C.uint8_t)(unsafe.Pointer(&nativeFrameCache[0]))
+}
+
 //export ReadMemory
 func ReadMemory(address C.uint16_t) C.uint8_t {
 	return C.uint8_t(gb.ReadMemory(uint16(address)))
+}
+
+//export ReadMemoryRange
+func ReadMemoryRange(address C.uint16_t, length C.uint8_t, out *C.uint8_t) {
+	for i := 0; i < int(length); i++ {
+		*(*C.uint8_t)(unsafe.Pointer(uintptr(unsafe.Pointer(out)) + uintptr(i))) = C.uint8_t(gb.ReadMemory(uint16(address) + uint16(i)))
+	}
+}
+
+//export ReadFullMemory
+func ReadFullMemory(out *C.uint8_t) {
+	for i := 0; i < 65536; i++ {
+		*(*C.uint8_t)(unsafe.Pointer(uintptr(unsafe.Pointer(out)) + uintptr(i))) = C.uint8_t(gb.ReadMemory(uint16(i)))
+	}
 }
 
 type SerializedData struct {
