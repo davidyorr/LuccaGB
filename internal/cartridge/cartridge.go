@@ -124,6 +124,9 @@ func (cartridge *Cartridge) Ram() []uint8 {
 
 func (cartridge *Cartridge) Read(address uint16) uint8 {
 	if cartridge.mbc == nil {
+		if int(address) >= len(cartridge.rom) {
+			return 0xFF
+		}
 		return cartridge.rom[address]
 	}
 
