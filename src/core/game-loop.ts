@@ -1,5 +1,6 @@
 import { audioController } from "../services/audio-controller";
 import { CanvasRenderer } from "../services/canvas-renderer";
+import type { InputManager } from "../services/input-manager";
 
 // Decouple emulation (~59.7275 Hz) from display refresh rate:
 // emulator produces frames, browser polls via requestAnimationFrame
@@ -11,9 +12,14 @@ class GameLoop {
 	private readonly SYSTEM_CLOCK_FREQUENCY = 4.194304 * 1_000_000;
 
 	private _renderer: CanvasRenderer | null = null;
+	private _inputManager: InputManager | null = null;
 
 	public attachRenderer(renderer: CanvasRenderer) {
 		this._renderer = renderer;
+	}
+
+	public attachInputManager(inputManager: InputManager) {
+		this._inputManager = inputManager;
 	}
 
 	public start() {
@@ -49,6 +55,11 @@ class GameLoop {
 
 		const deltaSeconds = (timestamp - this.lastFrameTime) / 1000;
 		this.lastFrameTime = timestamp;
+
+		// poll input
+		if (this._inputManager) {
+			this._inputManager.poll();
+		}
 
 		// run emulator steps
 		const tCyclesToAdd = this.SYSTEM_CLOCK_FREQUENCY * deltaSeconds;
