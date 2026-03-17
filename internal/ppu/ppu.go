@@ -66,6 +66,7 @@ type PPU struct {
 	obp1                           uint8
 	mode                           Mode
 	previousStatInterruptLineState bool
+	statOrModeChanged              bool
 	// 10 sprites can be displayed per scanline
 	spriteBuffer       SpriteBuffer
 	frameBuffer        [144][160]uint8
@@ -106,7 +107,28 @@ func (ppu *PPU) Step() (frameReady bool) {
 		return
 	}
 
-	ppu.updateStatInterruptLine()
+	// INT $48 — STAT interrupt
+	//
+	// There are various sources which can trigger this interrupt to occur as
+	// described in STAT register ($FF41). The various STAT interrupt sources (modes
+	// 0-2 and LYC=LY) have their state (inactive=low and active=high) logically
+	// ORed into a shared “STAT interrupt line” if their respective enable bit is
+	// turned on. A STAT interrupt will be triggered by a rising edge (transition
+	// from low to high) on the STAT interrupt line.
+	// See: https://gbdev.io/pandocs/Interrupt_Sources.html#int-48--stat-interrupt
+	if ppu.statOrModeChanged {
+		idx := int(ppu.mode)<<8 | int(ppu.stat)
+		current := (statInterruptBitset[idx>>6]>>uint(idx&63))&1 == 1
+
+		// Check for a rising edge
+		if !ppu.previousStatInterruptLineState && current {
+			ppu.interruptRequester(interrupt.LcdInterrupt)
+		}
+
+		// Update the state for the next check
+		ppu.previousStatInterruptLineState = current
+		ppu.statOrModeChanged = false
+	}
 
 	if ppu.ly < 144 {
 		if ppu.dot == 0 {
@@ -258,6 +280,7 @@ func (ppu *PPU) Write(address uint16, value uint8) {
 		}
 	case address == 0xFF41:
 		ppu.stat = (ppu.stat & 0b1000_0111) | (value & 0b0111_1000)
+		ppu.statOrModeChanged = true
 	case address == 0xFF42:
 		ppu.scy = value
 	case address == 0xFF43:
@@ -312,7 +335,8 @@ const (
 	DrawingPixels   Mode = 0b11
 )
 
-var statInterruptLookup [4][256]bool // [mode][statRegister] -> STAT interrupt line state
+// 16 * 64 = 1024 bits (4 modes * 256 STAT values)
+var statInterruptBitset [16]uint64
 
 func (ppu *PPU) initStatInterruptLookup() {
 	for mode := range 4 {
@@ -322,7 +346,10 @@ func (ppu *PPU) initStatInterruptLookup() {
 			mode2 := (mode == int(OamScan)) && ((stat & 0b0010_0000) != 0)
 			lycLyMatch := ((stat & 0b0100_0000) != 0) && ((stat & 0b0000_0100) != 0)
 
-			statInterruptLookup[mode][stat] = mode0 || mode1 || mode2 || lycLyMatch
+			if mode0 || mode1 || mode2 || lycLyMatch {
+				idx := mode<<8 | stat
+				statInterruptBitset[idx>>6] |= 1 << (idx & 63)
+			}
 		}
 	}
 }
@@ -330,30 +357,8 @@ func (ppu *PPU) initStatInterruptLookup() {
 func (ppu *PPU) changeMode(mode Mode) {
 	ppu.mode = mode
 	ppu.stat = (ppu.stat & 0b1111_1100) | uint8(mode)
-}
 
-// INT $48 — STAT interrupt
-//
-// There are various sources which can trigger this interrupt to occur as
-// described in STAT register ($FF41). The various STAT interrupt sources (modes
-// 0-2 and LYC=LY) have their state (inactive=low and active=high) logically
-// ORed into a shared “STAT interrupt line” if their respective enable bit is
-// turned on. A STAT interrupt will be triggered by a rising edge (transition
-// from low to high) on the STAT interrupt line.
-// See: https://gbdev.io/pandocs/Interrupt_Sources.html#int-48--stat-interrupt
-func (ppu *PPU) updateStatInterruptLine() {
-	// Use a precomputed lookup table instead of bit masking operations.
-	// This function is called very frequently, so avoiding repeated bit masks
-	// provides a measurable performance improvement.
-	currentStatInterruptLineState := statInterruptLookup[ppu.mode][ppu.stat]
-
-	// Check for a rising edge
-	if !ppu.previousStatInterruptLineState && currentStatInterruptLineState {
-		ppu.interruptRequester(interrupt.LcdInterrupt)
-	}
-
-	// Update the state for the next check
-	ppu.previousStatInterruptLineState = currentStatInterruptLineState
+	ppu.statOrModeChanged = true
 }
 
 // updateLycCoincidenceFlag sets or clears the STAT register's Coincidence Flag
@@ -367,6 +372,8 @@ func (ppu *PPU) updateLycCoincidenceFlag() {
 	} else {
 		ppu.stat &^= 0b0000_0100
 	}
+
+	ppu.statOrModeChanged = true
 }
 
 func (ppu *PPU) lcdEnabled() bool {
@@ -501,6 +508,9 @@ func (ppu *PPU) Deserialize(buf []byte) int {
 	offset++
 	ppu.previousStatInterruptLineState = buf[offset] == 1
 	offset++
+
+	// can be safely initialized to true (forcing a check) because it is transient
+	ppu.statOrModeChanged = true
 
 	ppu.dot = binary.LittleEndian.Uint16(buf[offset:])
 	offset += 2

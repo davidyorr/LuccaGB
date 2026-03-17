@@ -27,20 +27,12 @@ func (f *PixelFifo) Reset() {
 }
 
 func (f *PixelFifo) Push(p FIFO) {
-	if f.size >= fifoSize {
-		panic("FIFO push overflow")
-	}
-
 	f.buffer[f.tail] = p
 	f.tail = (f.tail + 1) & bufferMask // mod 8, keep lower 3 bits
 	f.size++
 }
 
 func (f *PixelFifo) Pop() FIFO {
-	if f.size == 0 {
-		panic("FIFO pop underflow")
-	}
-
 	p := f.buffer[f.head]
 	f.head = (f.head + 1) & bufferMask // mod 8, keep lower 3 bits
 	f.size--
@@ -48,10 +40,6 @@ func (f *PixelFifo) Pop() FIFO {
 }
 
 func (f *PixelFifo) Peek(i int) *FIFO {
-	if i >= f.size {
-		panic("FIFO peek out of bounds")
-	}
-
 	index := (f.head + i) & bufferMask
 	return &f.buffer[index]
 }

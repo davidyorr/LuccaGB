@@ -120,24 +120,16 @@ func (timer *Timer) Write(address uint16, value uint8) {
 	}
 }
 
+// Precomputed bit masks for each clock speed
+var timerBitMasks = [4]uint16{
+	1 << 9, // 0b00 — 4096 Hz,   bit 9
+	1 << 3, // 0b01 — 262144 Hz, bit 3
+	1 << 5, // 0b10 — 65536 Hz,  bit 5
+	1 << 7, // 0b11 — 16384 Hz,  bit 7
+}
+
 func (timer *Timer) getTimerBitState() bool {
-	// the bit index to check on the counter
-	var bitIndex uint8 = 9
-
-	switch timer.tac & 0b11 {
-	case 0b00: // 4096 Hz
-		bitIndex = 9
-	case 0b01: // 262144 Hz
-		bitIndex = 3
-	case 0b10: // 65536 Hz
-		bitIndex = 5
-	case 0b11: // 16384 Hz
-		bitIndex = 7
-	}
-
-	mask := uint16(1 << bitIndex)
-
-	return (timer.counter & mask) != 0
+	return (timer.counter & timerBitMasks[timer.tac&0b11]) != 0
 }
 
 func (timer *Timer) isTimerEnabled() bool {
