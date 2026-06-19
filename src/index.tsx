@@ -1,15 +1,23 @@
 import "./global.css";
 
 import { store } from "./core/store";
-import { InputManager } from "./services/input-manager";
+import { inputManager } from "./services/input-manager";
 import { render } from "solid-js/web";
 import { App } from "./App";
 import { initWasm } from "./core/wasm";
 import { gameLoop } from "./core/game-loop";
+import { startRewind, stopRewind } from "./services/rewinder";
 
-const inputManager = new InputManager({
-	Space: store.actions.togglePaused,
+inputManager.registerShortcuts({
+	Space: {
+		keydown: store.actions.togglePaused,
+	},
+	Comma: {
+		keydown: startRewind,
+		keyup: stopRewind,
+	},
 });
+
 gameLoop.attachInputManager(inputManager);
 
 store.actions.initializeAppSettings();

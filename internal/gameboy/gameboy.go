@@ -26,6 +26,14 @@ type Gameboy struct {
 	bus       *bus.Bus
 	cartridge *cartridge.Cartridge
 	joypad    *joypad.Joypad
+
+	// non-hardware: circular rewind buffer
+	rewindBuffer      [][]byte // Circular buffer of serialized states
+	rewindCapacity    int      // Maximum number of states to hold
+	rewindHead        int      // Index where the next state will be written
+	rewindCount       int      // Current number of stored states
+	pendingRewindSave bool     // Flag to save on the next safe cycle
+	serializeBuf      []byte   // Reusable buffer
 }
 
 func New() *Gameboy {
@@ -47,21 +55,25 @@ func New() *Gameboy {
 	dma.ConnectPpu(ppu)
 
 	return &Gameboy{
-		cpu:       cpu,
-		ppu:       ppu,
-		apu:       apu,
-		mmu:       mmu,
-		dma:       dma,
-		timer:     timer,
-		serial:    serial,
-		bus:       bus,
-		cartridge: cartridge,
-		joypad:    joypad,
+		cpu:          cpu,
+		ppu:          ppu,
+		apu:          apu,
+		mmu:          mmu,
+		dma:          dma,
+		timer:        timer,
+		serial:       serial,
+		bus:          bus,
+		cartridge:    cartridge,
+		joypad:       joypad,
+		serializeBuf: make([]byte, 1024*512), // 512KB
 	}
 }
 
 func (gameboy *Gameboy) LoadRom(rom []uint8) cartridge.CartridgeInfo {
 	logger.Info("GAMEBOY LOAD ROM", "SIZE", len(rom))
+
+	// Reset rewind buffer so stale states from a previous ROM can't be loaded
+	gameboy.ResetRewindBuffer()
 
 	return gameboy.cartridge.LoadRom(rom)
 }
@@ -78,7 +90,10 @@ func (gameboy *Gameboy) SetCartridgeRam(ram []uint8) {
 func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 	for range 4 {
 		gameboy.dma.Step()
-		frameReady = gameboy.ppu.Step()
+		if gameboy.ppu.Step() {
+			frameReady = true
+			gameboy.pendingRewindSave = true
+		}
 		gameboy.apu.Step()
 		gameboy.cpu.Step()
 		requestTimerInterrupt := gameboy.timer.Step()
@@ -89,6 +104,11 @@ func (gameboy *Gameboy) Step() (tCycles uint8, frameReady bool, err error) {
 		if requestSerialInterrupt {
 			gameboy.mmu.RequestInterrupt(interrupt.SerialInterrupt)
 		}
+	}
+
+	if gameboy.pendingRewindSave && gameboy.IsSafeToSerialize() {
+		gameboy.saveRewindState()
+		gameboy.pendingRewindSave = false
 	}
 
 	return 4, frameReady, nil
@@ -163,6 +183,121 @@ func (gameboy *Gameboy) GetAudioChannelEnabled(channel int) bool {
 
 func (gameboy *Gameboy) ReadMemory(address uint16) uint8 {
 	return gameboy.bus.DirectRead(address)
+}
+
+// SetRewindBufferSize sets the maximum number of frames to store in the rewind buffer.
+// If the new size is smaller than the current count, it preserves the most recent states.
+func (gb *Gameboy) SetRewindBufferSize(size int) {
+	if size < 0 {
+		size = 0
+	}
+	if size == gb.rewindCapacity {
+		return
+	}
+
+	newBuffer := make([][]byte, size)
+
+	// Determine how many of the existing states we can keep
+	keep := gb.rewindCount
+	if keep > size {
+		keep = size
+	}
+
+	if keep > 0 {
+		oldStates := gb.GetRewindBuffer() // Gets them chronologically (oldest to newest)
+
+		// Copy the "keep" newest states to the new buffer
+		startIdx := len(oldStates) - keep
+		for i := 0; i < keep; i++ {
+			newBuffer[i] = oldStates[startIdx+i]
+		}
+	}
+
+	gb.rewindBuffer = newBuffer
+	gb.rewindCapacity = size
+	gb.rewindCount = keep
+
+	if size > 0 {
+		gb.rewindHead = keep % size
+	} else {
+		gb.rewindHead = 0
+	}
+}
+
+// GetRewindBuffer returns a copy of all currently saved states in chronological
+// order (from oldest to newest). It does not modify or consume the buffer.
+func (gb *Gameboy) GetRewindBuffer() [][]byte {
+	if gb.rewindCount == 0 {
+		return nil
+	}
+
+	states := make([][]byte, gb.rewindCount)
+
+	// Find the index of the oldest element
+	oldest := 0
+	if gb.rewindCount == gb.rewindCapacity {
+		oldest = gb.rewindHead
+	}
+
+	for i := 0; i < gb.rewindCount; i++ {
+		idx := (oldest + i) % gb.rewindCapacity
+		states[i] = gb.rewindBuffer[idx]
+	}
+
+	return states
+}
+
+// GetRewindCapacity gets the size of the rewind buffer.
+func (gb *Gameboy) GetRewindCapacity() int {
+	return gb.rewindCapacity
+}
+
+// Rewind pops the most recent state off the buffer and loads it.
+// Returns true if a state was successfully loaded, false if the buffer is empty.
+func (gb *Gameboy) Rewind() bool {
+	if gb.rewindCount == 0 {
+		return false
+	}
+
+	gb.rewindHead--
+	if gb.rewindHead < 0 {
+		gb.rewindHead = gb.rewindCapacity - 1
+	}
+
+	stateData := gb.rewindBuffer[gb.rewindHead]
+	gb.DeserializeState(stateData)
+	gb.rewindCount--
+
+	return true
+}
+
+func (gb *Gameboy) ResetRewindBuffer() {
+	gb.rewindHead = 0
+	gb.rewindCount = 0
+	gb.pendingRewindSave = false
+}
+
+// internal helper to save the state
+func (gb *Gameboy) saveRewindState() {
+	if gb.rewindCapacity <= 0 {
+		return
+	}
+
+	// Serialize into our pre-allocated, reusable buffer
+	data := gb.SerializeState(gb.serializeBuf)
+
+	// Reuse existing buffer if possible to prevent allocations every frame
+	snapshot := gb.rewindBuffer[gb.rewindHead]
+	snapshot = append(snapshot[:0], data...)
+
+	// Store in the ring buffer
+	gb.rewindBuffer[gb.rewindHead] = snapshot
+
+	// Advance head and count
+	gb.rewindHead = (gb.rewindHead + 1) % gb.rewindCapacity
+	if gb.rewindCount < gb.rewindCapacity {
+		gb.rewindCount++
+	}
 }
 
 // Debug gathers debug information from all components, acting as a single entry

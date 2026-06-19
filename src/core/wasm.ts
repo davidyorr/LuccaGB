@@ -18,6 +18,8 @@ declare global {
 		setAudioChannelEnabled: (channel: number, enabled: boolean) => void;
 		getAudioChannelEnabled: (channel: number) => boolean;
 		getDebugInfo: () => GameboyDebugInfo | null;
+		setRewindBufferSize: (size: number) => boolean;
+		rewindFrames: (frames: number) => number;
 	}
 }
 

@@ -12,6 +12,7 @@ import { TraceLogger } from "./TraceLogger";
 import { DebuggerToggle } from "../Debugger";
 import { store } from "../../core/store";
 import { SaveStateControls } from "./SaveStateControls";
+import { RewindControls } from "./RewindControls";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
@@ -66,6 +67,7 @@ export const Controls: Component = () => {
 					<AudioChannels />
 					<TraceLogger />
 					<DebuggerToggle />
+					<RewindControls />
 					<SaveStateControls />
 				</div>
 			</div>

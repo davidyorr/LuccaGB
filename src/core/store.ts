@@ -14,6 +14,7 @@ import { updateDebugger } from "../ui/Debugger";
 export type State = {
 	isPaused: boolean;
 	isRomLoaded: boolean;
+	isRewinding: boolean;
 	currentRomHash: string;
 	cartridgeInfo: CartridgeInfo | null;
 
@@ -25,6 +26,10 @@ export type State = {
 		isDebuggerOpen: boolean;
 		scale: number | "fit";
 		updatedAt?: number;
+		/** How many frames to save */
+		rewindBufferSize: number;
+		/** How many frames to rewind per tick */
+		rewindIncrement: number;
 	};
 
 	ui: {
@@ -39,11 +44,14 @@ const defaultSettings = {
 	audioChannelsEnabled: [false, true, true, true, true],
 	isDebuggerOpen: false,
 	scale: 3 as const,
+	rewindBufferSize: 600,
+	rewindIncrement: 1,
 };
 
 const [state, setState] = createStore<State>({
 	isPaused: false,
 	isRomLoaded: false,
+	isRewinding: false,
 	currentRomHash: "",
 	cartridgeInfo: null,
 	settings: { ...defaultSettings },
@@ -58,7 +66,10 @@ const actions = {
 	initializeAppSettings: async () => {
 		const settings = await loadAppSettings();
 		if (settings) {
-			setState("settings", settings);
+			setState("settings", {
+				...defaultSettings,
+				...settings,
+			});
 		}
 	},
 
@@ -90,6 +101,10 @@ const actions = {
 		setState("cartridgeInfo", info);
 	},
 
+	setRewinding: (rewinding: boolean) => {
+		setState("isRewinding", rewinding);
+	},
+
 	setAudioVolume: (vol: number) => {
 		setState("settings", "audioVolume", vol);
 	},
@@ -119,6 +134,14 @@ const actions = {
 	setControlsOpen: (isOpen: boolean) => {
 		setState("ui", "isControlsOpen", isOpen);
 	},
+
+	setRewindBufferSize: (size: number) => {
+		setState("settings", "rewindBufferSize", size);
+	},
+
+	setRewindIncrement: (increment: number) => {
+		setState("settings", "rewindIncrement", increment);
+	},
 };
 
 // =========================================
@@ -128,6 +151,7 @@ const actions = {
 const isRunning = () =>
 	state.isRomLoaded &&
 	!state.isPaused &&
+	!state.isRewinding &&
 	!state.ui.isHidden &&
 	!state.ui.isFileInputOpen;
 
@@ -193,6 +217,17 @@ createEffect(function pauseWhenFileInputOpen() {
 		setState("isPaused", true);
 	}
 });
+
+createEffect(
+	on(
+		() => [state.settings.rewindBufferSize, state.isRomLoaded],
+		([rewindBufferSize, isRomLoaded]) => {
+			if (isRomLoaded && window.setRewindBufferSize) {
+				window.setRewindBufferSize(rewindBufferSize as number);
+			}
+		},
+	),
+);
 
 export const store = {
 	state,

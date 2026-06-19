@@ -150,6 +150,10 @@ class AudioController {
 	public resetTime() {
 		this.nextStartTime = this.audioContext.currentTime + this.LOOKAHEAD_TIME;
 	}
+
+	public onRewind() {
+		this.nextStartTime = 0;
+	}
 }
 
 export const audioController = new AudioController();

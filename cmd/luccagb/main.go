@@ -32,6 +32,10 @@ func main() {
 	js.Global().Set("loadSerializedState", js.FuncOf(loadSerializedState))
 	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
+	// Rewinds
+	js.Global().Set("setRewindBufferSize", js.FuncOf(setRewindBufferSize))
+	js.Global().Set("rewindFrames", js.FuncOf(rewindFrames))
+
 	jsImageData = js.Global().Get("Uint8Array").New(len(goImageData))
 
 	<-make(chan struct{})
@@ -44,7 +48,18 @@ func loadRom(this js.Value, args []js.Value) interface{} {
 	cartridgeRom := make([]byte, jsRomData.Get("length").Int())
 	js.CopyBytesToGo(cartridgeRom, jsRomData)
 
+	// Preserve rewind capacity if a previous instance existed
+	prevRewindCapacity := 0
+	if gb != nil {
+		prevRewindCapacity = gb.GetRewindCapacity()
+	}
+
 	gb = gameboy.New()
+
+	if prevRewindCapacity > 0 {
+		gb.SetRewindBufferSize(prevRewindCapacity)
+	}
+
 	cartridgeInfo := gb.LoadRom(cartridgeRom)
 
 	return map[string]interface{}{
@@ -283,7 +298,46 @@ func loadSerializedState(this js.Value, args []js.Value) interface{} {
 
 	gb.DeserializeState(stateData)
 
+	// Reset the rewind buffer after loading any manual save state
+	gb.ResetRewindBuffer()
+
 	return nil
+}
+
+// setRewindBufferSize allocates the internal circular buffer.
+func setRewindBufferSize(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return false
+	}
+	size := args[0].Int()
+	gb.SetRewindBufferSize(size)
+	return true
+}
+
+// rewindFrames rewinds the emulator state by N frames.
+// Returns the actual number of frames rewound (stops early if buffer empties).
+func rewindFrames(this js.Value, args []js.Value) interface{} {
+	if gb == nil {
+		return 0
+	}
+
+	framesToRewind := args[0].Int()
+	rewoundCount := 0
+
+	for range framesToRewind {
+		if !gb.Rewind() {
+			break // Reached the oldest available state
+		}
+		rewoundCount++
+	}
+
+	// If we successfully rewound, force an update to the frontend visually
+	// so the canvas updates immediately upon the rewind occurring.
+	if rewoundCount > 0 {
+		presentFrame()
+	}
+
+	return rewoundCount
 }
 
 // getDebugInfo returns a snapshot of the emulator's state.

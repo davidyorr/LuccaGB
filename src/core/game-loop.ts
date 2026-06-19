@@ -81,6 +81,14 @@ class GameLoop {
 
 		this.animationFrameId = requestAnimationFrame(this.handleAnimationFrame);
 	};
+
+	// Allow the game loop to be the single source of truth for rendering,
+	// while allowing other files to draw without needing direct access to the renderer
+	public forceDraw(frameData: Uint8Array) {
+		if (this._renderer) {
+			this._renderer.drawFrame(frameData);
+		}
+	}
 }
 
 export const gameLoop = new GameLoop();

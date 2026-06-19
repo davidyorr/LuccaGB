@@ -1,3 +1,8 @@
+type Shortcut = {
+	keydown?: () => void;
+	keyup?: () => void;
+};
+
 export class InputManager {
 	private keyToJoypadButton: Record<string, string> = {
 		Enter: "START",
@@ -25,7 +30,7 @@ export class InputManager {
 
 	private joypadButtonToButtonIndex: Record<string, number>;
 
-	private shortcuts: Record<string, () => void>;
+	private shortcuts: Record<string, Shortcut> = {};
 
 	// Map<Button, isPressed>
 	private keyboardState: Map<string, boolean> = new Map();
@@ -34,8 +39,7 @@ export class InputManager {
 	// Map<Button, isPressed>
 	private emulatedButtonState: Map<string, boolean> = new Map();
 
-	constructor(shortcuts: Record<string, () => void>) {
-		this.shortcuts = shortcuts;
+	constructor() {
 		this.joypadButtonToButtonIndex = Object.fromEntries(
 			Object.entries(this.buttonIndexToJoypadButton).map(([k, v]) => [
 				v,
@@ -47,7 +51,14 @@ export class InputManager {
 		window.addEventListener("keyup", this.handleKeyUp);
 	}
 
-	public poll() {
+	public registerShortcuts(shortcuts: Record<string, Shortcut>) {
+		this.shortcuts = {
+			...this.shortcuts,
+			...shortcuts,
+		};
+	}
+
+	public poll(forceSync: boolean = false) {
 		// Even if no gamepad is connected, we must run this loop
 		// to process the keyboard state captured in handleKeyDown/Up
 
@@ -72,15 +83,28 @@ export class InputManager {
 			const isPressedNow = gamepadPressed || keyboardPressed;
 			const wasPressedBefore = this.emulatedButtonState.get(action) || false;
 
-			// Only trigger if the result changed
-			if (isPressedNow && !wasPressedBefore) {
-				window.handleJoypadButtonPressed(action);
-			} else if (!isPressedNow && wasPressedBefore) {
-				window.handleJoypadButtonReleased(action);
+			// If forcing sync, inform the emulator of the current state no matter what
+			if (forceSync) {
+				if (isPressedNow) {
+					window.handleJoypadButtonPressed(action);
+				} else {
+					window.handleJoypadButtonReleased(action);
+				}
+			} else {
+				// Otherwise, only trigger if the result changed
+				if (isPressedNow && !wasPressedBefore) {
+					window.handleJoypadButtonPressed(action);
+				} else if (!isPressedNow && wasPressedBefore) {
+					window.handleJoypadButtonReleased(action);
+				}
 			}
 
 			this.emulatedButtonState.set(action, isPressedNow);
 		});
+	}
+
+	public syncJoypadState() {
+		this.poll(true);
 	}
 
 	private handleKeyDown = (event: KeyboardEvent) => {
@@ -88,8 +112,9 @@ export class InputManager {
 			return;
 		}
 
-		if (this.shortcuts[event.code]) {
-			this.shortcuts[event.code]();
+		const shortcut = this.shortcuts[event.code];
+		if (shortcut) {
+			shortcut.keydown?.();
 			return;
 		}
 
@@ -100,9 +125,17 @@ export class InputManager {
 	};
 
 	private handleKeyUp = (event: KeyboardEvent) => {
+		const shortcut = this.shortcuts[event.code];
+		if (shortcut && shortcut.keyup) {
+			shortcut.keyup();
+			return;
+		}
+
 		const action = this.keyToJoypadButton[event.code];
 		if (action) {
 			this.keyboardState.set(action, false);
 		}
 	};
 }
+
+export const inputManager = new InputManager();
