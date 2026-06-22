@@ -11,6 +11,13 @@ import type { CartridgeInfo } from "../core/wasm";
 import { gameLoop } from "./game-loop";
 import { updateDebugger } from "../ui/Debugger";
 
+export type GameBoyPalette = {
+	id: string;
+	name: string;
+	colors: [string, string, string, string];
+	isReadonly?: boolean;
+};
+
 export type State = {
 	isPaused: boolean;
 	isRomLoaded: boolean;
@@ -26,6 +33,8 @@ export type State = {
 		isDebuggerOpen: boolean;
 		scale: number | "fit";
 		updatedAt?: number;
+		activePaletteId: string;
+		palettes: GameBoyPalette[];
 		/** How many frames to save */
 		rewindBufferSize: number;
 		/** How many frames to rewind per tick */
@@ -39,11 +48,34 @@ export type State = {
 	};
 };
 
+const defaultPalettes: GameBoyPalette[] = [
+	{
+		id: "default-green",
+		name: "OG Green",
+		colors: ["#d0e040", "#a0a830", "#607028", "#384828"],
+		isReadonly: true,
+	},
+	{
+		id: "lucca-gb",
+		name: "LuccaGB",
+		colors: ["#FFFDF1", "#FFCE99", "#FF9644", "#562F00"],
+		isReadonly: true,
+	},
+	{
+		id: "grayscale",
+		name: "Grayscale",
+		colors: ["#ffffff", "#aaaaaa", "#555555", "#000000"],
+		isReadonly: true,
+	},
+];
+
 const defaultSettings = {
 	audioVolume: 0.5,
 	audioChannelsEnabled: [false, true, true, true, true],
 	isDebuggerOpen: false,
 	scale: 3 as const,
+	activePaletteId: "default-green",
+	palettes: defaultPalettes,
 	rewindBufferSize: 600,
 	rewindIncrement: 1,
 };
@@ -66,9 +98,18 @@ const actions = {
 	initializeAppSettings: async () => {
 		const settings = await loadAppSettings();
 		if (settings) {
+			// Extract only the user's custom palettes from their save data
+			const savedCustomPalettes = (settings.palettes || []).filter(
+				(palette) => !palette.isReadonly,
+			);
+
+			// Merge the latest hardcoded defaults with the user's custom ones
+			const mergedPalettes = [...defaultPalettes, ...savedCustomPalettes];
+
 			setState("settings", {
 				...defaultSettings,
 				...settings,
+				palettes: mergedPalettes,
 			});
 		}
 	},
@@ -123,6 +164,51 @@ const actions = {
 		setState("settings", "scale", scale);
 	},
 
+	setActivePaletteId: (id: string) => {
+		setState("settings", "activePaletteId", id);
+	},
+
+	addPalette: (palette: GameBoyPalette) => {
+		setState("settings", "palettes", (prev) => [...prev, palette]);
+		setState("settings", "activePaletteId", palette.id);
+	},
+
+	updateActivePaletteColor: (index: number, hexColor: string) => {
+		const activeId = state.settings.activePaletteId;
+		const activeIndex = state.settings.palettes.findIndex(
+			(palette) => palette.id === activeId,
+		);
+		if (activeIndex === -1 || state.settings.palettes[activeIndex].isReadonly)
+			return;
+
+		setState("settings", "palettes", activeIndex, "colors", index, hexColor);
+	},
+
+	renameActivePalette: (newName: string) => {
+		const activeId = state.settings.activePaletteId;
+		const activeIndex = state.settings.palettes.findIndex(
+			(palette) => palette.id === activeId,
+		);
+
+		if (activeIndex === -1 || state.settings.palettes[activeIndex].isReadonly)
+			return;
+
+		setState("settings", "palettes", activeIndex, "name", newName);
+	},
+
+	deletePalette: (id: string) => {
+		const index = state.settings.palettes.findIndex(
+			(palette) => palette.id === id,
+		);
+		if (index > -1 && !state.settings.palettes[index].isReadonly) {
+			setState("settings", "palettes", (prev) =>
+				prev.filter((palette) => palette.id !== id),
+			);
+			// Fallback to the default green if they delete their active palette
+			setState("settings", "activePaletteId", "default-green");
+		}
+	},
+
 	setFileInputOpen: (isOpen: boolean) => {
 		setState("ui", "isFileInputOpen", isOpen);
 	},
@@ -141,6 +227,16 @@ const actions = {
 
 	setRewindIncrement: (increment: number) => {
 		setState("settings", "rewindIncrement", increment);
+	},
+};
+
+const getters = {
+	activePalette: () => {
+		return (
+			state.settings.palettes.find(
+				(palette) => palette.id === store.state.settings.activePaletteId,
+			) ?? state.settings.palettes[0]
+		);
 	},
 };
 
@@ -229,7 +325,46 @@ createEffect(
 	),
 );
 
+createEffect(
+	on(
+		() => {
+			const activeId = state.settings.activePaletteId;
+			const activePalette = state.settings.palettes.find(
+				(palette) => palette.id === activeId,
+			);
+			const colors = activePalette
+				? activePalette.colors
+				: state.settings.palettes[0].colors;
+
+			return [[...colors], state.isRomLoaded];
+		},
+		([colors, isRomLoaded]) => {
+			if (isRomLoaded && window.setPalette) {
+				// Convert ["#hex", "#hex", "#hex", "#hex"] -> [r,g,b,a, r,g,b,a, r,g,b,a, r,g,b,a]
+				const flatRgbaArray = (colors as string[]).flatMap((hex) => {
+					const cleanHex = hex.replace("#", "");
+					const r = parseInt(cleanHex.substring(0, 2), 16);
+					const g = parseInt(cleanHex.substring(2, 4), 16);
+					const b = parseInt(cleanHex.substring(4, 6), 16);
+					return [r, g, b, 255];
+				});
+				window.setPalette(flatRgbaArray);
+
+				// If emulation is paused, the game loop isn't running to pull this frame automatically,
+				// so we need to manually do it
+				if (state.isPaused) {
+					const frame = window.pollFrame();
+					if (frame) {
+						gameLoop.forceDraw(frame);
+					}
+				}
+			}
+		},
+	),
+);
+
 export const store = {
 	state,
+	getters,
 	actions,
 };

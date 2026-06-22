@@ -7,6 +7,7 @@ declare global {
 			tCyclesUsed: number;
 		};
 		pollFrame: () => Uint8Array;
+		setPalette: (colors: number[]) => void;
 		pollAudioBuffer: () => Array<number>;
 		handleJoypadButtonPressed: (button: string) => void;
 		handleJoypadButtonReleased: (button: string) => void;

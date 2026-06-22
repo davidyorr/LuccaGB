@@ -20,6 +20,7 @@ func main() {
 	js.Global().Set("setCartridgeRam", js.FuncOf(setCartridgeRam))
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
 	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
+	js.Global().Set("setPalette", js.FuncOf(setPalette))
 	js.Global().Set("pollAudioBuffer", js.FuncOf(pollAudioBuffer))
 	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
 	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
@@ -158,6 +159,14 @@ const (
 	displayHeight = 144
 )
 
+// default OG green
+var currentPalette = [4][4]byte{
+	{208, 224, 64, 255}, // Color 0: Lightest
+	{160, 168, 48, 255}, // Color 1: Light
+	{96, 112, 40, 255},  // Color 2: Dark
+	{56, 72, 40, 255},   // Color 3: Darkest
+}
+
 var goImageData [displayWidth * displayHeight * 4]byte
 var jsImageData js.Value
 var frameReady bool = false
@@ -168,16 +177,13 @@ func presentFrame() {
 	for screenY := 0; screenY < displayHeight; screenY++ {
 		for screenX := 0; screenX < displayWidth; screenX++ {
 			color := frameBuffer[screenY][screenX]
-			switch color {
-			case 0:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 208, 224, 64, 255
-			case 1:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 160, 168, 48, 255
-			case 2:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 96, 112, 40, 255
-			case 3:
-				goImageData[i], goImageData[i+1], goImageData[i+2], goImageData[i+3] = 56, 72, 40, 255
-			}
+
+			p := currentPalette[color]
+			goImageData[i] = p[0]
+			goImageData[i+1] = p[1]
+			goImageData[i+2] = p[2]
+			goImageData[i+3] = p[3]
+
 			i += 4
 		}
 	}
@@ -195,6 +201,26 @@ func pollFrame(this js.Value, args []js.Value) interface{} {
 	frameReady = false
 	js.CopyBytesToJS(jsImageData, goImageData[:])
 	return jsImageData
+}
+
+// setPalette takes a flat array of 16 integers (4 colors * 4 RGBA values)
+func setPalette(this js.Value, args []js.Value) interface{} {
+	if len(args) == 0 || args[0].Length() != 16 {
+		return nil
+	}
+
+	jsColors := args[0]
+	for i := range 4 {
+		currentPalette[i][0] = byte(jsColors.Index(i*4 + 0).Int()) // R
+		currentPalette[i][1] = byte(jsColors.Index(i*4 + 1).Int()) // G
+		currentPalette[i][2] = byte(jsColors.Index(i*4 + 2).Int()) // B
+		currentPalette[i][3] = byte(jsColors.Index(i*4 + 3).Int()) // A
+	}
+
+	// need to do this for when emulation is paused
+	presentFrame()
+
+	return nil
 }
 
 const AudioChunkSize = apu.AudioBufferSize

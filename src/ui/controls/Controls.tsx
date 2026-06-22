@@ -13,6 +13,7 @@ import { DebuggerToggle } from "../Debugger";
 import { store } from "../../core/store";
 import { SaveStateControls } from "./SaveStateControls";
 import { RewindControls } from "./RewindControls";
+import { PalettePicker } from "./PalettePicker";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
@@ -63,6 +64,7 @@ export const Controls: Component = () => {
 					<DataManager />
 					<ScreenshotButton />
 					<ViewportScale />
+					<PalettePicker />
 					<VolumeControl />
 					<AudioChannels />
 					<TraceLogger />
