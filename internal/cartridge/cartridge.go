@@ -43,6 +43,66 @@ var batteryBackedTypes = map[uint8]bool{
 	0xFF: true, // HuC1+RAM+BATTERY
 }
 
+var ramTypes = map[uint8]bool{
+	0x02: true, // MBC1+RAM
+	0x03: true, // MBC1+RAM+BATTERY
+	0x08: true, // ROM+RAM
+	0x09: true, // ROM+RAM+BATTERY
+	0x0C: true, // MMM01+RAM
+	0x0D: true, // MMM01+RAM+BATTERY
+	0x10: true, // MBC3+TIMER+RAM+BATTERY
+	0x12: true, // MBC3+RAM
+	0x13: true, // MBC3+RAM+BATTERY
+	0x1A: true, // MBC5+RAM
+	0x1B: true, // MBC5+RAM+BATTERY
+	0x1D: true, // MBC5+RUMBLE+RAM
+	0x1E: true, // MBC5+RUMBLE+RAM+BATTERY
+	0x22: true, // MBC7+SENSOR+RUMBLE+RAM+BATTERY
+	0xFF: true, // HuC1+RAM+BATTERY
+}
+
+// The largest RAM size code supported by each cartridge type. Used as a
+// fallback when the header declares RAM size 0 but the cartridge type requires
+// RAM. No commercial games should have this bug, but some homebrew ROMs do,
+// including Blargg's halt_bug.gb.
+var maxRamSizeCodeForType = map[uint8]uint8{
+	// MBC1: 32KiB
+	// See: https://gbdev.io/pandocs/MBC1.html
+	0x02: 0x03, // MBC1+RAM
+	0x03: 0x03, // MBC1+RAM+BATTERY
+
+	// No MBC: no banking, optionally up to 8KiB
+	// See: https://gbdev.io/pandocs/nombc.html
+	0x08: 0x02, // ROM+RAM
+	0x09: 0x02, // ROM+RAM+BATTERY
+
+	// MMM01: emulates an MBC1, 32KiB
+	// See: https://gbdev.io/pandocs/MMM01.html
+	0x0C: 0x03,
+	0x0D: 0x03,
+
+	// MBC3: 32KiB
+	// See: https://gbdev.io/pandocs/MBC3.html
+	0x10: 0x03,
+	0x12: 0x03,
+	0x13: 0x03,
+
+	// MBC5: 128KiB
+	// See: https://gbdev.io/pandocs/MBC5.html
+	0x1A: 0x04,
+	0x1B: 0x04,
+	0x1D: 0x04,
+	0x1E: 0x04,
+
+	// MBC7: 8KiB
+	// See: https://gbdev.io/pandocs/MBC7.html
+	0x22: 0x02,
+
+	// HuC1: banks like MBC1, 32KiB
+	// See: https://gbdev.io/pandocs/HuC1.html
+	0xFF: 0x03,
+}
+
 func New() *Cartridge {
 	cartridge := &Cartridge{}
 
@@ -53,6 +113,7 @@ type CartridgeInfo struct {
 	Title      string
 	RamSize    int
 	HasBattery bool
+	Type       int
 }
 
 func (cartridge *Cartridge) LoadRom(rom []uint8) CartridgeInfo {
@@ -62,6 +123,19 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) CartridgeInfo {
 	cartridge.romSizeCode = cartridge.rom[0x148]
 	cartridge.ramSizeCode = cartridge.rom[0x149]
 	cartridge.cartridgeType = cartridge.rom[0x147]
+
+	if cartridge.ramSizeCode == 0x00 && ramTypes[cartridge.cartridgeType] {
+		fallbackCode, ok := maxRamSizeCodeForType[cartridge.cartridgeType]
+		if !ok {
+			fallbackCode = 0x02
+		}
+		logger.Warn(
+			"cartridge type requires RAM but header declares size 0, using mapper's max addressable RAM as fallback",
+			"TYPE", fmt.Sprintf("0x%02X", cartridge.cartridgeType),
+			"FALLBACK_RAM_SIZE_CODE", fmt.Sprintf("0x%02X", fallbackCode),
+		)
+		cartridge.ramSizeCode = fallbackCode
+	}
 
 	if batteryBackedTypes[cartridge.cartridgeType] {
 		cartridge.hasBattery = true
@@ -96,6 +170,7 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) CartridgeInfo {
 		Title:      string(cartridge.title),
 		RamSize:    len(cartridge.ram),
 		HasBattery: cartridge.hasBattery,
+		Type:       int(cartridge.cartridgeType),
 	}
 }
 

@@ -67,7 +67,7 @@ func TestBlargg__dmg_sound(t *testing.T) {
 }
 
 func TestBlargg__halt_bug(t *testing.T) {
-	loadRomAndRunSteps(t, "blargg/halt_bug", 2_000_000, TestTypeBlargg)
+	loadRomAndRunSteps(t, "blargg/halt_bug", 1_820_186, TestTypeBlarggMemory)
 }
 
 func TestBlargg__instr_timing(t *testing.T) {

@@ -67,6 +67,7 @@ func loadRom(this js.Value, args []js.Value) interface{} {
 		"title":      cartridgeInfo.Title,
 		"ramSize":    cartridgeInfo.RamSize,
 		"hasBattery": cartridgeInfo.HasBattery,
+		"type":       cartridgeInfo.Type,
 	}
 }
 

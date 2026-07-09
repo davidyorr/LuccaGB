@@ -246,8 +246,9 @@ func (cpu *CPU) executeInterruptServiceRoutineStep() {
 func (cpu *CPU) interruptsPending() bool {
 	interruptEnable := cpu.bus.Read(0xFFFF)
 	interruptFlag := cpu.bus.Read(0xFF0F)
-	// logger.Info("interruptsPending()", "IE", fmt.Sprintf("%08b", interruptEnable), "IF", fmt.Sprintf("%08b", interruptFlag))
-	return (interruptEnable & interruptFlag) != 0
+
+	// only the 5 lower bits are valid interrupts
+	return (interruptEnable & interruptFlag & 0b0001_1111) != 0
 }
 
 // getPendingInterrupt determines the highest priority interrupt to be serviced.
