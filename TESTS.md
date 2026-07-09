@@ -5,7 +5,7 @@
 | **blargg** |  |  |
 |  | `cpu_instrs.gb` | ✅ |
 |  | `dmg_sound.gb` | ✅ |
-|  | `halt_bug.gb` | ❌ |
+|  | `halt_bug.gb` | ✅ |
 |  | `instr_timing.gb` | ✅ |
 |  | `mem_timing.gb` | ✅ |
 |  | `oam_bug.gb` | ❌ |
