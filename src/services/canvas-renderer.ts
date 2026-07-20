@@ -59,14 +59,13 @@ export class CanvasRenderer {
 			const maxWidth = window.innerWidth;
 			const maxHeight = window.innerHeight;
 
-			const fitScale = Math.floor(
-				Math.min(maxWidth / this.displayWidth, maxHeight / this.displayHeight),
+			const fitScale = Math.min(
+				maxWidth / this.displayWidth,
+				maxHeight / this.displayHeight,
 			);
 
-			const finalScale = Math.max(1, fitScale);
-
-			container.style.width = `${this.displayWidth * finalScale}px`;
-			container.style.height = `${this.displayHeight * finalScale}px`;
+			container.style.width = `${this.displayWidth * fitScale}px`;
+			container.style.height = `${this.displayHeight * fitScale}px`;
 		} else {
 			container.style.width = `${this.displayWidth * scale}px`;
 			container.style.height = `${this.displayHeight * scale}px`;
