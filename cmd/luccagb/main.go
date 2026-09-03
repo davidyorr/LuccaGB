@@ -15,27 +15,42 @@ import (
 func main() {
 	logger.Info("Hello LuccaGB!")
 
+	// ROM
 	js.Global().Set("loadRom", js.FuncOf(loadRom))
+
+	// RAM
 	js.Global().Set("getCartridgeRam", js.FuncOf(getCartridgeRam))
 	js.Global().Set("setCartridgeRam", js.FuncOf(setCartridgeRam))
+
+	// Game loop
 	js.Global().Set("processEmulatorCycles", js.FuncOf(processEmulatorCycles))
 	js.Global().Set("pollFrame", js.FuncOf(pollFrame))
+
+	// Video
 	js.Global().Set("setPalette", js.FuncOf(setPalette))
+
+	// Audio
 	js.Global().Set("pollAudioBuffer", js.FuncOf(pollAudioBuffer))
-	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
-	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
-	js.Global().Set("enableTraceLogging", js.FuncOf(enableTraceLogging))
-	js.Global().Set("disableTraceLogging", js.FuncOf(disableTraceLogging))
 	js.Global().Set("setAudioChannelEnabled", js.FuncOf(setAudioChannelEnabled))
 	js.Global().Set("getAudioChannelEnabled", js.FuncOf(getAudioChannelEnabled))
-	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
+
+	// Joypad
+	js.Global().Set("handleJoypadButtonPressed", js.FuncOf(handleJoypadButtonPressed))
+	js.Global().Set("handleJoypadButtonReleased", js.FuncOf(handleJoypadButtonReleased))
+
+	// Save states
 	js.Global().Set("getSerializedState", js.FuncOf(getSerializedState))
 	js.Global().Set("loadSerializedState", js.FuncOf(loadSerializedState))
-	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
 	// Rewinds
 	js.Global().Set("setRewindBufferSize", js.FuncOf(setRewindBufferSize))
 	js.Global().Set("rewindFrames", js.FuncOf(rewindFrames))
+
+	// Debug
+	js.Global().Set("enableTraceLogging", js.FuncOf(enableTraceLogging))
+	js.Global().Set("disableTraceLogging", js.FuncOf(disableTraceLogging))
+	js.Global().Set("getTraceLogs", js.FuncOf(getTraceLogs))
+	js.Global().Set("getDebugInfo", js.FuncOf(getDebugInfo))
 
 	jsImageData = js.Global().Get("Uint8Array").New(len(goImageData))
 
