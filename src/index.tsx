@@ -7,6 +7,7 @@ import { App } from "./App";
 import { initWasm } from "./core/wasm";
 import { gameLoop } from "./core/game-loop";
 import { startRewind, stopRewind } from "./services/rewinder";
+import { toggleRecordingGameplay } from "./services/gameplay-recorder";
 
 inputManager.registerShortcuts({
 	Space: {
@@ -15,6 +16,9 @@ inputManager.registerShortcuts({
 	Comma: {
 		keydown: startRewind,
 		keyup: stopRewind,
+	},
+	F9: {
+		keydown: toggleRecordingGameplay,
 	},
 });
 

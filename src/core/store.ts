@@ -22,6 +22,9 @@ export type State = {
 	isPaused: boolean;
 	isRomLoaded: boolean;
 	isRewinding: boolean;
+	isRecordingGameplay: boolean;
+	recordingDuration: number;
+	recordingSize: number;
 	currentRomHash: string;
 	cartridgeInfo: CartridgeInfo | null;
 
@@ -84,6 +87,9 @@ const [state, setState] = createStore<State>({
 	isPaused: false,
 	isRomLoaded: false,
 	isRewinding: false,
+	isRecordingGameplay: false,
+	recordingDuration: 0,
+	recordingSize: 0,
 	currentRomHash: "",
 	cartridgeInfo: null,
 	settings: { ...defaultSettings },
@@ -144,6 +150,18 @@ const actions = {
 
 	setRewinding: (rewinding: boolean) => {
 		setState("isRewinding", rewinding);
+	},
+
+	setRecordingGameplay: (recordingGameplay: boolean) => {
+		setState("isRecordingGameplay", recordingGameplay);
+	},
+
+	setRecordingDuration: (duration: number) => {
+		setState("recordingDuration", duration);
+	},
+
+	setRecordingSize: (size: number) => {
+		setState("recordingSize", size);
 	},
 
 	setAudioVolume: (vol: number) => {

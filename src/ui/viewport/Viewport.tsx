@@ -3,6 +3,7 @@ import styles from "./Viewport.module.css";
 import type { Component } from "solid-js";
 import { AudioHint } from "./AudioHint";
 import { store } from "../../core/store";
+import { RecordingStatus } from "./RecordingStatus";
 
 export const Viewport: Component = () => {
 	const activePalette = store.getters.activePalette;
@@ -19,6 +20,7 @@ export const Viewport: Component = () => {
 			>
 				<canvas id="canvas" class={styles.canvas} width="160" height="144" />
 				<AudioHint />
+				<RecordingStatus />
 			</div>
 		</>
 	);

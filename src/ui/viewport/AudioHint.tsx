@@ -1,4 +1,4 @@
-import styles from "./AudioHint.module.css";
+import styles from "./ViewportStatus.module.css";
 
 import { Show, type Component } from "solid-js";
 import { store } from "../../core/store";

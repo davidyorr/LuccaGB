@@ -3,6 +3,7 @@ import { createSignal } from "solid-js";
 class AudioController {
 	private audioContext: AudioContext;
 	private gainNode: GainNode;
+	private recordingDestination: MediaStreamAudioDestinationNode;
 	private nextStartTime = 0;
 	// Max allowed latency in seconds.
 	private readonly MAX_LATENCY_TIME = 0.1;
@@ -20,6 +21,10 @@ class AudioController {
 		this.gainNode = this.audioContext.createGain();
 		this.gainNode.connect(this.audioContext.destination);
 		this.gainNode.gain.value = 0.5;
+
+		this.recordingDestination =
+			this.audioContext.createMediaStreamDestination();
+		this.gainNode.connect(this.recordingDestination);
 
 		const [unlocked, setUnlocked] = createSignal(this.unlockedState);
 		this._unlocked = unlocked;
@@ -71,6 +76,10 @@ class AudioController {
 
 	get unlocked() {
 		return this._unlocked();
+	}
+
+	public recordingStream(): MediaStream {
+		return this.recordingDestination.stream;
 	}
 
 	public setVolume(volume: number) {

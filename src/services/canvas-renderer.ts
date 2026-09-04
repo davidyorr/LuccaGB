@@ -32,6 +32,10 @@ export class CanvasRenderer {
 		}
 	}
 
+	public canvas(): HTMLCanvasElement {
+		return this.visibleCanvasCtx.canvas;
+	}
+
 	public drawFrame(frameData: Uint8Array) {
 		// put the 160x144 data onto the same size offscreen canvas
 		this.imageData.data.set(frameData);
@@ -85,5 +89,6 @@ export class CanvasRenderer {
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
+		URL.revokeObjectURL(imageURL);
 	}
 }
