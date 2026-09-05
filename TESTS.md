@@ -52,7 +52,7 @@
 |  | `bits_bank2.gb` | ✅ |
 |  | `bits_mode.gb` | ✅ |
 |  | `bits_ramg.gb` | ✅ |
-|  | `multicart_rom_8Mb.gb` | ❌ |
+|  | `multicart_rom_8Mb.gb` | ✅ |
 |  | `ram_256kb.gb` | ✅ |
 |  | `ram_64kb.gb` | ✅ |
 |  | `rom_16Mb.gb` | ✅ |
