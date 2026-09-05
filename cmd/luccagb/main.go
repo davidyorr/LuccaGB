@@ -79,10 +79,13 @@ func loadRom(this js.Value, args []js.Value) interface{} {
 	cartridgeInfo := gb.LoadRom(cartridgeRom)
 
 	return map[string]interface{}{
-		"title":      cartridgeInfo.Title,
-		"ramSize":    cartridgeInfo.RamSize,
-		"hasBattery": cartridgeInfo.HasBattery,
-		"type":       cartridgeInfo.Type,
+		"title":       cartridgeInfo.Title,
+		"romSizeCode": cartridgeInfo.RomSizeCode,
+		"ramSizeCode": cartridgeInfo.RamSizeCode,
+		"ramSize":     cartridgeInfo.RamSize,
+		"romSize":     cartridgeInfo.RomSize,
+		"hasBattery":  cartridgeInfo.HasBattery,
+		"type":        cartridgeInfo.Type,
 	}
 }
 

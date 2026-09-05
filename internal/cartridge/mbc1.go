@@ -1,6 +1,7 @@
 package cartridge
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/davidyorr/LuccaGB/internal/logger"
@@ -14,6 +15,10 @@ type Mbc1 struct {
 	// bitmask to wrap addresses to the physical RAM capacity,
 	// derived from the RAM size code
 	ramAddressMask uint32
+
+	// 1 MiB Multi-Game Compilation Carts
+	// See: https://gbdev.io/pandocs/MBC1.html#mbc1m-1-mib-multi-game-compilation-carts
+	mbc1m bool
 
 	// =======================
 	// ====== Registers ======
@@ -32,6 +37,13 @@ type Mbc1 struct {
 	mode uint8
 }
 
+// See: https://gbdev.io/pandocs/The_Cartridge_Header.html#0104-0133--nintendo-logo
+var nintendoLogo = []byte{
+	0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
+	0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
+	0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E,
+}
+
 func newMbc1(cartridge *Cartridge) *Mbc1 {
 	mbc1 := &Mbc1{}
 
@@ -39,6 +51,18 @@ func newMbc1(cartridge *Cartridge) *Mbc1 {
 	mbc1.romAddressMask = addressMaskSizes[cartridge.romSizeCode]
 	mbc1.ramAddressMask = ramAddressMaskSizes[cartridge.ramSizeCode]
 	cartridge.ram = make([]uint8, ramSizes[cartridge.ramSizeCode])
+
+	// check if MBC1M
+	const bankSize = 0x4000
+	const bank10Offset = 0x10 * bankSize
+	const nintendoLogoStart = bank10Offset + 0x104
+	const nintendoLogoEnd = bank10Offset + 0x134
+
+	mbc1.mbc1m = false
+	if cartridge.romSizeCode == 0x05 && len(cartridge.rom) >= nintendoLogoEnd {
+		mbc1.mbc1m = bytes.Equal(cartridge.rom[nintendoLogoStart:nintendoLogoEnd], nintendoLogo)
+	}
+
 	mbc1.Reset()
 
 	return mbc1
@@ -62,15 +86,28 @@ func (mbc *Mbc1) Read(address uint16) uint8 {
 			return mbc.cartridge.rom[actualAddress]
 		} else if mbc.mode == 0b01 {
 			// Mode 1: Advanced banking mode
-			bank := uint32(mbc.bank2) << 5
+			var bank uint32
+			if mbc.mbc1m {
+				// Bank 2 selects Banks $00, $10, $20, or $30
+				bank = uint32(mbc.bank2) << 4
+			} else {
+				// Bank 2 selects Banks $00, $20, $40, or $60
+				bank = uint32(mbc.bank2) << 5
+			}
 			actualAddress := ((bank << 14) | uint32(address)) & mbc.romAddressMask
 			return mbc.cartridge.rom[actualAddress]
 		}
 
 	// ROM BANK 01-7F
 	case address >= 0x4000 && address <= 0x7FFF:
-		// lower 5 bits from Bank 1, upper 2 bits from Bank 2
-		bank := (uint32(mbc.bank2) << 5) | uint32(mbc.bank1)
+		var bank uint32
+		if mbc.mbc1m {
+			// ignore the top bit of the main ROM banking register
+			bank = (uint32(mbc.bank2) << 4) | uint32(mbc.bank1&0x0F)
+		} else {
+			// lower 5 bits from Bank 1, upper 2 bits from Bank 2
+			bank = (uint32(mbc.bank2) << 5) | uint32(mbc.bank1)
+		}
 		// map 0x4000-0x7FFF down to 0x0000-0x3FFF
 		offset := uint32(address) & 0b11_1111_1111_1111
 		actualAddress := ((bank << 14) | offset) & mbc.romAddressMask

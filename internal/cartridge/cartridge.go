@@ -110,10 +110,13 @@ func New() *Cartridge {
 }
 
 type CartridgeInfo struct {
-	Title      string
-	RamSize    int
-	HasBattery bool
-	Type       int
+	Title       string
+	RomSizeCode int
+	RamSizeCode int
+	RamSize     int
+	RomSize     int
+	HasBattery  bool
+	Type        int
 }
 
 func (cartridge *Cartridge) LoadRom(rom []uint8) CartridgeInfo {
@@ -167,10 +170,13 @@ func (cartridge *Cartridge) LoadRom(rom []uint8) CartridgeInfo {
 	)
 
 	return CartridgeInfo{
-		Title:      string(cartridge.title),
-		RamSize:    len(cartridge.ram),
-		HasBattery: cartridge.hasBattery,
-		Type:       int(cartridge.cartridgeType),
+		Title:       string(cartridge.title),
+		RomSizeCode: int(cartridge.romSizeCode),
+		RamSizeCode: int(cartridge.ramSizeCode),
+		RamSize:     len(cartridge.ram),
+		RomSize:     len(cartridge.rom),
+		HasBattery:  cartridge.hasBattery,
+		Type:        int(cartridge.cartridgeType),
 	}
 }
 
