@@ -28,6 +28,9 @@ export async function handleRomLoad(arrayBuffer: ArrayBuffer) {
 	store.actions.setCartridgeInfo(cartridgeInfo);
 	console.log("Cartridge Info:", cartridgeInfo);
 
+	// Initialize the audio controller with the persisted volume setting
+	audioController.setVolume(store.state.settings.audioVolume);
+
 	// Attempt to load existing RAM
 	if (cartridgeInfo.hasBattery && cartridgeInfo.ramSize > 0) {
 		try {
