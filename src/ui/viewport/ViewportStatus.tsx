@@ -21,6 +21,11 @@ export const ViewportStatus: Component = () => {
 						: ""}
 				</div>
 			</Show>
+
+			{/* Save States */}
+			<Show when={store.state.isRomLoaded && store.state.saveStateStatus}>
+				<div class={styles.container}>{store.state.saveStateStatus}</div>
+			</Show>
 		</>
 	);
 };

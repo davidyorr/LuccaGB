@@ -112,8 +112,18 @@ export class InputManager {
 			return;
 		}
 
+		const target = event.target as HTMLElement;
+		if (
+			target.tagName === "INPUT" ||
+			target.tagName === "TEXTAREA" ||
+			target.isContentEditable
+		) {
+			return;
+		}
+
 		const shortcut = this.shortcuts[event.code];
 		if (shortcut) {
+			event.preventDefault();
 			shortcut.keydown?.();
 			return;
 		}
@@ -125,8 +135,18 @@ export class InputManager {
 	};
 
 	private handleKeyUp = (event: KeyboardEvent) => {
+		const target = event.target as HTMLElement;
+		if (
+			target.tagName === "INPUT" ||
+			target.tagName === "TEXTAREA" ||
+			target.isContentEditable
+		) {
+			return;
+		}
+
 		const shortcut = this.shortcuts[event.code];
 		if (shortcut && shortcut.keyup) {
+			event.preventDefault();
 			shortcut.keyup();
 			return;
 		}

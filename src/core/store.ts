@@ -19,12 +19,21 @@ export type GameBoyPalette = {
 };
 
 export type State = {
+	// emulation
 	isPaused: boolean;
 	isRomLoaded: boolean;
 	isRewinding: boolean;
+
+	// recording
 	isRecordingGameplay: boolean;
 	recordingDuration: number;
 	recordingSize: number;
+
+	// save states
+	currentSaveStateSlot: number;
+	saveStateStatus: string;
+
+	// ROM
 	currentRomHash: string;
 	cartridgeInfo: CartridgeInfo | null;
 
@@ -90,6 +99,8 @@ const [state, setState] = createStore<State>({
 	isRecordingGameplay: false,
 	recordingDuration: 0,
 	recordingSize: 0,
+	currentSaveStateSlot: 0,
+	saveStateStatus: "",
 	currentRomHash: "",
 	cartridgeInfo: null,
 	settings: { ...defaultSettings },
@@ -99,6 +110,9 @@ const [state, setState] = createStore<State>({
 		isControlsOpen: false,
 	},
 });
+
+const MAX_SAVE_STATE_SLOTS = 10;
+let saveStateStatusTimeout: number | undefined;
 
 const actions = {
 	initializeAppSettings: async () => {
@@ -162,6 +176,42 @@ const actions = {
 
 	setRecordingSize: (size: number) => {
 		setState("recordingSize", size);
+	},
+
+	setSaveStateSlotToNext: () => {
+		setState(
+			"currentSaveStateSlot",
+			(prev) => (prev + 1) % MAX_SAVE_STATE_SLOTS,
+		);
+		store.actions.setSaveStateStatus(
+			`Save State ${state.currentSaveStateSlot} selected`,
+			1000,
+		);
+	},
+
+	setSaveStateSlotToPrev: () => {
+		setState(
+			"currentSaveStateSlot",
+			(prev) => (prev - 1 + MAX_SAVE_STATE_SLOTS) % MAX_SAVE_STATE_SLOTS,
+		);
+		store.actions.setSaveStateStatus(
+			`Save State ${state.currentSaveStateSlot} selected`,
+			1000,
+		);
+	},
+
+	setSaveStateStatus: (status: string, timeout?: number) => {
+		clearTimeout(saveStateStatusTimeout);
+		saveStateStatusTimeout = undefined;
+
+		setState("saveStateStatus", status);
+
+		if (timeout !== undefined) {
+			saveStateStatusTimeout = setTimeout(
+				() => store.actions.setSaveStateStatus(""),
+				timeout,
+			);
+		}
 	},
 
 	setAudioVolume: (vol: number) => {
