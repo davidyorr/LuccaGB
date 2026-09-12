@@ -10,12 +10,18 @@ import { debounce } from "../utils/debounce";
 import type { CartridgeInfo } from "../core/wasm";
 import { gameLoop } from "./game-loop";
 import { updateDebugger } from "../ui/Debugger";
+import { inputManager } from "../services/input-manager";
 
 export type GameBoyPalette = {
 	id: string;
 	name: string;
 	colors: [string, string, string, string];
 	isReadonly?: boolean;
+};
+
+export type Keybindings = {
+	joypad: Record<string, string>;
+	shortcuts: Record<string, string>;
 };
 
 export type State = {
@@ -51,6 +57,7 @@ export type State = {
 		rewindBufferSize: number;
 		/** How many frames to rewind per tick */
 		rewindIncrement: number;
+		keybindings: Keybindings;
 	};
 
 	ui: {
@@ -90,6 +97,27 @@ const defaultSettings = {
 	palettes: defaultPalettes,
 	rewindBufferSize: 600,
 	rewindIncrement: 1,
+	keybindings: {
+		joypad: {
+			UP: "ArrowUp",
+			DOWN: "ArrowDown",
+			LEFT: "ArrowLeft",
+			RIGHT: "ArrowRight",
+			A: "KeyX",
+			B: "KeyZ",
+			START: "Enter",
+			SELECT: "Backspace",
+		},
+		shortcuts: {
+			togglePaused: "Space",
+			rewind: "Comma",
+			toggleRecording: "F9",
+			quickSave: "KeyO",
+			quickLoad: "KeyP",
+			prevSaveStateSlot: "BracketLeft",
+			nextSaveStateSlot: "BracketRight",
+		},
+	},
 };
 
 const [state, setState] = createStore<State>({
@@ -126,9 +154,20 @@ const actions = {
 			// Merge the latest hardcoded defaults with the user's custom ones
 			const mergedPalettes = [...defaultPalettes, ...savedCustomPalettes];
 
+			// Merge persisted keybindings with defaults so new bindings are added automatically
 			setState("settings", {
 				...defaultSettings,
 				...settings,
+				keybindings: {
+					joypad: {
+						...defaultSettings.keybindings.joypad,
+						...(settings.keybindings?.joypad ?? {}),
+					},
+					shortcuts: {
+						...defaultSettings.keybindings.shortcuts,
+						...(settings.keybindings?.shortcuts ?? {}),
+					},
+				},
 				palettes: mergedPalettes,
 			});
 		}
@@ -296,6 +335,14 @@ const actions = {
 	setRewindIncrement: (increment: number) => {
 		setState("settings", "rewindIncrement", increment);
 	},
+
+	updateJoypadBinding: (action: string, keyCode: string) => {
+		setState("settings", "keybindings", "joypad", action, keyCode);
+	},
+
+	updateShortcutBinding: (action: string, keyCode: string) => {
+		setState("settings", "keybindings", "shortcuts", action, keyCode);
+	},
 };
 
 const getters = {
@@ -380,6 +427,11 @@ createEffect(function pauseWhenFileInputOpen() {
 	if (state.ui.isFileInputOpen) {
 		setState("isPaused", true);
 	}
+});
+
+createEffect(function syncKeybindingsToInputManager() {
+	inputManager.setJoypadBindings(state.settings.keybindings.joypad);
+	inputManager.setShortcutBindings(state.settings.keybindings.shortcuts);
 });
 
 createEffect(

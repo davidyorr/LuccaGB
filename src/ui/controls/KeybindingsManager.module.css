@@ -1,0 +1,89 @@
+.modal {
+	background: #333;
+	color: #e0e0e0;
+	border: 1px solid #555;
+	border-radius: 8px;
+	padding: 20px;
+	width: 100%;
+	max-width: 450px;
+	font-family: system-ui, monospace;
+
+	&::backdrop {
+		background: rgba(0, 0, 0, 0.7);
+	}
+}
+
+.scrollableContent {
+	max-height: 60vh;
+	overflow-y: auto;
+	margin-bottom: 20px;
+	padding-right: 10px;
+}
+
+.section {
+	margin-bottom: 20px;
+
+	& h3 {
+		margin-top: 0;
+		margin-bottom: 10px;
+		font-size: 1.1rem;
+		color: #fff;
+	}
+}
+
+.grid {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: #222;
+	padding: 6px 12px;
+	border-radius: 4px;
+}
+
+.keyButton {
+	min-width: 130px;
+	background: #444;
+	color: #fff;
+	border: 1px solid #666;
+	padding: 6px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background 0.2s;
+	font-family: inherit;
+
+	&:hover {
+		background: #555;
+	}
+
+	&.listening {
+		background: #0066cc;
+		border-color: #0088ff;
+		animation: pulse 1s infinite alternate;
+	}
+}
+
+@keyframes pulse {
+	from {
+		background: #0055aa;
+	}
+	to {
+		background: #0077ee;
+	}
+}
+
+.dialogFooter {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.divider {
+	border: 0;
+	border-top: 1px solid #555;
+	margin: 15px 0;
+}

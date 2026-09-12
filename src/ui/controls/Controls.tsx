@@ -14,6 +14,7 @@ import { store } from "../../core/store";
 import { SaveStateControls } from "./SaveStateControls";
 import { RewindControls } from "./RewindControls";
 import { PalettePicker } from "./PalettePicker";
+import { KeybindingsManager } from "./KeybindingsManager";
 
 export const Controls: Component = () => {
 	let panelRef: HTMLDivElement | undefined;
@@ -62,6 +63,7 @@ export const Controls: Component = () => {
 					<TestRoms />
 					<RomFileInput />
 					<DataManager />
+					<KeybindingsManager />
 					<ScreenshotButton />
 					<ViewportScale />
 					<PalettePicker />
