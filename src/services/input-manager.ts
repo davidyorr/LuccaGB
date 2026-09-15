@@ -63,6 +63,8 @@ export class InputManager {
 	// Map<Button, isPressed>
 	private keyboardState: Map<string, boolean> = new Map();
 
+	private touchscreenState = new Map<string, Set<number>>();
+
 	// the state sent to the emulator
 	// Map<Button, isPressed>
 	private emulatedButtonState: Map<string, boolean> = new Map();
@@ -121,8 +123,13 @@ export class InputManager {
 			// Check keyboard
 			const keyboardPressed = this.keyboardState.get(action) || false;
 
+			// Check touchscreen
+			const touchscreenPressed =
+				(this.touchscreenState.get(action)?.size ?? 0) > 0;
+
 			// Combine them
-			const isPressedNow = gamepadPressed || keyboardPressed;
+			const isPressedNow =
+				gamepadPressed || keyboardPressed || touchscreenPressed;
 			const wasPressedBefore = this.emulatedButtonState.get(action) || false;
 
 			// If forcing sync, inform the emulator of the current state no matter what
@@ -147,6 +154,31 @@ export class InputManager {
 
 	public syncJoypadState() {
 		this.poll(true);
+	}
+
+	public pressTouchscreenButton(action: string, pointerId: number) {
+		let pointers = this.touchscreenState.get(action);
+
+		if (!pointers) {
+			pointers = new Set();
+			this.touchscreenState.set(action, pointers);
+		}
+
+		pointers.add(pointerId);
+	}
+
+	public releaseTouchscreenButton(action: string, pointerId: number) {
+		const pointers = this.touchscreenState.get(action);
+
+		if (!pointers) {
+			return;
+		}
+
+		pointers.delete(pointerId);
+
+		if (pointers.size === 0) {
+			this.touchscreenState.delete(action);
+		}
 	}
 
 	private handleKeyDown = (event: KeyboardEvent) => {

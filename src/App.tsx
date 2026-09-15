@@ -8,6 +8,7 @@ import { DragAndDropOverlay } from "./ui/DragAndDropOverlay";
 import { gameLoop } from "./core/game-loop";
 import { CanvasRenderer } from "./services/canvas-renderer";
 import { Viewport } from "./ui/viewport/Viewport";
+import { OnScreenJoypad } from "./ui/OnScreenJoypad";
 
 export const App: Component = () => {
 	onMount(() => {
@@ -32,6 +33,8 @@ export const App: Component = () => {
 			<Controls />
 
 			<Viewport />
+
+			<OnScreenJoypad />
 
 			<Debugger />
 		</div>

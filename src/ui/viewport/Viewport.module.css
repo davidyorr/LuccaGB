@@ -12,3 +12,23 @@
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
 }
+
+@media (max-width: 768px) {
+	.container {
+		/* !important to override inline styles set by CanvasRenderer */
+		width: 100vw !important;
+		height: 50vh !important;
+		display: flex !important;
+		justify-content: center;
+		align-items: center;
+		overflow: hidden;
+	}
+
+	.canvas {
+		/* Force the canvas to fill the container, but respect aspect ratio */
+		width: 100% !important;
+		height: 100% !important;
+		max-width: 100vw;
+		object-fit: contain !important;
+	}
+}

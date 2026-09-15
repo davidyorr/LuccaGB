@@ -1,0 +1,164 @@
+.container {
+	display: none;
+
+	--cyan: 50 210 255;
+	--pink: 255 50 200;
+}
+
+@media (max-width: 768px) {
+	.container {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		width: 100%;
+		height: 50vh;
+		padding: 32px;
+		padding-bottom: 72px;
+
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-touch-callout: none;
+	}
+
+	.topRow {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		flex: 1;
+	}
+
+	.dpad {
+		position: relative;
+		display: grid;
+		grid-template-columns: repeat(3, 48px);
+		grid-template-rows: repeat(3, 48px);
+		gap: 3px;
+	}
+
+	.button {
+		position: relative;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-touch-callout: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.dpad .button {
+		border: 1px solid rgb(var(--cyan) / 0.7);
+		background: rgb(var(--cyan) / 0.05);
+		box-shadow:
+			0 0 5px rgb(var(--cyan) / 0.35),
+			inset 0 0 10px rgb(var(--cyan) / 0.05);
+		color: rgb(var(--cyan) / 0.95);
+	}
+
+	.up {
+		grid-column: 2;
+		grid-row: 1;
+		border-radius: 8px 8px 2px 2px;
+	}
+
+	.left {
+		grid-column: 1;
+		grid-row: 2;
+		border-radius: 8px 2px 2px 8px;
+	}
+
+	.center {
+		grid-column: 2;
+		grid-row: 2;
+		border: 1px solid rgb(var(--cyan) / 0.15);
+		background: rgb(var(--cyan) / 0.02);
+	}
+
+	.right {
+		grid-column: 3;
+		grid-row: 2;
+		border-radius: 2px 8px 8px 2px;
+	}
+
+	.down {
+		grid-column: 2;
+		grid-row: 3;
+		border-radius: 2px 2px 8px 8px;
+	}
+
+	.actionButtons {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		transform: rotate(-8deg);
+	}
+
+	.actionButton {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.aOffset {
+		transform: translateY(-30px);
+	}
+
+	.actionButton .button {
+		width: 64px;
+		height: 64px;
+		border: 2px solid rgb(var(--pink) / 0.7);
+		border-radius: 50%;
+		background: rgb(var(--pink) / 0.05);
+		color: rgb(var(--pink) / 0.95);
+		box-shadow:
+			0 0 6px rgb(var(--pink) / 0.5),
+			0 0 20px rgb(var(--pink) / 0.15),
+			inset 0 0 15px rgb(var(--pink) / 0.08);
+	}
+
+	.bottomRow {
+		display: flex;
+		justify-content: center;
+		gap: 32px;
+		padding-top: 24px;
+	}
+
+	.systemButton {
+		width: 72px;
+		height: 18px;
+		border: 1px solid rgb(var(--cyan) / 0.7);
+		border-radius: 999px;
+		background: rgb(var(--cyan) / 0.05);
+		box-shadow:
+			0 0 5px rgb(var(--cyan) / 0.35),
+			inset 0 0 10px rgb(var(--cyan) / 0.05);
+		color: rgb(var(--cyan) / 0.9);
+	}
+
+	/* ---------------- PRESSED STATE ---------------- */
+
+	.button.pressed {
+		filter: brightness(1.8);
+
+		box-shadow:
+			0 0 8px currentColor,
+			0 0 24px currentColor,
+			inset 0 0 18px currentColor;
+	}
+
+	.dpad .button.pressed,
+	.systemButton.pressed {
+		background: rgb(var(--cyan) / 0.18);
+	}
+
+	.actionButton .button.pressed {
+		background: rgb(var(--pink) / 0.18);
+	}
+}

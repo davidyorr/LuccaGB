@@ -8,3 +8,12 @@
 	gap: 24px;
 	position: relative;
 }
+
+@media (max-width: 768px) {
+	.app {
+		flex-direction: column;
+		justify-content: flex-start;
+		gap: 0;
+		overflow: hidden;
+	}
+}
