@@ -26,3 +26,25 @@
 	border-top: 1px solid #555;
 	margin: 15px 0;
 }
+
+.linkResult {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+
+	& input {
+		flex: 1;
+		min-width: 0;
+		background: transparent;
+		color: inherit;
+		border: 1px solid #555;
+		border-radius: 4px;
+		padding: 6px;
+		font-family: monospace;
+		font-size: 0.85em;
+	}
+
+	& button {
+		white-space: nowrap;
+	}
+}

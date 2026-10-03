@@ -5,7 +5,8 @@
 	"author": "David Orr <davidyorr@gmail.com>",
 	"packageManager": "pnpm@10.11.1",
 	"scripts": {
-		"dev": "concurrently \"pnpm run watch:wasm\" \"vite\"",
+		"dev": "USE_SSL=true concurrently \"pnpm run watch:wasm\" \"vite\"",
+		"dev:vercel": "concurrently \"pnpm run watch:wasm\" \"vercel dev\"",
 		"build": "go version && pnpm run build:wasm && vite build",
 		"build:wasm": "GOOS=js GOARCH=wasm go build -o public/main.wasm ./cmd/luccagb",
 		"watch:wasm": "chokidar '**/*.go' -c 'GOOS=js GOARCH=wasm go build -o public/main.wasm -tags trace ./cmd/luccagb' --initial",
@@ -22,15 +23,18 @@
 	},
 	"devDependencies": {
 		"@types/golang-wasm-exec": "1.15.2",
+		"@vercel/node": "17.0.0",
 		"@vitejs/plugin-basic-ssl": "2.3.0",
 		"chokidar-cli": "3.0.0",
 		"concurrently": "9.1.2",
 		"prettier": "3.5.3",
 		"typescript": "5.8.3",
+		"vercel": "62.1.0",
 		"vite": "6.3.5",
 		"vite-plugin-solid": "2.11.10"
 	},
 	"dependencies": {
+		"@upstash/redis": "1.39.0",
 		"solid-js": "1.9.11"
 	}
 }

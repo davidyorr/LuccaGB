@@ -29,7 +29,7 @@ type SaveStateData = {
 	};
 };
 
-type BackupFile = {
+export type BackupFile = {
 	version: number; // Schema version
 	timestamp: number;
 	app: "LuccaGB";
@@ -471,39 +471,7 @@ export async function importData(jsonContent: string): Promise<ImportStats> {
 }
 
 export async function exportData(): Promise<void> {
-	const db = await openDatabase();
-
-	const saves = await new Promise<SaveData[]>((resolve, reject) => {
-		const transaction = db.transaction([STORE_NAME], "readonly");
-		const store = transaction.objectStore(STORE_NAME);
-		const request = store.getAll();
-
-		request.onsuccess = () => {
-			resolve(request.result as SaveData[]);
-		};
-		request.onerror = () => {
-			reject(request.error);
-		};
-	});
-
-	const settings = await loadAppSettings();
-
-	// Transform SaveData (Uint8Array) -> Backup format (Base64)
-	const backup: BackupFile = {
-		version: 1,
-		timestamp: Date.now(),
-		app: "LuccaGB",
-		saves: saves.map((save) => ({
-			romHash: save.romHash,
-			updatedAt: save.updatedAt,
-			meta: save.meta,
-			// Convert raw bytes to Base64 string for JSON compatibility
-			ramBase64: bufferToBase64(
-				save.ram instanceof Uint8Array ? save.ram : new Uint8Array(save.ram),
-			),
-		})),
-		settings: settings ?? undefined,
-	};
+	const backup = await generateBackupData();
 
 	// Create a blob and trigger download
 	const blob = new Blob([JSON.stringify(backup, null, 2)], {
@@ -521,6 +489,41 @@ export async function exportData(): Promise<void> {
 	// Cleanup
 	document.body.removeChild(a);
 	URL.revokeObjectURL(url);
+}
+
+export async function generateBackupData(): Promise<BackupFile> {
+	const db = await openDatabase();
+
+	const saves = await new Promise<SaveData[]>((resolve, reject) => {
+		const transaction = db.transaction([STORE_NAME], "readonly");
+		const store = transaction.objectStore(STORE_NAME);
+		const request = store.getAll();
+
+		request.onsuccess = () => {
+			resolve(request.result as SaveData[]);
+		};
+		request.onerror = () => {
+			reject(request.error);
+		};
+	});
+
+	const settings = await loadAppSettings();
+
+	return {
+		version: 1,
+		timestamp: Date.now(),
+		app: "LuccaGB",
+		saves: saves.map((save) => ({
+			romHash: save.romHash,
+			updatedAt: save.updatedAt,
+			meta: save.meta,
+			// Convert raw bytes to Base64 string for JSON compatibility
+			ramBase64: bufferToBase64(
+				save.ram instanceof Uint8Array ? save.ram : new Uint8Array(save.ram),
+			),
+		})),
+		settings: settings ?? undefined,
+	};
 }
 
 function bufferToBase64(buffer: Uint8Array): string {
