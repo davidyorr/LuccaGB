@@ -7,7 +7,11 @@ import {
 	importData,
 	type ImportStats,
 } from "../../services/storage";
-import { createMagicLink, fetchMagicLinkData } from "../../services/magic-link";
+import {
+	createMagicLink,
+	createQrCode,
+	fetchMagicLinkData,
+} from "../../services/magic-link";
 
 function showImportResult(stats: ImportStats) {
 	alert(
@@ -26,6 +30,7 @@ export const DataManager: Component = () => {
 	const [syncId, setSyncId] = createSignal<string | null>(null);
 	const [isSyncing, setIsSyncing] = createSignal(false);
 	const [magicLink, setMagicLink] = createSignal("");
+	const [qrCode, setQrCode] = createSignal("");
 	const [isGenerating, setIsGenerating] = createSignal(false);
 
 	onMount(function checkForMagicLink() {
@@ -53,6 +58,7 @@ export const DataManager: Component = () => {
 			setSyncId(null);
 		}
 		setMagicLink("");
+		setQrCode("");
 	};
 
 	const handleExportClick = async () => {
@@ -65,9 +71,13 @@ export const DataManager: Component = () => {
 
 	const handleGenerateLinkClick = async () => {
 		setIsGenerating(true);
+
 		try {
 			const link = await createMagicLink();
+			const qr = await createQrCode(link);
+
 			setMagicLink(link);
+			setQrCode(qr);
 		} catch (error) {
 			alert("Failed to generate link: " + error);
 		} finally {
@@ -159,6 +169,13 @@ export const DataManager: Component = () => {
 													Copy
 												</button>
 											</div>
+											<Show when={qrCode()}>
+												<img
+													class={styles.qrCode}
+													src={qrCode()}
+													alt="QR code for the transfer link"
+												/>
+											</Show>
 										</Show>
 									</div>
 

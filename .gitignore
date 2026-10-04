@@ -21,3 +21,6 @@ mem.out
 
 # PPU screenshots test output
 screenshots_out/
+
+.vercel
+.env*

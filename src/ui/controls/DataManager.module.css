@@ -48,3 +48,12 @@
 		white-space: nowrap;
 	}
 }
+
+.qrCode {
+	display: block;
+	width: 200px;
+	height: 200px;
+	margin: 12px auto 0;
+	border-radius: 4px;
+	image-rendering: pixelated;
+}

@@ -1,4 +1,5 @@
-import { generateBackupData, importData } from "./storage";
+import QRCode from "qrcode";
+import { generateBackupData } from "./storage";
 
 export async function createMagicLink(): Promise<string> {
 	const backup = await generateBackupData();
@@ -30,4 +31,12 @@ export async function fetchMagicLinkData(id: string): Promise<string> {
 	}
 
 	return await response.text();
+}
+
+export async function createQrCode(url: string): Promise<string> {
+	return QRCode.toDataURL(url, {
+		width: 256,
+		margin: 4,
+		errorCorrectionLevel: "M",
+	});
 }
